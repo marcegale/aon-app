@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  nombre      String
+  empresa     String
+  email       String
+  rubro       String?
+  empleados   String?
+  problema    String
+  objetivo    String
+  diagnostico String
+  leadScore   Int
+  leadLevel   String
+  emailStatus String?
+  emailError  String?
+  createdAt   DateTime @default(now())
+}
