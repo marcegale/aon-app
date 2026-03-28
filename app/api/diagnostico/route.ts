@@ -130,22 +130,7 @@ Devuelve exactamente con esta estructura:
     });
 
     let emailStatus: "sent" | "failed" | "not_attempted" = "not_attempted";
-    let emailError: string | null = null;
-
-    try {
-      await enviarDiagnosticoEmail({
-        to: email,
-        nombre,
-        empresa,
-        diagnostico,
-      });
-
-      emailStatus = "sent";
-    } catch (emailErr: any) {
-      emailStatus = "failed";
-      emailError = emailErr?.message || "Error desconocido al enviar email";
-      console.error("Error enviando email:", emailErr);
-    }
+let emailError: string | null = null;
 
     await prisma.lead.create({
       data: {
