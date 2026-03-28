@@ -5,12 +5,15 @@ import { validarTurnstile } from "@/app/lib/turnstile";
 import { prisma } from "@/app/lib/prisma";
 
 function getOpenAIClient() {
+  console.log("ENV KEYS:", Object.keys(process.env));
+  console.log("OPENAI KEY:", process.env.OPENAI_API_KEY);
+
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Falta OPENAI_API_KEY");
   }
 
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY || "",
   });
 }
 
