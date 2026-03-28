@@ -153,7 +153,7 @@ export default function DiagnosticoPage() {
 
         <div className="pt-2">
           <Turnstile
-            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            siteKey="0x4AAAAAACw5ZlW3h_E6OOI0"
             onSuccess={(receivedToken) => setToken(receivedToken)}
             onExpire={() => setToken("")}
             onError={() => setToken("")}
