@@ -4,9 +4,15 @@ import { enviarDiagnosticoEmail } from "@/app/lib/email";
 import { validarTurnstile } from "@/app/lib/turnstile";
 import { prisma } from "@/app/lib/prisma";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Falta OPENAI_API_KEY");
+  }
+
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 function calcularLeadScore(data: {
   email: string;
@@ -102,6 +108,8 @@ Devuelve exactamente con esta estructura:
 4. 3 quick wins
 5. Plan de 30 días
 `;
+
+    const client = getOpenAIClient();
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
