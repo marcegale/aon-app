@@ -4,11 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "build": "prisma generate && next build",
+    "start": "next start -p $PORT -H 0.0.0.0",
+    "lint": "eslint",
     "postinstall": "prisma generate"
-    "build": "prisma generate && next build"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.4.2",
