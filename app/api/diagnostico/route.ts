@@ -110,6 +110,8 @@ Devuelve exactamente con esta estructura:
 3. 3 riesgos
 4. 3 quick wins
 5. Plan de 30 días
+
+Ten en cuenta que al ennumerar la devolución puede existir confusión numérica visual al poner "3. 3 riesgos", entonces utiliza este formato: "3. Tres riesgos".
 `;
 
     const client = getOpenAIClient();
