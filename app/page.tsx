@@ -1,30 +1,61 @@
+import Image from "next/image";
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#0B0D12] text-white flex flex-col items-center justify-center px-6">
-      <h1 className="text-4xl md:text-5xl font-bold text-center mb-6">
-        Diagnostica tu empresa con AON
-      </h1>
+    <main className="min-h-screen bg-[#00003C]">
+      <section className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-16 text-center md:px-8">
+        <div className="mb-6">
+          <Image
+            src="/logo-aon.png"
+            alt="AON"
+            width={72}
+            height={72}
+            className="h-16 w-16 object-contain md:h-20 md:w-20"
+            priority
+          />
+        </div>
 
-      <p className="text-lg md:text-xl text-gray-300 text-center max-w-2xl mb-8">
-        Recibe un diagnóstico inicial automatizado y un plan de acción ejecutivo directamente en tu correo.
-      </p>
+        <div className="inline-flex rounded-full border border-[#E2AB6D]/30 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#FDF6CB]/85">
+          AON · Diagnóstico Estratégico
+        </div>
 
-      <div className="text-gray-400 text-center mb-10 space-y-2">
-        <p>• Identifica problemas raíz</p>
-        <p>• Detecta riesgos visibles</p>
-        <p>• Obtén quick wins accionables</p>
-        <p>• Recibe un plan de 30 días</p>
-      </div>
+        <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-[#FDF6CB] md:text-6xl">
+          Diagnostica tu empresa con una lectura estratégica inicial
+        </h1>
 
-      <a href="/diagnostico">
-        <button className="bg-[#C9A24D] text-black px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition">
-        Iniciar diagnóstico
-        </button>
-      </a>
+        <p className="mt-6 max-w-3xl text-lg leading-8 text-[#FDF6CB]/75 md:text-xl">
+          Recibe un diagnóstico inicial automatizado con foco en estructura,
+          prioridades, riesgos visibles y oportunidades de mejora para tu negocio.
+        </p>
 
-      <p className="text-sm text-gray-500 mt-6">
-        Tiempo estimado: 3 minutos
-      </p>
+        <div className="mt-10 grid w-full max-w-4xl gap-4 md:grid-cols-2">
+          <FeatureCard text="Identifica problemas raíz" />
+          <FeatureCard text="Detecta riesgos visibles" />
+          <FeatureCard text="Obtén quick wins accionables" />
+          <FeatureCard text="Recibe un plan inicial de 30 días" />
+        </div>
+
+        <div className="mt-10 flex flex-col items-center">
+          <a
+            href="/diagnostico"
+            className="inline-flex items-center justify-center rounded-2xl bg-[#E2AB6D] px-8 py-3.5 text-sm font-semibold text-[#00003C] transition hover:opacity-90"
+          >
+            Iniciar diagnóstico
+          </a>
+
+          <p className="mt-4 text-sm text-[#FDF6CB]/55">
+            Tiempo estimado: 3 minutos
+          </p>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function FeatureCard({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left backdrop-blur-sm">
+      <p className="text-sm font-medium text-[#FDF6CB]">{text}</p>
+    </div>
   );
 }

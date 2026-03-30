@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import jsPDF from "jspdf";
 
@@ -65,72 +66,100 @@ export default function ResultadoClient() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0D12] text-white px-6 py-12">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-[#00003C]">
+      <section className="mx-auto max-w-6xl px-6 py-10 md:px-8 lg:py-16">
         <div className="mb-10">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#C9A24D] mb-3">
-            AON
-          </p>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">
+          <div className="mb-6">
+            <Image
+              src="/logo-aon.png"
+              alt="AON"
+              width={64}
+              height={64}
+              className="h-14 w-14 object-contain md:h-16 md:w-16"
+              priority
+            />
+          </div>
+
+          <div className="inline-flex rounded-full border border-[#E2AB6D]/30 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#FDF6CB]/85">
+            AON · Diagnóstico Estratégico
+          </div>
+
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight text-[#FDF6CB] md:text-5xl">
             Diagnóstico inicial
           </h1>
-          <p className="text-gray-400 text-lg max-w-2xl">
-            Esta es una lectura inicial automatizada de la situación actual de tu empresa, con foco en prioridades, riesgos y acciones inmediatas.
+
+          <p className="mt-4 max-w-3xl text-base leading-7 text-[#FDF6CB]/75 md:text-lg">
+            Esta es una lectura inicial automatizada de la situación actual de tu
+            empresa, con foco en prioridades, riesgos y acciones inmediatas.
           </p>
         </div>
 
-        <div className="bg-[#11161F] border border-[#2A3140] rounded-2xl p-8 shadow-xl">
-          <div className="mb-6 pb-6 border-b border-[#2A3140]">
-            <h2 className="text-xl font-semibold text-white">
+        <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-6 shadow-2xl shadow-black/20 md:p-8 lg:p-10">
+          <div className="border-b border-[#E2AB6D]/15 pb-6">
+            <p className="text-sm font-medium uppercase tracking-[0.16em] text-[#B07A45]">
               Resultado generado por AON
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-[#00003C]">
+              Lectura estratégica inicial
             </h2>
-          </div>
-
-          <div className="whitespace-pre-wrap text-gray-200 leading-8 text-[15px]">
-            {diagnostico || "No hay diagnóstico disponible."}
-          </div>
-
-          <div className="mt-6 text-xs text-gray-500 leading-6">
-            <p>
-              <strong>Disclaimer:</strong> Este diagnóstico es una lectura inicial automatizada. Always On no se responsabiliza por decisiones o ejecuciones realizadas sin supervisión profesional de nuestro equipo. En casos puntuales, la IA puede generar interpretaciones inexactas. Recomendamos validar este diagnóstico antes de implementar cualquier plan de acción.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#4B4F6B]">
+              Te recomendamos tomar este resultado como una primera lectura ejecutiva
+              para ordenar prioridades antes de avanzar a una validación más profunda.
             </p>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-8 rounded-2xl border border-[#E2AB6D]/15 bg-white p-6 md:p-8">
+            <div className="whitespace-pre-wrap text-[15px] leading-8 text-[#1E2340]">
+              {diagnostico || "No hay diagnóstico disponible."}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-[#E2AB6D]/15 bg-[#FDF6CB]/20 p-4">
+            <p className="text-xs leading-6 text-[#5A5F79]">
+              <strong className="text-[#00003C]">Disclaimer:</strong> Este
+              diagnóstico es una lectura inicial automatizada. Always On no se
+              responsabiliza por decisiones o ejecuciones realizadas sin supervisión
+              profesional de nuestro equipo. En casos puntuales, la IA puede generar
+              interpretaciones inexactas. Recomendamos validar este diagnóstico antes
+              de implementar cualquier plan de acción.
+            </p>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-4 md:flex-row">
             <a
               href="https://alwayson.com.py/#contacto"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center bg-[#C9A24D] text-black px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-[#00003C] px-6 py-3.5 text-center text-sm font-semibold text-[#FDF6CB] transition hover:bg-[#0A0A52] md:w-auto"
             >
               Validar diagnóstico con nuestro equipo
             </a>
-          </div>
 
-          <button
-            onClick={descargarPDF}
-            className="mt-6 bg-[#C9A24D] text-black px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition"
-          >
-            Descargar PDF
-          </button>
+            <button
+              onClick={descargarPDF}
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-[#00003C] px-6 py-3.5 text-sm font-semibold text-[#00003C] transition hover:bg-[#00003C] hover:text-[#FDF6CB] md:w-auto"
+            >
+              Descargar PDF
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-col md:flex-row gap-4">
+        <div className="mt-8 flex flex-col gap-4 md:flex-row">
           <a
             href="/"
-            className="bg-[#C9A24D] text-black px-6 py-3 rounded-xl font-semibold text-center hover:opacity-90 transition"
+            className="inline-flex items-center justify-center rounded-2xl bg-[#E2AB6D] px-6 py-3.5 text-center text-sm font-semibold text-[#00003C] transition hover:opacity-90"
           >
             Volver al inicio
           </a>
 
           <a
             href="/diagnostico"
-            className="border border-[#C9A24D] text-[#C9A24D] px-6 py-3 rounded-xl font-semibold text-center hover:bg-[#C9A24D] hover:text-black transition"
+            className="inline-flex items-center justify-center rounded-2xl border border-[#E2AB6D] px-6 py-3.5 text-center text-sm font-semibold text-[#FDF6CB] transition hover:bg-[#E2AB6D] hover:text-[#00003C]"
           >
             Hacer otro diagnóstico
           </a>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

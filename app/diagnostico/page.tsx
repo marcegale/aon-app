@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function DiagnosticoPage() {
@@ -72,124 +73,259 @@ export default function DiagnosticoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0B0D12] text-white flex flex-col items-center px-6 py-12">
-      <h1 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        Cuéntanos sobre tu empresa
-      </h1>
-
-      <p className="text-gray-400 text-center mb-10 max-w-xl">
-        Completa esta información para que AON prepare tu diagnóstico inicial.
-      </p>
-
-      <form onSubmit={handleSubmit} className="w-full max-w-xl space-y-4">
-        <input
-          name="nombre"
-          value={formData.nombre}
-          onChange={handleChange}
-          placeholder="Nombre"
-          className="w-full p-3 rounded bg-[#1C2230]"
-          required
-          disabled={loading}
-        />
-
-        <input
-          name="empresa"
-          value={formData.empresa}
-          onChange={handleChange}
-          placeholder="Empresa"
-          className="w-full p-3 rounded bg-[#1C2230]"
-          required
-          disabled={loading}
-        />
-
-        <input
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Email"
-          className="w-full p-3 rounded bg-[#1C2230]"
-          required
-          disabled={loading}
-        />
-
-        <input
-          name="rubro"
-          value={formData.rubro}
-          onChange={handleChange}
-          placeholder="Rubro"
-          className="w-full p-3 rounded bg-[#1C2230]"
-          disabled={loading}
-        />
-
-        <input
-          name="empleados"
-          value={formData.empleados}
-          onChange={handleChange}
-          placeholder="Cantidad de empleados"
-          className="w-full p-3 rounded bg-[#1C2230]"
-          disabled={loading}
-        />
-
-        <textarea
-          name="problema"
-          value={formData.problema}
-          onChange={handleChange}
-          placeholder="Principal problema actual"
-          className="w-full p-3 rounded bg-[#1C2230] min-h-[120px]"
-          required
-          disabled={loading}
-        />
-
-        <textarea
-          name="objetivo"
-          value={formData.objetivo}
-          onChange={handleChange}
-          placeholder="Objetivo principal"
-          className="w-full p-3 rounded bg-[#1C2230] min-h-[120px]"
-          required
-          disabled={loading}
-        />
-
-        <div className="pt-2">
-          <Turnstile
-            siteKey="0x4AAAAAACw5ZlW3h_E6OOI0"
-            onSuccess={(receivedToken) => setToken(receivedToken)}
-            onExpire={() => setToken("")}
-            onError={() => setToken("")}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading || !token}
-          className={`w-full py-3 rounded font-semibold transition ${
-            loading || !token
-              ? "bg-gray-500 text-white cursor-not-allowed"
-              : "bg-[#C9A24D] text-black hover:opacity-90"
-          }`}
-        >
-          {loading ? "Procesando..." : "Recibir diagnóstico"}
-        </button>
-
-        {loading && (
-          <div className="rounded-xl border border-[#2A3140] bg-[#11161F] p-4 text-center">
-            <div className="mb-3 text-[#C9A24D] font-semibold">
-              AON está analizando tu empresa...
+    <main className="min-h-screen bg-[#00003C]">
+      <section className="mx-auto max-w-7xl px-6 py-10 md:px-8 lg:py-16">
+        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
+          <div className="flex flex-col justify-center text-[#FDF6CB] lg:min-h-[720px]">
+            <div className="mb-6">
+              <Image
+                src="/logo-aon.png"
+                alt="AON"
+                width={64}
+                height={64}
+                className="h-14 w-14 object-contain md:h-16 md:w-16"
+                priority
+              />
             </div>
-            <div className="w-full h-2 bg-[#1C2230] rounded-full overflow-hidden">
-              <div className="h-full w-full bg-[#C9A24D] animate-pulse" />
+
+            <div className="inline-flex w-fit rounded-full border border-[#E2AB6D]/30 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#FDF6CB]/85">
+              AON · Diagnóstico Estratégico
             </div>
-            <p className="text-xs text-gray-400 mt-3">
-              Esto puede tardar unos segundos. No cierres esta ventana.
+
+            <h1 className="mt-6 max-w-xl text-4xl font-semibold tracking-tight text-[#FDF6CB] md:text-5xl">
+              Recibí una lectura estratégica inicial de tu empresa
+            </h1>
+
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#FDF6CB]/75 md:text-lg">
+              Completá esta evaluación y AON generará un diagnóstico ejecutivo
+              con foco en estructura, gestión y oportunidades de mejora.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              <InfoCard
+                title="Visión ejecutiva inicial"
+                text="Una primera lectura ordenada para entender el momento actual de la empresa."
+              />
+              <InfoCard
+                title="Criterio consultivo"
+                text="El análisis está planteado para sentirse como una lectura estratégica, no como una respuesta genérica."
+              />
+              <InfoCard
+                title="Proceso confidencial"
+                text="La información se utiliza únicamente para generar este diagnóstico inicial."
+              />
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-6 shadow-2xl shadow-black/20 md:p-8">
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-[#00003C]">
+                Completá tu evaluación inicial
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#4B4F6B]">
+                Te tomará entre 3 y 5 minutos.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField
+                  label="Nombre"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+
+                <FormField
+                  label="Empresa"
+                  name="empresa"
+                  value={formData.empresa}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+
+                <FormField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+
+                <FormField
+                  label="Rubro"
+                  name="rubro"
+                  value={formData.rubro}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+
+                <FormField
+                  label="Cantidad de empleados"
+                  name="empleados"
+                  value={formData.empleados}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+              </div>
+
+              <FormTextarea
+                label="Principal problema actual"
+                name="problema"
+                value={formData.problema}
+                onChange={handleChange}
+                rows={5}
+                required
+                disabled={loading}
+              />
+
+              <FormTextarea
+                label="Objetivo principal"
+                name="objetivo"
+                value={formData.objetivo}
+                onChange={handleChange}
+                rows={5}
+                required
+                disabled={loading}
+              />
+
+              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-[#FDF6CB]/25 p-4 text-sm leading-6 text-[#4B4F6B]">
+                Este diagnóstico no reemplaza una consultoría completa, pero sí
+                ofrece una lectura estratégica inicial para detectar focos de
+                mejora.
+              </div>
+
+              <div className="pt-1">
+                <Turnstile
+                  siteKey="0x4AAAAAACw5ZlW3h_E6OOI0"
+                  onSuccess={(receivedToken) => setToken(receivedToken)}
+                  onExpire={() => setToken("")}
+                  onError={() => setToken("")}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !token}
+                className={`inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold transition ${
+                  loading || !token
+                    ? "cursor-not-allowed bg-[#B8B8C7] text-white"
+                    : "bg-[#00003C] text-[#FDF6CB] hover:bg-[#0A0A52]"
+                }`}
+              >
+                {loading ? "Procesando..." : "Recibir diagnóstico"}
+              </button>
+
+              {loading && (
+                <div className="rounded-2xl border border-[#E2AB6D]/15 bg-[#F7F1DE] p-4 text-center">
+                  <div className="mb-3 font-semibold text-[#00003C]">
+                    AON está analizando tu empresa...
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#E8E0C6]">
+                    <div className="h-full w-full animate-pulse bg-[#E2AB6D]" />
+                  </div>
+                  <p className="mt-3 text-xs text-[#5C607B]">
+                    Esto puede tardar unos segundos. No cierres esta ventana.
+                  </p>
+                </div>
+              )}
+            </form>
+
+            <p className="mt-6 text-xs leading-5 text-[#6B6F86]">
+              La información será utilizada únicamente para generar un
+              diagnóstico inicial y para contacto comercial.
             </p>
           </div>
-        )}
-      </form>
-
-      <p className="text-xs text-gray-500 mt-6 text-center max-w-md">
-        La información será utilizada únicamente para generar un diagnóstico inicial y para contacto comercial.
-      </p>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function InfoCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+      <p className="font-medium text-[#FDF6CB]">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-[#FDF6CB]/70">{text}</p>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  name,
+  type = "text",
+  value,
+  onChange,
+  required = false,
+  disabled = false,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={name} className="text-sm font-medium text-[#00003C]">
+        {label}
+        {required && <span className="ml-1 text-[#E2AB6D]">*</span>}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        required={required}
+        disabled={disabled}
+        className="w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+      />
+    </div>
+  );
+}
+
+function FormTextarea({
+  label,
+  name,
+  value,
+  onChange,
+  rows = 4,
+  required = false,
+  disabled = false,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  rows?: number;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={name} className="text-sm font-medium text-[#00003C]">
+        {label}
+        {required && <span className="ml-1 text-[#E2AB6D]">*</span>}
+      </label>
+      <textarea
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows={rows}
+        required={required}
+        disabled={disabled}
+        className="min-h-[130px] w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+      />
+    </div>
   );
 }
