@@ -20,6 +20,7 @@ function calcularLeadScore(data: {
   email: string;
   rubro?: string | null;
   empleados?: string | null;
+  facturacionAnual?: string | null;
   problema: string;
   objetivo: string;
 }) {
@@ -27,10 +28,27 @@ function calcularLeadScore(data: {
 
   if (data.rubro?.trim()) score += 10;
   if (data.empleados?.trim()) score += 10;
+  if (data.facturacionAnual?.trim()) score += 10;
 
-  const empleadosNum = Number(data.empleados || "0");
-  if (empleadosNum >= 10) score += 15;
-  if (empleadosNum >= 50) score += 10;
+  const empleadosLabel = (data.empleados || "").toLowerCase();
+
+  if (
+    empleadosLabel.includes("11 a 30") ||
+    empleadosLabel.includes("31 a 60") ||
+    empleadosLabel.includes("61 a 100") ||
+    empleadosLabel.includes("101 a 500") ||
+    empleadosLabel.includes("más de 500")
+  ) {
+    score += 15;
+  }
+
+  if (
+    empleadosLabel.includes("61 a 100") ||
+    empleadosLabel.includes("101 a 500") ||
+    empleadosLabel.includes("más de 500")
+  ) {
+    score += 10;
+  }
 
   if (data.problema.trim().length > 20) score += 20;
   if (data.objetivo.trim().length > 20) score += 20;
@@ -55,6 +73,31 @@ function calcularLeadScore(data: {
   return { score, nivel };
 }
 
+function validarEmail(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const basicRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,24}$/i;
+  if (!basicRegex.test(normalizedEmail)) return false;
+
+  const typoDomains = [
+    ".coim",
+    ".comm",
+    ".cpm",
+    ".xom",
+    ".con",
+  ];
+
+  const domain = normalizedEmail.split("@")[1] || "";
+  if (typoDomains.some((ending) => domain.endsWith(ending))) return false;
+
+  return true;
+}
+
+function validarTelefono(telefono?: string) {
+  if (!telefono) return true;
+  return /^\d+$/.test(telefono);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -65,6 +108,9 @@ export async function POST(request: Request) {
       email,
       rubro,
       empleados,
+      codigoPais,
+      telefono,
+      facturacionAnual,
       problema,
       objetivo,
       turnstileToken,
@@ -101,8 +147,27 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           ok: false,
-          message:
-            "Debes aceptar los términos y la política de privacidad.",
+          message: "Debes aceptar los términos y la política de privacidad.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!validarEmail(email)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "El email ingresado no es válido.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!validarTelefono(telefono)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "El teléfono debe contener solo números.",
         },
         { status: 400 }
       );
@@ -116,15 +181,16 @@ Analiza esta empresa:
 Empresa: ${empresa}
 Rubro: ${rubro || "No especificado"}
 Empleados: ${empleados || "No especificado"}
+Facturación anual estimada: ${facturacionAnual || "No especificado"}
 Problema: ${problema}
 Objetivo: ${objetivo}
 
 Devuelve exactamente con esta estructura:
 
 1. Resumen ejecutivo
-2. 3 problemas raíz
-3. 3 riesgos
-4. 3 quick wins
+2. Tres problemas raíz
+3. Tres riesgos
+4. Tres quick wins
 5. Plan de 30 días
 
 Ten en cuenta que al ennumerar la devolución puede existir confusión numérica visual al poner "3. 3 riesgos", entonces utiliza este formato: "3. Tres riesgos".
@@ -143,6 +209,7 @@ Ten en cuenta que al ennumerar la devolución puede existir confusión numérica
       email,
       rubro,
       empleados,
+      facturacionAnual,
       problema,
       objetivo,
     });
@@ -157,6 +224,9 @@ Ten en cuenta que al ennumerar la devolución puede existir confusión numérica
         email,
         rubro: rubro || null,
         empleados: empleados || null,
+        codigoPais: codigoPais || null,
+        telefono: telefono || null,
+        facturacionAnual: facturacionAnual || null,
         problema,
         objetivo,
         diagnostico,

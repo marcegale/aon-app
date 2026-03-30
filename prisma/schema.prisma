@@ -8,20 +8,23 @@ datasource db {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
-  nombre      String
-  empresa     String
-  email       String
-  rubro       String?
-  empleados   String?
-  problema    String
-  objetivo    String
-  diagnostico String
-  leadScore   Int
-  leadLevel   String
-  emailStatus String?
-  emailError  String?
+  id              String   @id @default(cuid())
+  nombre          String
+  empresa         String
+  email           String
+  rubro           String?
+  empleados       String?
+  codigoPais      String?
+  telefono        String?
+  facturacionAnual String?
+  problema        String
+  objetivo        String
+  diagnostico     String
+  leadScore       Int
+  leadLevel       String
+  emailStatus     String?
+  emailError      String?
   aceptaTerminos  Boolean  @default(false)
   fechaAceptacion DateTime?
-  createdAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
 }

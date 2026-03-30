@@ -1,9 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Turnstile } from "@marsidev/react-turnstile";
+
+const EMPLEADOS_OPTIONS = [
+  "De 1 a 10",
+  "De 11 a 30",
+  "De 31 a 60",
+  "De 61 a 100",
+  "De 101 a 500",
+  "Más de 500",
+];
+
+const FACTURACION_OPTIONS = [
+  "De 0 a 99.999 USD",
+  "De 100.000 a 199.999 USD",
+  "De 200.000 a 499.999 USD",
+  "De 500.000 a 999.999 USD",
+  "De 1.000.000 a 5.000.000 USD",
+  "Más de 5.000.000 USD",
+  "Prefiero no revelar esta información por ahora"
+];
+
+const RUBRO_OPTIONS = [
+  "Agroganadera",
+  "Agricultura",
+  "Ganadería",
+  "Industria alimenticia",
+  "Bebidas",
+  "Textil y confección",
+  "Calzados y cuero",
+  "Madera y muebles",
+  "Química y farmacéutica",
+  "Plásticos y caucho",
+  "Metalúrgica",
+  "Maquinarias y equipos",
+  "Electrónica y tecnología",
+  "Software y desarrollo",
+  "Servicios de TI",
+  "Telecomunicaciones",
+  "Energía, electricidad y gas",
+  "Construcción",
+  "Inmobiliaria",
+  "Arquitectura e ingeniería",
+  "Comercio mayorista o minorista",
+  "Import, Export y distribución",
+  "Logística y transporte",
+  "Almacenamiento y depósitos",
+  "Automotriz",
+  "Hotelería, Turismo, Gastronomía",
+  "Salud y servicios médicos",
+  "Finanzas y seguros",
+  "Servicios profesionales",
+  "Consultoría empresarial",
+  "Marketing y publicidad",
+  "Diseño y creatividad",
+  "Medios y comunicación",
+  "Recursos humanos y reclutamiento",
+  "Seguridad y vigilancia",
+  "Limpieza y mantenimiento",
+  "Marketplace y plataformas digitales",
+  "Belleza y cuidado personal",
+  "Moda y accesorios",
+  "Entretenimiento y eventos",
+  "Deportes y bienestar",
+  "Otro",
+];
+
+const COUNTRY_OPTIONS = [
+  { code: "PY", flag: "🇵🇾", dialCode: "+595", label: "Paraguay" },
+  { code: "AR", flag: "🇦🇷", dialCode: "+54", label: "Argentina" },
+  { code: "BR", flag: "🇧🇷", dialCode: "+55", label: "Brasil" },
+  { code: "BO", flag: "🇧🇴", dialCode: "+591", label: "Bolivia" },
+  { code: "CL", flag: "🇨🇱", dialCode: "+56", label: "Chile" },
+  { code: "UY", flag: "🇺🇾", dialCode: "+598", label: "Uruguay" },
+  { code: "PE", flag: "🇵🇪", dialCode: "+51", label: "Perú" },
+  { code: "CO", flag: "🇨🇴", dialCode: "+57", label: "Colombia" },
+  { code: "MX", flag: "🇲🇽", dialCode: "+52", label: "México" },
+  { code: "US", flag: "🇺🇸", dialCode: "+1", label: "Estados Unidos" },
+  { code: "ES", flag: "🇪🇸", dialCode: "+34", label: "España" },
+];
 
 export default function DiagnosticoPage() {
   const router = useRouter();
@@ -11,6 +89,11 @@ export default function DiagnosticoPage() {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState("");
   const [acepta, setAcepta] = useState(false);
+  const [phonePlaceholder, setPhonePlaceholder] = useState("Ej: 981234567");
+  const [errors, setErrors] = useState<{
+    email?: string;
+    telefono?: string;
+  }>({});
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -18,18 +101,131 @@ export default function DiagnosticoPage() {
     email: "",
     rubro: "",
     empleados: "",
+    codigoPais: "+595",
+    telefono: "",
+    facturacionAnual: "",
     problema: "",
     objetivo: "",
   });
 
+  const selectedCountry = useMemo(() => {
+    return (
+      COUNTRY_OPTIONS.find((country) => country.dialCode === formData.codigoPais) ||
+      COUNTRY_OPTIONS[0]
+    );
+  }, [formData.codigoPais]);
+
+  function validateEmail(value: string) {
+    const email = value.trim().toLowerCase();
+
+    if (!email) {
+      return "El email es obligatorio.";
+    }
+
+    const basicRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,24}$/i;
+    if (!basicRegex.test(email)) {
+      return "Ingresa un email válido.";
+    }
+
+    const parts = email.split("@");
+    if (parts.length !== 2) {
+      return "Ingresa un email válido.";
+    }
+
+    const domain = parts[1];
+
+    const typoMap: Record<string, string> = {
+      "gmail.coim": "gmail.com",
+      "gmail.con": "gmail.com",
+      "gmail.cim": "gmail.com",
+      "gmail.comm": "gmail.com",
+      "gmail.cpm": "gmail.com",
+      "gmail.xom": "gmail.com",
+      "hotmail.coim": "hotmail.com",
+      "hotmail.con": "hotmail.com",
+      "hotmail.cim": "hotmail.com",
+      "outlook.coim": "outlook.com",
+      "outlook.con": "outlook.com",
+      "yahoo.coim": "yahoo.com",
+      "icloud.coim": "icloud.com",
+    };
+
+    if (typoMap[domain]) {
+      return `Revisa tu email. Quizás quisiste escribir ${parts[0]}@${typoMap[domain]}.`;
+    }
+
+    if (
+      domain.endsWith(".coim") ||
+      domain.endsWith(".comm") ||
+      domain.endsWith(".cpm") ||
+      domain.endsWith(".xom") ||
+      domain.endsWith(".con")
+    ) {
+      return "Revisa el dominio de tu email. Parece tener un error tipográfico.";
+    }
+
+    return "";
+  }
+
+  function validatePhone(value: string) {
+    if (!value.trim()) return "";
+    if (!/^\d+$/.test(value)) {
+      return "El teléfono solo debe contener números.";
+    }
+    if (value.length < 6) {
+      return "El teléfono parece demasiado corto.";
+    }
+    return "";
+  }
+
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target;
+
+    if (name === "telefono") {
+      const numericValue = value.replace(/\D/g, "");
+      setFormData((prev) => ({
+        ...prev,
+        telefono: numericValue,
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        telefono: validatePhone(numericValue),
+      }));
+      return;
+    }
+
+    if (name === "email") {
+      setFormData((prev) => ({
+        ...prev,
+        email: value,
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        email: value ? validateEmail(value) : "",
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+  }
+
+  function validateBeforeSubmit() {
+    const emailError = validateEmail(formData.email);
+    const telefonoError = validatePhone(formData.telefono);
+
+    setErrors({
+      email: emailError,
+      telefono: telefonoError,
+    });
+
+    if (emailError || telefonoError) return false;
+
+    return true;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -49,6 +245,11 @@ export default function DiagnosticoPage() {
       return;
     }
 
+    if (!validateBeforeSubmit()) {
+      alert("Por favor, revisa los campos marcados.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -61,6 +262,7 @@ export default function DiagnosticoPage() {
           ...formData,
           turnstileToken: token,
           aceptaTerminos: acepta,
+          telefonoCompleto: `${formData.codigoPais}${formData.telefono}`,
         }),
       });
 
@@ -164,24 +366,59 @@ export default function DiagnosticoPage() {
                   onChange={handleChange}
                   required
                   disabled={loading}
+                  error={errors.email}
+                  placeholder="Ej: nombre@empresa.com"
                 />
 
-                <FormField
+                <FormSelect
                   label="Rubro"
                   name="rubro"
                   value={formData.rubro}
                   onChange={handleChange}
+                  options={RUBRO_OPTIONS}
+                  placeholder="Selecciona un rubro"
+                  required
                   disabled={loading}
                 />
 
-                <FormField
+                <FormSelect
                   label="Cantidad de empleados"
                   name="empleados"
                   value={formData.empleados}
                   onChange={handleChange}
+                  options={EMPLEADOS_OPTIONS}
+                  placeholder="Selecciona un rango"
+                  disabled={loading}
+                />
+
+                <FormSelect
+                  label="Facturación anual en USD"
+                  name="facturacionAnual"
+                  value={formData.facturacionAnual}
+                  onChange={handleChange}
+                  options={FACTURACION_OPTIONS}
+                  placeholder="Selecciona un rango"
                   disabled={loading}
                 />
               </div>
+
+              <PhoneField
+                label="Teléfono"
+                countryValue={formData.codigoPais}
+                phoneValue={formData.telefono}
+                onCountryChange={handleChange}
+                onPhoneChange={handleChange}
+                disabled={loading}
+                error={errors.telefono}
+                placeholder={phonePlaceholder}
+                onPhoneFocus={() => setPhonePlaceholder("")}
+                onPhoneBlur={() => {
+                  if (!formData.telefono) {
+                    setPhonePlaceholder("Ej: 981234567");
+                  }
+                }}
+                selectedCountry={selectedCountry}
+              />
 
               <FormTextarea
                 label="Principal problema actual"
@@ -307,14 +544,20 @@ function FormField({
   onChange,
   required = false,
   disabled = false,
+  error,
+  placeholder,
 }: {
   label: string;
   name: string;
   type?: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   required?: boolean;
   disabled?: boolean;
+  error?: string;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -330,8 +573,152 @@ function FormField({
         onChange={onChange}
         required={required}
         disabled={disabled}
-        className="w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+        placeholder={placeholder}
+        className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 ${
+          error
+            ? "border-red-400 focus:border-red-400 focus:ring-red-100"
+            : "border-[#D8D3C4] focus:border-[#E2AB6D] focus:ring-[#E2AB6D]/20"
+        }`}
       />
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+    </div>
+  );
+}
+
+function FormSelect({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  placeholder,
+  required = false,
+  disabled = false,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
+  options: string[];
+  placeholder: string;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={name} className="text-sm font-medium text-[#00003C]">
+        {label}
+        {required && <span className="ml-1 text-[#E2AB6D]">*</span>}
+      </label>
+      <select
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        disabled={disabled}
+        className="w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function PhoneField({
+  label,
+  countryValue,
+  phoneValue,
+  onCountryChange,
+  onPhoneChange,
+  disabled = false,
+  error,
+  placeholder,
+  onPhoneFocus,
+  onPhoneBlur,
+  selectedCountry,
+}: {
+  label: string;
+  countryValue: string;
+  phoneValue: string;
+  onCountryChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
+  onPhoneChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
+  disabled?: boolean;
+  error?: string;
+  placeholder?: string;
+  onPhoneFocus: () => void;
+  onPhoneBlur: () => void;
+  selectedCountry: { code: string; flag: string; dialCode: string; label: string };
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor="telefono" className="text-sm font-medium text-[#00003C]">
+        {label}
+      </label>
+
+      <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="relative">
+          <select
+            id="codigoPais"
+            name="codigoPais"
+            value={countryValue}
+            onChange={onCountryChange}
+            disabled={disabled}
+            className="w-full appearance-none rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 pr-10 text-sm text-[#00003C] outline-none transition focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {COUNTRY_OPTIONS.map((country) => (
+              <option key={country.code} value={country.dialCode}>
+                {country.flag} {country.label} ({country.dialCode})
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4F6B]">
+            ▾
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div
+            className={`flex items-center rounded-2xl border bg-white px-4 py-3 transition ${
+              error
+                ? "border-red-400 focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100"
+                : "border-[#D8D3C4] focus-within:border-[#E2AB6D] focus-within:ring-2 focus-within:ring-[#E2AB6D]/20"
+            }`}
+          >
+            <span className="mr-3 whitespace-nowrap text-sm font-medium text-[#4B4F6B]">
+              {selectedCountry.flag} {selectedCountry.dialCode}
+            </span>
+
+            <input
+              id="telefono"
+              name="telefono"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              pattern="[0-9]*"
+              value={phoneValue}
+              onChange={onPhoneChange}
+              onFocus={onPhoneFocus}
+              onBlur={onPhoneBlur}
+              disabled={disabled}
+              placeholder={placeholder}
+              className="w-full bg-transparent text-sm text-[#00003C] outline-none placeholder:text-[#8A8DA8] disabled:cursor-not-allowed"
+            />
+          </div>
+          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -348,7 +735,9 @@ function FormTextarea({
   label: string;
   name: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   rows?: number;
   required?: boolean;
   disabled?: boolean;

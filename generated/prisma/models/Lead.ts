@@ -41,6 +41,9 @@ export type LeadMinAggregateOutputType = {
   email: string | null
   rubro: string | null
   empleados: string | null
+  codigoPais: string | null
+  telefono: string | null
+  facturacionAnual: string | null
   problema: string | null
   objetivo: string | null
   diagnostico: string | null
@@ -60,6 +63,9 @@ export type LeadMaxAggregateOutputType = {
   email: string | null
   rubro: string | null
   empleados: string | null
+  codigoPais: string | null
+  telefono: string | null
+  facturacionAnual: string | null
   problema: string | null
   objetivo: string | null
   diagnostico: string | null
@@ -79,6 +85,9 @@ export type LeadCountAggregateOutputType = {
   email: number
   rubro: number
   empleados: number
+  codigoPais: number
+  telefono: number
+  facturacionAnual: number
   problema: number
   objetivo: number
   diagnostico: number
@@ -108,6 +117,9 @@ export type LeadMinAggregateInputType = {
   email?: true
   rubro?: true
   empleados?: true
+  codigoPais?: true
+  telefono?: true
+  facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
@@ -127,6 +139,9 @@ export type LeadMaxAggregateInputType = {
   email?: true
   rubro?: true
   empleados?: true
+  codigoPais?: true
+  telefono?: true
+  facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
@@ -146,6 +161,9 @@ export type LeadCountAggregateInputType = {
   email?: true
   rubro?: true
   empleados?: true
+  codigoPais?: true
+  telefono?: true
+  facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
@@ -252,6 +270,9 @@ export type LeadGroupByOutputType = {
   email: string
   rubro: string | null
   empleados: string | null
+  codigoPais: string | null
+  telefono: string | null
+  facturacionAnual: string | null
   problema: string
   objetivo: string
   diagnostico: string
@@ -294,6 +315,9 @@ export type LeadWhereInput = {
   email?: Prisma.StringFilter<"Lead"> | string
   rubro?: Prisma.StringNullableFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableFilter<"Lead"> | string | null
+  codigoPais?: Prisma.StringNullableFilter<"Lead"> | string | null
+  telefono?: Prisma.StringNullableFilter<"Lead"> | string | null
+  facturacionAnual?: Prisma.StringNullableFilter<"Lead"> | string | null
   problema?: Prisma.StringFilter<"Lead"> | string
   objetivo?: Prisma.StringFilter<"Lead"> | string
   diagnostico?: Prisma.StringFilter<"Lead"> | string
@@ -313,6 +337,9 @@ export type LeadOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   rubro?: Prisma.SortOrderInput | Prisma.SortOrder
   empleados?: Prisma.SortOrderInput | Prisma.SortOrder
+  codigoPais?: Prisma.SortOrderInput | Prisma.SortOrder
+  telefono?: Prisma.SortOrderInput | Prisma.SortOrder
+  facturacionAnual?: Prisma.SortOrderInput | Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
@@ -335,6 +362,9 @@ export type LeadWhereUniqueInput = Prisma.AtLeast<{
   email?: Prisma.StringFilter<"Lead"> | string
   rubro?: Prisma.StringNullableFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableFilter<"Lead"> | string | null
+  codigoPais?: Prisma.StringNullableFilter<"Lead"> | string | null
+  telefono?: Prisma.StringNullableFilter<"Lead"> | string | null
+  facturacionAnual?: Prisma.StringNullableFilter<"Lead"> | string | null
   problema?: Prisma.StringFilter<"Lead"> | string
   objetivo?: Prisma.StringFilter<"Lead"> | string
   diagnostico?: Prisma.StringFilter<"Lead"> | string
@@ -354,6 +384,9 @@ export type LeadOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   rubro?: Prisma.SortOrderInput | Prisma.SortOrder
   empleados?: Prisma.SortOrderInput | Prisma.SortOrder
+  codigoPais?: Prisma.SortOrderInput | Prisma.SortOrder
+  telefono?: Prisma.SortOrderInput | Prisma.SortOrder
+  facturacionAnual?: Prisma.SortOrderInput | Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
@@ -381,6 +414,9 @@ export type LeadScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   rubro?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  codigoPais?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  telefono?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  facturacionAnual?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   problema?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   objetivo?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   diagnostico?: Prisma.StringWithAggregatesFilter<"Lead"> | string
@@ -400,6 +436,9 @@ export type LeadCreateInput = {
   email: string
   rubro?: string | null
   empleados?: string | null
+  codigoPais?: string | null
+  telefono?: string | null
+  facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
@@ -419,6 +458,9 @@ export type LeadUncheckedCreateInput = {
   email: string
   rubro?: string | null
   empleados?: string | null
+  codigoPais?: string | null
+  telefono?: string | null
+  facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
@@ -438,6 +480,9 @@ export type LeadUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
@@ -457,6 +502,9 @@ export type LeadUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
@@ -476,6 +524,9 @@ export type LeadCreateManyInput = {
   email: string
   rubro?: string | null
   empleados?: string | null
+  codigoPais?: string | null
+  telefono?: string | null
+  facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
@@ -495,6 +546,9 @@ export type LeadUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
@@ -514,6 +568,9 @@ export type LeadUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
@@ -533,6 +590,9 @@ export type LeadCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   rubro?: Prisma.SortOrder
   empleados?: Prisma.SortOrder
+  codigoPais?: Prisma.SortOrder
+  telefono?: Prisma.SortOrder
+  facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
@@ -556,6 +616,9 @@ export type LeadMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   rubro?: Prisma.SortOrder
   empleados?: Prisma.SortOrder
+  codigoPais?: Prisma.SortOrder
+  telefono?: Prisma.SortOrder
+  facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
@@ -575,6 +638,9 @@ export type LeadMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   rubro?: Prisma.SortOrder
   empleados?: Prisma.SortOrder
+  codigoPais?: Prisma.SortOrder
+  telefono?: Prisma.SortOrder
+  facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
@@ -628,6 +694,9 @@ export type LeadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   rubro?: boolean
   empleados?: boolean
+  codigoPais?: boolean
+  telefono?: boolean
+  facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
@@ -647,6 +716,9 @@ export type LeadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   rubro?: boolean
   empleados?: boolean
+  codigoPais?: boolean
+  telefono?: boolean
+  facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
@@ -666,6 +738,9 @@ export type LeadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   rubro?: boolean
   empleados?: boolean
+  codigoPais?: boolean
+  telefono?: boolean
+  facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
@@ -685,6 +760,9 @@ export type LeadSelectScalar = {
   email?: boolean
   rubro?: boolean
   empleados?: boolean
+  codigoPais?: boolean
+  telefono?: boolean
+  facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
@@ -697,7 +775,7 @@ export type LeadSelectScalar = {
   createdAt?: boolean
 }
 
-export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt", ExtArgs["result"]["lead"]>
+export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "codigoPais" | "telefono" | "facturacionAnual" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt", ExtArgs["result"]["lead"]>
 
 export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Lead"
@@ -709,6 +787,9 @@ export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string
     rubro: string | null
     empleados: string | null
+    codigoPais: string | null
+    telefono: string | null
+    facturacionAnual: string | null
     problema: string
     objetivo: string
     diagnostico: string
@@ -1148,6 +1229,9 @@ export interface LeadFieldRefs {
   readonly email: Prisma.FieldRef<"Lead", 'String'>
   readonly rubro: Prisma.FieldRef<"Lead", 'String'>
   readonly empleados: Prisma.FieldRef<"Lead", 'String'>
+  readonly codigoPais: Prisma.FieldRef<"Lead", 'String'>
+  readonly telefono: Prisma.FieldRef<"Lead", 'String'>
+  readonly facturacionAnual: Prisma.FieldRef<"Lead", 'String'>
   readonly problema: Prisma.FieldRef<"Lead", 'String'>
   readonly objetivo: Prisma.FieldRef<"Lead", 'String'>
   readonly diagnostico: Prisma.FieldRef<"Lead", 'String'>
