@@ -10,6 +10,7 @@ export default function DiagnosticoPage() {
 
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState("");
+  const [acepta, setAcepta] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -41,6 +42,13 @@ export default function DiagnosticoPage() {
       return;
     }
 
+    if (!acepta) {
+      alert(
+        "Debes aceptar los Términos y Condiciones y la Política de Privacidad para continuar."
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -52,6 +60,7 @@ export default function DiagnosticoPage() {
         body: JSON.stringify({
           ...formData,
           turnstileToken: token,
+          aceptaTerminos: acepta,
         }),
       });
 
@@ -209,11 +218,44 @@ export default function DiagnosticoPage() {
                 />
               </div>
 
+              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-white p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={acepta}
+                    onChange={(e) => setAcepta(e.target.checked)}
+                    disabled={loading}
+                    className="mt-1 h-4 w-4 rounded border-[#D8D3C4] text-[#00003C] focus:ring-[#E2AB6D]/30 disabled:cursor-not-allowed"
+                  />
+                  <span className="text-sm leading-6 text-[#4B4F6B]">
+                    Acepto los{" "}
+                    <a
+                      href="/terminos"
+                      className="font-medium text-[#00003C] underline underline-offset-2 hover:text-[#0A0A52]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Términos y Condiciones
+                    </a>{" "}
+                    y la{" "}
+                    <a
+                      href="/privacidad"
+                      className="font-medium text-[#00003C] underline underline-offset-2 hover:text-[#0A0A52]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Política de Privacidad
+                    </a>
+                    .
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
-                disabled={loading || !token}
+                disabled={loading || !token || !acepta}
                 className={`inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold transition ${
-                  loading || !token
+                  loading || !token || !acepta
                     ? "cursor-not-allowed bg-[#B8B8C7] text-white"
                     : "bg-[#00003C] text-[#FDF6CB] hover:bg-[#0A0A52]"
                 }`}
@@ -238,7 +280,8 @@ export default function DiagnosticoPage() {
 
             <p className="mt-6 text-xs leading-5 text-[#6B6F86]">
               La información será utilizada únicamente para generar un
-              diagnóstico inicial y para contacto comercial.
+              diagnóstico inicial y para contacto comercial, de conformidad con
+              los términos aceptados por el usuario.
             </p>
           </div>
         </div>

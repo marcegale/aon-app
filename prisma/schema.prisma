@@ -21,5 +21,7 @@ model Lead {
   leadLevel   String
   emailStatus String?
   emailError  String?
+  aceptaTerminos  Boolean  @default(false)
+  fechaAceptacion DateTime?
   createdAt   DateTime @default(now())
 }

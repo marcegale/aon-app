@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { enviarDiagnosticoEmail } from "@/app/lib/email";
 import { validarTurnstile } from "@/app/lib/turnstile";
 import { prisma } from "@/app/lib/prisma";
 
@@ -19,8 +18,8 @@ function getOpenAIClient() {
 
 function calcularLeadScore(data: {
   email: string;
-  rubro?: string;
-  empleados?: string;
+  rubro?: string | null;
+  empleados?: string | null;
   problema: string;
   objetivo: string;
 }) {
@@ -37,7 +36,12 @@ function calcularLeadScore(data: {
   if (data.objetivo.trim().length > 20) score += 20;
 
   const email = data.email.toLowerCase();
-  const dominiosGenericos = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
+  const dominiosGenericos = [
+    "gmail.com",
+    "hotmail.com",
+    "outlook.com",
+    "yahoo.com",
+  ];
   const dominio = email.split("@")[1] || "";
 
   if (dominio && !dominiosGenericos.includes(dominio)) {
@@ -64,6 +68,7 @@ export async function POST(request: Request) {
       problema,
       objetivo,
       turnstileToken,
+      aceptaTerminos,
     } = body;
 
     if (!turnstileToken) {
@@ -88,6 +93,17 @@ export async function POST(request: Request) {
     if (!nombre || !empresa || !email || !problema || !objetivo) {
       return NextResponse.json(
         { ok: false, message: "Faltan campos obligatorios." },
+        { status: 400 }
+      );
+    }
+
+    if (!aceptaTerminos) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "Debes aceptar los términos y la política de privacidad.",
+        },
         { status: 400 }
       );
     }
@@ -132,7 +148,7 @@ Ten en cuenta que al ennumerar la devolución puede existir confusión numérica
     });
 
     let emailStatus: "sent" | "failed" | "not_attempted" = "not_attempted";
-let emailError: string | null = null;
+    let emailError: string | null = null;
 
     await prisma.lead.create({
       data: {
@@ -148,6 +164,8 @@ let emailError: string | null = null;
         leadLevel: leadScore.nivel,
         emailStatus,
         emailError,
+        aceptaTerminos: true,
+        fechaAceptacion: new Date(),
       },
     });
 

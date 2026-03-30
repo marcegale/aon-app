@@ -48,6 +48,8 @@ export type LeadMinAggregateOutputType = {
   leadLevel: string | null
   emailStatus: string | null
   emailError: string | null
+  aceptaTerminos: boolean | null
+  fechaAceptacion: Date | null
   createdAt: Date | null
 }
 
@@ -65,6 +67,8 @@ export type LeadMaxAggregateOutputType = {
   leadLevel: string | null
   emailStatus: string | null
   emailError: string | null
+  aceptaTerminos: boolean | null
+  fechaAceptacion: Date | null
   createdAt: Date | null
 }
 
@@ -82,6 +86,8 @@ export type LeadCountAggregateOutputType = {
   leadLevel: number
   emailStatus: number
   emailError: number
+  aceptaTerminos: number
+  fechaAceptacion: number
   createdAt: number
   _all: number
 }
@@ -109,6 +115,8 @@ export type LeadMinAggregateInputType = {
   leadLevel?: true
   emailStatus?: true
   emailError?: true
+  aceptaTerminos?: true
+  fechaAceptacion?: true
   createdAt?: true
 }
 
@@ -126,6 +134,8 @@ export type LeadMaxAggregateInputType = {
   leadLevel?: true
   emailStatus?: true
   emailError?: true
+  aceptaTerminos?: true
+  fechaAceptacion?: true
   createdAt?: true
 }
 
@@ -143,6 +153,8 @@ export type LeadCountAggregateInputType = {
   leadLevel?: true
   emailStatus?: true
   emailError?: true
+  aceptaTerminos?: true
+  fechaAceptacion?: true
   createdAt?: true
   _all?: true
 }
@@ -247,6 +259,8 @@ export type LeadGroupByOutputType = {
   leadLevel: string
   emailStatus: string | null
   emailError: string | null
+  aceptaTerminos: boolean
+  fechaAceptacion: Date | null
   createdAt: Date
   _count: LeadCountAggregateOutputType | null
   _avg: LeadAvgAggregateOutputType | null
@@ -287,6 +301,8 @@ export type LeadWhereInput = {
   leadLevel?: Prisma.StringFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableFilter<"Lead"> | string | null
+  aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
+  fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
 }
 
@@ -304,6 +320,8 @@ export type LeadOrderByWithRelationInput = {
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   emailError?: Prisma.SortOrderInput | Prisma.SortOrder
+  aceptaTerminos?: Prisma.SortOrder
+  fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -324,6 +342,8 @@ export type LeadWhereUniqueInput = Prisma.AtLeast<{
   leadLevel?: Prisma.StringFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableFilter<"Lead"> | string | null
+  aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
+  fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
 }, "id">
 
@@ -341,6 +361,8 @@ export type LeadOrderByWithAggregationInput = {
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   emailError?: Prisma.SortOrderInput | Prisma.SortOrder
+  aceptaTerminos?: Prisma.SortOrder
+  fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.LeadCountOrderByAggregateInput
   _avg?: Prisma.LeadAvgOrderByAggregateInput
@@ -366,6 +388,8 @@ export type LeadScalarWhereWithAggregatesInput = {
   leadLevel?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  aceptaTerminos?: Prisma.BoolWithAggregatesFilter<"Lead"> | boolean
+  fechaAceptacion?: Prisma.DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Lead"> | Date | string
 }
 
@@ -383,6 +407,8 @@ export type LeadCreateInput = {
   leadLevel: string
   emailStatus?: string | null
   emailError?: string | null
+  aceptaTerminos?: boolean
+  fechaAceptacion?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -400,6 +426,8 @@ export type LeadUncheckedCreateInput = {
   leadLevel: string
   emailStatus?: string | null
   emailError?: string | null
+  aceptaTerminos?: boolean
+  fechaAceptacion?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -417,6 +445,8 @@ export type LeadUpdateInput = {
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -434,6 +464,8 @@ export type LeadUncheckedUpdateInput = {
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -451,6 +483,8 @@ export type LeadCreateManyInput = {
   leadLevel: string
   emailStatus?: string | null
   emailError?: string | null
+  aceptaTerminos?: boolean
+  fechaAceptacion?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -468,6 +502,8 @@ export type LeadUpdateManyMutationInput = {
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -485,6 +521,8 @@ export type LeadUncheckedUpdateManyInput = {
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -502,6 +540,8 @@ export type LeadCountOrderByAggregateInput = {
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
+  aceptaTerminos?: Prisma.SortOrder
+  fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -523,6 +563,8 @@ export type LeadMaxOrderByAggregateInput = {
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
+  aceptaTerminos?: Prisma.SortOrder
+  fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -540,6 +582,8 @@ export type LeadMinOrderByAggregateInput = {
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
+  aceptaTerminos?: Prisma.SortOrder
+  fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -563,6 +607,14 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
@@ -583,6 +635,8 @@ export type LeadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
+  aceptaTerminos?: boolean
+  fechaAceptacion?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["lead"]>
 
@@ -600,6 +654,8 @@ export type LeadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
+  aceptaTerminos?: boolean
+  fechaAceptacion?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["lead"]>
 
@@ -617,6 +673,8 @@ export type LeadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
+  aceptaTerminos?: boolean
+  fechaAceptacion?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["lead"]>
 
@@ -634,10 +692,12 @@ export type LeadSelectScalar = {
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
+  aceptaTerminos?: boolean
+  fechaAceptacion?: boolean
   createdAt?: boolean
 }
 
-export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "createdAt", ExtArgs["result"]["lead"]>
+export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt", ExtArgs["result"]["lead"]>
 
 export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Lead"
@@ -656,6 +716,8 @@ export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     leadLevel: string
     emailStatus: string | null
     emailError: string | null
+    aceptaTerminos: boolean
+    fechaAceptacion: Date | null
     createdAt: Date
   }, ExtArgs["result"]["lead"]>
   composites: {}
@@ -1093,6 +1155,8 @@ export interface LeadFieldRefs {
   readonly leadLevel: Prisma.FieldRef<"Lead", 'String'>
   readonly emailStatus: Prisma.FieldRef<"Lead", 'String'>
   readonly emailError: Prisma.FieldRef<"Lead", 'String'>
+  readonly aceptaTerminos: Prisma.FieldRef<"Lead", 'Boolean'>
+  readonly fechaAceptacion: Prisma.FieldRef<"Lead", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Lead", 'DateTime'>
 }
     
