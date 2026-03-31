@@ -125,14 +125,14 @@ export default async function AdminLeadsPage({
 
           <select
             name="rubro"
-            defaultValue={rubro}
+            defaultValue={rubro ?? ""}
             className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm"
           >
             <option value="">Todos los rubros</option>
-            {rubros.map((item) => (
-              <option key={item.rubro} value={item.rubro}>
-                {item.rubro}
-              </option>
+           {rubros.map((item, index) => (
+            <option key={`${item.rubro ?? "sin-rubro"}-${index}`} value={item.rubro ?? ""}>
+            {item.rubro ?? "Sin rubro"}
+            </option>
             ))}
           </select>
 
