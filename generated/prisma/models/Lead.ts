@@ -54,6 +54,8 @@ export type LeadMinAggregateOutputType = {
   aceptaTerminos: boolean | null
   fechaAceptacion: Date | null
   createdAt: Date | null
+  estadoComercial: string | null
+  notasInternas: string | null
 }
 
 export type LeadMaxAggregateOutputType = {
@@ -76,6 +78,8 @@ export type LeadMaxAggregateOutputType = {
   aceptaTerminos: boolean | null
   fechaAceptacion: Date | null
   createdAt: Date | null
+  estadoComercial: string | null
+  notasInternas: string | null
 }
 
 export type LeadCountAggregateOutputType = {
@@ -98,6 +102,8 @@ export type LeadCountAggregateOutputType = {
   aceptaTerminos: number
   fechaAceptacion: number
   createdAt: number
+  estadoComercial: number
+  notasInternas: number
   _all: number
 }
 
@@ -130,6 +136,8 @@ export type LeadMinAggregateInputType = {
   aceptaTerminos?: true
   fechaAceptacion?: true
   createdAt?: true
+  estadoComercial?: true
+  notasInternas?: true
 }
 
 export type LeadMaxAggregateInputType = {
@@ -152,6 +160,8 @@ export type LeadMaxAggregateInputType = {
   aceptaTerminos?: true
   fechaAceptacion?: true
   createdAt?: true
+  estadoComercial?: true
+  notasInternas?: true
 }
 
 export type LeadCountAggregateInputType = {
@@ -174,6 +184,8 @@ export type LeadCountAggregateInputType = {
   aceptaTerminos?: true
   fechaAceptacion?: true
   createdAt?: true
+  estadoComercial?: true
+  notasInternas?: true
   _all?: true
 }
 
@@ -283,6 +295,8 @@ export type LeadGroupByOutputType = {
   aceptaTerminos: boolean
   fechaAceptacion: Date | null
   createdAt: Date
+  estadoComercial: string
+  notasInternas: string | null
   _count: LeadCountAggregateOutputType | null
   _avg: LeadAvgAggregateOutputType | null
   _sum: LeadSumAggregateOutputType | null
@@ -328,6 +342,8 @@ export type LeadWhereInput = {
   aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
+  estadoComercial?: Prisma.StringFilter<"Lead"> | string
+  notasInternas?: Prisma.StringNullableFilter<"Lead"> | string | null
 }
 
 export type LeadOrderByWithRelationInput = {
@@ -350,6 +366,8 @@ export type LeadOrderByWithRelationInput = {
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  estadoComercial?: Prisma.SortOrder
+  notasInternas?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type LeadWhereUniqueInput = Prisma.AtLeast<{
@@ -375,6 +393,8 @@ export type LeadWhereUniqueInput = Prisma.AtLeast<{
   aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
+  estadoComercial?: Prisma.StringFilter<"Lead"> | string
+  notasInternas?: Prisma.StringNullableFilter<"Lead"> | string | null
 }, "id">
 
 export type LeadOrderByWithAggregationInput = {
@@ -397,6 +417,8 @@ export type LeadOrderByWithAggregationInput = {
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  estadoComercial?: Prisma.SortOrder
+  notasInternas?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.LeadCountOrderByAggregateInput
   _avg?: Prisma.LeadAvgOrderByAggregateInput
   _max?: Prisma.LeadMaxOrderByAggregateInput
@@ -427,6 +449,8 @@ export type LeadScalarWhereWithAggregatesInput = {
   aceptaTerminos?: Prisma.BoolWithAggregatesFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Lead"> | Date | string
+  estadoComercial?: Prisma.StringWithAggregatesFilter<"Lead"> | string
+  notasInternas?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
 }
 
 export type LeadCreateInput = {
@@ -449,6 +473,8 @@ export type LeadCreateInput = {
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
   createdAt?: Date | string
+  estadoComercial?: string
+  notasInternas?: string | null
 }
 
 export type LeadUncheckedCreateInput = {
@@ -471,6 +497,8 @@ export type LeadUncheckedCreateInput = {
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
   createdAt?: Date | string
+  estadoComercial?: string
+  notasInternas?: string | null
 }
 
 export type LeadUpdateInput = {
@@ -493,6 +521,8 @@ export type LeadUpdateInput = {
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
+  notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadUncheckedUpdateInput = {
@@ -515,6 +545,8 @@ export type LeadUncheckedUpdateInput = {
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
+  notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadCreateManyInput = {
@@ -537,6 +569,8 @@ export type LeadCreateManyInput = {
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
   createdAt?: Date | string
+  estadoComercial?: string
+  notasInternas?: string | null
 }
 
 export type LeadUpdateManyMutationInput = {
@@ -559,6 +593,8 @@ export type LeadUpdateManyMutationInput = {
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
+  notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadUncheckedUpdateManyInput = {
@@ -581,6 +617,8 @@ export type LeadUncheckedUpdateManyInput = {
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
+  notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadCountOrderByAggregateInput = {
@@ -603,6 +641,8 @@ export type LeadCountOrderByAggregateInput = {
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  estadoComercial?: Prisma.SortOrder
+  notasInternas?: Prisma.SortOrder
 }
 
 export type LeadAvgOrderByAggregateInput = {
@@ -629,6 +669,8 @@ export type LeadMaxOrderByAggregateInput = {
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  estadoComercial?: Prisma.SortOrder
+  notasInternas?: Prisma.SortOrder
 }
 
 export type LeadMinOrderByAggregateInput = {
@@ -651,6 +693,8 @@ export type LeadMinOrderByAggregateInput = {
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  estadoComercial?: Prisma.SortOrder
+  notasInternas?: Prisma.SortOrder
 }
 
 export type LeadSumOrderByAggregateInput = {
@@ -707,6 +751,8 @@ export type LeadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
   createdAt?: boolean
+  estadoComercial?: boolean
+  notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
 
 export type LeadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -729,6 +775,8 @@ export type LeadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
   createdAt?: boolean
+  estadoComercial?: boolean
+  notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
 
 export type LeadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -751,6 +799,8 @@ export type LeadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
   createdAt?: boolean
+  estadoComercial?: boolean
+  notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
 
 export type LeadSelectScalar = {
@@ -773,9 +823,11 @@ export type LeadSelectScalar = {
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
   createdAt?: boolean
+  estadoComercial?: boolean
+  notasInternas?: boolean
 }
 
-export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "codigoPais" | "telefono" | "facturacionAnual" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt", ExtArgs["result"]["lead"]>
+export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "codigoPais" | "telefono" | "facturacionAnual" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt" | "estadoComercial" | "notasInternas", ExtArgs["result"]["lead"]>
 
 export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Lead"
@@ -800,6 +852,8 @@ export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     aceptaTerminos: boolean
     fechaAceptacion: Date | null
     createdAt: Date
+    estadoComercial: string
+    notasInternas: string | null
   }, ExtArgs["result"]["lead"]>
   composites: {}
 }
@@ -1242,6 +1296,8 @@ export interface LeadFieldRefs {
   readonly aceptaTerminos: Prisma.FieldRef<"Lead", 'Boolean'>
   readonly fechaAceptacion: Prisma.FieldRef<"Lead", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Lead", 'DateTime'>
+  readonly estadoComercial: Prisma.FieldRef<"Lead", 'String'>
+  readonly notasInternas: Prisma.FieldRef<"Lead", 'String'>
 }
     
 

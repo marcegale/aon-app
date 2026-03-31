@@ -27,4 +27,6 @@ model Lead {
   aceptaTerminos  Boolean  @default(false)
   fechaAceptacion DateTime?
   createdAt       DateTime @default(now())
+  estadoComercial  String   @default("Nuevo")
+  notasInternas    String?
 }
