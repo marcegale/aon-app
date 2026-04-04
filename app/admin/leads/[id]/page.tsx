@@ -14,9 +14,9 @@ const ESTADOS = [
 export default async function LeadDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
 
   const lead = await prisma.lead.findUnique({
     where: { id },
@@ -38,27 +38,37 @@ export default async function LeadDetailPage({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
             <h2 className="text-lg font-medium">Datos del lead</h2>
+
             <p>
               <strong>Email:</strong> {lead.email}
             </p>
+
             <p>
               <strong>Teléfono:</strong> {lead.telefono || "-"}
             </p>
+
             <p>
-              <strong>Rubro:</strong> {lead.rubro}
+              <strong>Rubro:</strong> {lead.rubro || "-"}
             </p>
+
             <p>
-              <strong>Empleados:</strong> {lead.empleados}
+              <strong>Empleados:</strong> {lead.empleados || "-"}
             </p>
+
             <p>
-              <strong>Facturación:</strong> {lead.facturacion || "-"}
+              <strong>Facturación:</strong> {"facturacionAnual" in lead
+                ? (lead.facturacionAnual as string | null) || "-"
+                : "-"}
             </p>
+
             <p>
               <strong>Score:</strong> {lead.leadScore}
             </p>
+
             <p>
               <strong>Nivel:</strong> {lead.leadLevel}
             </p>
+
             <p>
               <strong>Estado:</strong> {lead.estadoComercial}
             </p>
@@ -110,12 +120,16 @@ export default async function LeadDetailPage({
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
           <h2 className="mb-2 text-lg font-medium">Problema detectado</h2>
-          <p className="whitespace-pre-wrap text-neutral-300">{lead.problema}</p>
+          <p className="whitespace-pre-wrap text-neutral-300">
+            {lead.problema}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
           <h2 className="mb-2 text-lg font-medium">Objetivo declarado</h2>
-          <p className="whitespace-pre-wrap text-neutral-300">{lead.objetivo}</p>
+          <p className="whitespace-pre-wrap text-neutral-300">
+            {lead.objetivo}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
