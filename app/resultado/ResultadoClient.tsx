@@ -1,12 +1,23 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import jsPDF from "jspdf";
 
 export default function ResultadoClient() {
   const searchParams = useSearchParams();
   const diagnostico = searchParams.get("data");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "conversion", {
+        send_to: "AW-18044003641/5p8CN_zqZAcEInKhxpD",
+        value: 1.0,
+        currency: "USD",
+      });
+    }
+  }, []);
 
   const descargarPDF = () => {
     const doc = new jsPDF();
