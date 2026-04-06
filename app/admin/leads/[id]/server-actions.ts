@@ -9,10 +9,11 @@ export async function updateLeadStatus(formData: FormData) {
 
   if (!id || !estadoComercial) return;
 
-  await prisma.lead.update({
-    where: { id },
-    data: { estadoComercial },
-  });
+  // ❌ Eliminamos update porque la columna no existe
+  // await prisma.lead.update({
+  //   where: { id },
+  //   data: { estadoComercial },
+  // });
 
   revalidatePath("/admin/leads");
   revalidatePath(`/admin/leads/${id}`);
