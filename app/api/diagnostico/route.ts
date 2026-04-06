@@ -4,15 +4,12 @@ import { validarTurnstile } from "@/app/lib/turnstile";
 import { prisma } from "@/app/lib/prisma";
 
 function getOpenAIClient() {
-  console.log("ENV KEYS:", Object.keys(process.env));
-  console.log("OPENAI KEY:", process.env.OPENAI_API_KEY);
-
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Falta OPENAI_API_KEY");
   }
 
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
+    apiKey: process.env.OPENAI_API_KEY,
   });
 }
 
@@ -54,12 +51,7 @@ function calcularLeadScore(data: {
   if (data.objetivo.trim().length > 20) score += 20;
 
   const email = data.email.toLowerCase();
-  const dominiosGenericos = [
-    "gmail.com",
-    "hotmail.com",
-    "outlook.com",
-    "yahoo.com",
-  ];
+  const dominiosGenericos = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
   const dominio = email.split("@")[1] || "";
 
   if (dominio && !dominiosGenericos.includes(dominio)) {
@@ -79,15 +71,9 @@ function validarEmail(email: string) {
   const basicRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,24}$/i;
   if (!basicRegex.test(normalizedEmail)) return false;
 
-  const typoDomains = [
-    ".coim",
-    ".comm",
-    ".cpm",
-    ".xom",
-    ".con",
-  ];
-
+  const typoDomains = [".coim", ".comm", ".cpm", ".xom", ".con"];
   const domain = normalizedEmail.split("@")[1] || "";
+
   if (typoDomains.some((ending) => domain.endsWith(ending))) return false;
 
   return true;
@@ -128,10 +114,7 @@ export async function POST(request: Request) {
 
     if (!captchaResult.success) {
       return NextResponse.json(
-        {
-          ok: false,
-          message: "No se pudo validar la verificación humana.",
-        },
+        { ok: false, message: "No se pudo validar la verificación humana." },
         { status: 400 }
       );
     }
@@ -155,20 +138,14 @@ export async function POST(request: Request) {
 
     if (!validarEmail(email)) {
       return NextResponse.json(
-        {
-          ok: false,
-          message: "El email ingresado no es válido.",
-        },
+        { ok: false, message: "El email ingresado no es válido." },
         { status: 400 }
       );
     }
 
     if (!validarTelefono(telefono)) {
       return NextResponse.json(
-        {
-          ok: false,
-          message: "El teléfono debe contener solo números.",
-        },
+        { ok: false, message: "El teléfono debe contener solo números." },
         { status: 400 }
       );
     }
@@ -194,6 +171,7 @@ Devuelve exactamente con esta estructura:
 5. Plan de 30 días
 
 Ten en cuenta que al ennumerar la devolución puede existir confusión numérica visual al poner "3. 3 riesgos", entonces utiliza este formato: "3. Tres riesgos".
+Para elaborar tu análisis, revisa si la empresa tiene sitio o sitios web, reportes financieros disponibles en línea, redes sociales de la empresa y sus marcas, estructura de equipos en linkedIn o fuentes oficiales.
 `;
 
     const client = getOpenAIClient();
@@ -214,8 +192,8 @@ Ten en cuenta que al ennumerar la devolución puede existir confusión numérica
       objetivo,
     });
 
-    let emailStatus: "sent" | "failed" | "not_attempted" = "not_attempted";
-    let emailError: string | null = null;
+    const emailStatus: "sent" | "failed" | "not_attempted" = "not_attempted";
+    const emailError: string | null = null;
 
     await prisma.lead.create({
       data: {
@@ -236,6 +214,9 @@ Ten en cuenta que al ennumerar la devolución puede existir confusión numérica
         emailError,
         aceptaTerminos: true,
         fechaAceptacion: new Date(),
+      },
+      select: {
+        id: true,
       },
     });
 
