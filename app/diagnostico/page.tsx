@@ -175,9 +175,9 @@ export default function DiagnosticoPage() {
 
   return (
     <main className="min-h-screen bg-[#00003C]">
-      <section className="mx-auto max-w-7xl px-5 py-6 md:px-6 lg:py-8">
+      <section className="mx-auto max-w-7xl px-4 py-4 md:px-5 lg:py-5">
         <div className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
-          <div className="flex flex-col justify-center text-[#FDF6CB] lg:min-h-[calc(100vh-90px)]">
+          <div className="flex flex-col justify-center text-[#FDF6CB] lg:min-h-[calc(100vh-48px)]">
             <div className="mb-6">
               <Image
                 src="/logo-aon.png"
@@ -193,11 +193,11 @@ export default function DiagnosticoPage() {
               AON · Diagnóstico Estratégico
             </div>
 
-            <h1 className="mt-6 max-w-xl text-4xl font-semibold tracking-tight text-[#FDF6CB] md:text-5xl">
+            <h1 className="mt-4 max-w-xl text-3xl font-semibold tracking-tight text-[#FDF6CB] md:text-4xl">
               Recibí una lectura estratégica inicial de tu empresa
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-7 text-[#FDF6CB]/75 md:text-lg">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#FDF6CB]/75 md:text-base">
               Completá esta evaluación breve y AON generará un diagnóstico ejecutivo
               inicial con foco en estructura, gestión y oportunidades de mejora.
             </p>
@@ -218,12 +218,12 @@ export default function DiagnosticoPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-5 shadow-2xl shadow-black/20 md:p-6">
-            <div className="mb-8">
+          <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-4 shadow-2xl shadow-black/20 md:p-5">
+            <div className="mb-5">
               <h2 className="text-2xl font-semibold text-[#00003C]">
                 Completá tu evaluación inicial
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[#4B4F6B]">
+              <p className="mt-1 text-sm leading-5 text-[#4B4F6B]">
                 Te tomará menos de 2 minutos.
               </p>
             </div>
@@ -284,7 +284,7 @@ export default function DiagnosticoPage() {
                 disabled={loading}
               />
 
-              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-[#FDF6CB]/25 p-4 text-sm leading-6 text-[#4B4F6B]">
+              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-[#FDF6CB]/25 p-3 text-xs leading-5 text-[#4B4F6B]">
                 Este diagnóstico no reemplaza una consultoría completa, pero sí
                 ofrece una lectura estratégica inicial para detectar focos de mejora.
               </div>
@@ -298,7 +298,7 @@ export default function DiagnosticoPage() {
                 />
               </div>
 
-              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-white p-4">
+              <div className="rounded-2xl border border-[#E2AB6D]/20 bg-white p-3">
                 <label className="flex cursor-pointer items-start gap-3">
                   <input
                     type="checkbox"
@@ -460,7 +460,7 @@ function FormTextarea({
         rows={rows}
         required={required}
         disabled={disabled}
-        className="min-h-[96px] w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+        className="min-h-[78px] w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
       />
     </div>
   );

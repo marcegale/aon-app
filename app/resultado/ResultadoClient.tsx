@@ -272,55 +272,72 @@ export default function ResultadoClient() {
                 {lead.diagnostico || "No hay diagnóstico disponible."}
               </div>
             ) : (
-              <div className="relative">
-  {/* Texto blur */}
-  <div className="relative overflow-hidden rounded-2xl border border-[#E2AB6D]/15">
+              <div className="relative min-h-[320px] md:min-h-[340px]">
+  <div className="relative h-[220px] overflow-hidden rounded-2xl border border-[#E2AB6D]/15 bg-white">
     <div className="pointer-events-none select-none whitespace-pre-wrap p-6 text-[15px] leading-8 text-[#1E2340] blur-sm opacity-40">
       {lead.diagnostico || "No hay diagnóstico disponible."}
     </div>
 
-    {/* Fade */}
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white" />
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/70 to-white" />
   </div>
 
-  {/* FORM FLOTANTE */}
-  <div className="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 px-4">
+  <div className="absolute left-1/2 top-[110px] w-full max-w-md -translate-x-1/2 px-4">
     <div className="rounded-2xl border border-[#E2AB6D]/20 bg-white p-6 shadow-2xl">
-      <h3 className="text-lg font-semibold text-[#00003C] text-center">
+      <h3 className="text-center text-lg font-semibold text-[#00003C]">
         Desbloquea el diagnóstico completo
       </h3>
 
-      <p className="mt-2 text-sm text-center text-[#4B4F6B]">
-        Completa tus datos para ver el análisis completo
+      <p className="mt-2 text-center text-sm leading-6 text-[#4B4F6B]">
+        Completa tus datos para acceder al análisis completo.
       </p>
 
       <form onSubmit={handleUnlock} className="mt-5 space-y-4">
-        <input
-          type="text"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          placeholder="Tu nombre"
-          className="w-full rounded-2xl border border-[#E2AB6D]/25 px-4 py-3 text-sm"
-        />
+        <div>
+          <label
+            htmlFor="nombre"
+            className="mb-2 block text-sm font-medium text-[#00003C]"
+          >
+            Nombre
+          </label>
+          <input
+            id="nombre"
+            type="text"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            className="w-full rounded-2xl border border-[#E2AB6D]/25 bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#B07A45]"
+            placeholder="Tu nombre"
+          />
+        </div>
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@email.com"
-          className="w-full rounded-2xl border border-[#E2AB6D]/25 px-4 py-3 text-sm"
-        />
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-2 block text-sm font-medium text-[#00003C]"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-2xl border border-[#E2AB6D]/25 bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#B07A45]"
+            placeholder="tu@email.com"
+          />
+        </div>
 
-        {unlockError && (
-          <div className="text-xs text-red-600">{unlockError}</div>
-        )}
+        {unlockError ? (
+          <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-700">
+            {unlockError}
+          </div>
+        ) : null}
 
         <button
           type="submit"
           disabled={unlockLoading}
-          className="w-full rounded-2xl bg-[#00003C] py-3 text-sm font-semibold text-[#FDF6CB]"
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-[#00003C] px-6 py-3.5 text-sm font-semibold text-[#FDF6CB] transition hover:bg-[#0A0A52] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {unlockLoading ? "Desbloqueando..." : "Desbloquear"}
+          {unlockLoading ? "Desbloqueando..." : "Desbloquear diagnóstico"}
         </button>
       </form>
     </div>
