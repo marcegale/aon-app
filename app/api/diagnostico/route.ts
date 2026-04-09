@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { validarTurnstile } from "@/app/lib/turnstile";
 import { prisma } from "@/app/lib/prisma";
@@ -65,23 +65,46 @@ function calcularLeadScore(data: {
   return { score, nivel };
 }
 
-function validarEmail(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
-  const basicRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,24}$/i;
-  if (!basicRegex.test(normalizedEmail)) return false;
+    if (!id) {
+      return NextResponse.json(
+        { error: "Falta id" },
+        { status: 400 }
+      );
+    }
 
-  const typoDomains = [".coim", ".comm", ".cpm", ".xom", ".con"];
-  const domain = normalizedEmail.split("@")[1] || "";
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        diagnosticoResumen: true,
+        diagnostico: true,
+        isUnlocked: true,
+        nombre: true,
+        email: true,
+      },
+    });
 
-  if (typoDomains.some((ending) => domain.endsWith(ending))) return false;
+    if (!lead) {
+      return NextResponse.json(
+        { error: "Lead no encontrado" },
+        { status: 404 }
+      );
+    }
 
-  return true;
-}
+    return NextResponse.json({ lead });
+  } catch (error) {
+    console.error("GET /api/diagnostico error:", error);
 
-function validarTelefono(telefono?: string) {
-  if (!telefono) return true;
-  return /^\d+$/.test(telefono);
+    return NextResponse.json(
+      { error: "Error interno" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -89,13 +112,8 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const {
-      nombre,
-      empresa,
-      email,
       rubro,
       empleados,
-      codigoPais,
-      telefono,
       facturacionAnual,
       problema,
       objetivo,
@@ -119,7 +137,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!nombre || !empresa || !email || !problema || !objetivo) {
+    if (!problema || !objetivo) {
       return NextResponse.json(
         { ok: false, message: "Faltan campos obligatorios." },
         { status: 400 }
@@ -136,26 +154,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!validarEmail(email)) {
-      return NextResponse.json(
-        { ok: false, message: "El email ingresado no es válido." },
-        { status: 400 }
-      );
-    }
-
-    if (!validarTelefono(telefono)) {
-      return NextResponse.json(
-        { ok: false, message: "El teléfono debe contener solo números." },
-        { status: 400 }
-      );
-    }
-
     const prompt = `
 Eres un consultor estratégico de negocios.
 
 Analiza esta empresa:
 
-Empresa: ${empresa}
 Rubro: ${rubro || "No especificado"}
 Empleados: ${empleados || "No especificado"}
 Facturación anual estimada: ${facturacionAnual || "No especificado"}
@@ -169,9 +172,6 @@ Devuelve exactamente con esta estructura:
 3. Tres riesgos
 4. Tres quick wins
 5. Plan de 30 días
-
-Ten en cuenta que al ennumerar la devolución puede existir confusión numérica visual al poner "3. 3 riesgos", entonces utiliza este formato: "3. Tres riesgos".
-Para elaborar tu análisis, revisa si la empresa tiene sitio o sitios web, reportes financieros disponibles en línea, redes sociales de la empresa y sus marcas, estructura de equipos en linkedIn o fuentes oficiales.
 `;
 
     const client = getOpenAIClient();
@@ -183,8 +183,10 @@ Para elaborar tu análisis, revisa si la empresa tiene sitio o sitios web, repor
 
     const diagnostico = response.output_text;
 
+    const resumen = diagnostico.split("\n").slice(0, 5).join("\n");
+
     const leadScore = calcularLeadScore({
-      email,
+      email: "temp@email.com",
       rubro,
       empleados,
       facturacionAnual,
@@ -192,28 +194,21 @@ Para elaborar tu análisis, revisa si la empresa tiene sitio o sitios web, repor
       objetivo,
     });
 
-    const emailStatus: "sent" | "failed" | "not_attempted" = "not_attempted";
-    const emailError: string | null = null;
-
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
-        nombre,
-        empresa,
-        email,
         rubro: rubro || null,
         empleados: empleados || null,
-        codigoPais: codigoPais || null,
-        telefono: telefono || null,
         facturacionAnual: facturacionAnual || null,
         problema,
         objetivo,
         diagnostico,
+        diagnosticoResumen: resumen,
         leadScore: leadScore.score,
         leadLevel: leadScore.nivel,
-        emailStatus,
-        emailError,
         aceptaTerminos: true,
         fechaAceptacion: new Date(),
+        humanVerified: true,
+        isUnlocked: false,
       },
       select: {
         id: true,
@@ -222,11 +217,7 @@ Para elaborar tu análisis, revisa si la empresa tiene sitio o sitios web, repor
 
     return NextResponse.json({
       ok: true,
-      diagnostico,
-      leadScore: leadScore.score,
-      leadLevel: leadScore.nivel,
-      emailStatus,
-      emailError,
+      id: lead.id,
     });
   } catch (error: any) {
     console.error("Error en API /api/diagnostico:", error);

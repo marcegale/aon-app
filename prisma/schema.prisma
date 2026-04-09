@@ -8,25 +8,31 @@ datasource db {
 }
 
 model Lead {
-  id              String   @id @default(cuid())
-  nombre          String
-  empresa         String
-  email           String
-  rubro           String?
-  empleados       String?
-  codigoPais      String?
-  telefono        String?
-  facturacionAnual String?
-  problema        String
-  objetivo        String
-  diagnostico     String
-  leadScore       Int
-  leadLevel       String
-  emailStatus     String?
-  emailError      String?
-  aceptaTerminos  Boolean  @default(false)
-  fechaAceptacion DateTime?
-  createdAt       DateTime @default(now())
-  estadoComercial  String   @default("Nuevo")
-  notasInternas    String?
+  id                 String    @id @default(cuid())
+  nombre             String?
+  empresa            String?
+  email              String?
+  rubro              String?
+  empleados          String?
+  codigoPais         String?
+  telefono           String?
+  telefonoCompleto   String?
+  facturacionAnual   String?
+  problema           String
+  objetivo           String
+  diagnostico        String
+  diagnosticoResumen String?
+  leadScore          Int       @default(0)
+  leadLevel          String    @default("Frío")
+  emailStatus        String?
+  emailError         String?
+  aceptaTerminos     Boolean   @default(false)
+  fechaAceptacion    DateTime?
+  humanVerified      Boolean   @default(false)
+  isUnlocked         Boolean   @default(false)
+  unlockedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  estadoComercial    String    @default("Nuevo")
+  notasInternas      String?
 }

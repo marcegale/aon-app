@@ -43,17 +43,23 @@ export type LeadMinAggregateOutputType = {
   empleados: string | null
   codigoPais: string | null
   telefono: string | null
+  telefonoCompleto: string | null
   facturacionAnual: string | null
   problema: string | null
   objetivo: string | null
   diagnostico: string | null
+  diagnosticoResumen: string | null
   leadScore: number | null
   leadLevel: string | null
   emailStatus: string | null
   emailError: string | null
   aceptaTerminos: boolean | null
   fechaAceptacion: Date | null
+  humanVerified: boolean | null
+  isUnlocked: boolean | null
+  unlockedAt: Date | null
   createdAt: Date | null
+  updatedAt: Date | null
   estadoComercial: string | null
   notasInternas: string | null
 }
@@ -67,17 +73,23 @@ export type LeadMaxAggregateOutputType = {
   empleados: string | null
   codigoPais: string | null
   telefono: string | null
+  telefonoCompleto: string | null
   facturacionAnual: string | null
   problema: string | null
   objetivo: string | null
   diagnostico: string | null
+  diagnosticoResumen: string | null
   leadScore: number | null
   leadLevel: string | null
   emailStatus: string | null
   emailError: string | null
   aceptaTerminos: boolean | null
   fechaAceptacion: Date | null
+  humanVerified: boolean | null
+  isUnlocked: boolean | null
+  unlockedAt: Date | null
   createdAt: Date | null
+  updatedAt: Date | null
   estadoComercial: string | null
   notasInternas: string | null
 }
@@ -91,17 +103,23 @@ export type LeadCountAggregateOutputType = {
   empleados: number
   codigoPais: number
   telefono: number
+  telefonoCompleto: number
   facturacionAnual: number
   problema: number
   objetivo: number
   diagnostico: number
+  diagnosticoResumen: number
   leadScore: number
   leadLevel: number
   emailStatus: number
   emailError: number
   aceptaTerminos: number
   fechaAceptacion: number
+  humanVerified: number
+  isUnlocked: number
+  unlockedAt: number
   createdAt: number
+  updatedAt: number
   estadoComercial: number
   notasInternas: number
   _all: number
@@ -125,17 +143,23 @@ export type LeadMinAggregateInputType = {
   empleados?: true
   codigoPais?: true
   telefono?: true
+  telefonoCompleto?: true
   facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
+  diagnosticoResumen?: true
   leadScore?: true
   leadLevel?: true
   emailStatus?: true
   emailError?: true
   aceptaTerminos?: true
   fechaAceptacion?: true
+  humanVerified?: true
+  isUnlocked?: true
+  unlockedAt?: true
   createdAt?: true
+  updatedAt?: true
   estadoComercial?: true
   notasInternas?: true
 }
@@ -149,17 +173,23 @@ export type LeadMaxAggregateInputType = {
   empleados?: true
   codigoPais?: true
   telefono?: true
+  telefonoCompleto?: true
   facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
+  diagnosticoResumen?: true
   leadScore?: true
   leadLevel?: true
   emailStatus?: true
   emailError?: true
   aceptaTerminos?: true
   fechaAceptacion?: true
+  humanVerified?: true
+  isUnlocked?: true
+  unlockedAt?: true
   createdAt?: true
+  updatedAt?: true
   estadoComercial?: true
   notasInternas?: true
 }
@@ -173,17 +203,23 @@ export type LeadCountAggregateInputType = {
   empleados?: true
   codigoPais?: true
   telefono?: true
+  telefonoCompleto?: true
   facturacionAnual?: true
   problema?: true
   objetivo?: true
   diagnostico?: true
+  diagnosticoResumen?: true
   leadScore?: true
   leadLevel?: true
   emailStatus?: true
   emailError?: true
   aceptaTerminos?: true
   fechaAceptacion?: true
+  humanVerified?: true
+  isUnlocked?: true
+  unlockedAt?: true
   createdAt?: true
+  updatedAt?: true
   estadoComercial?: true
   notasInternas?: true
   _all?: true
@@ -277,24 +313,30 @@ export type LeadGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type LeadGroupByOutputType = {
   id: string
-  nombre: string
-  empresa: string
-  email: string
+  nombre: string | null
+  empresa: string | null
+  email: string | null
   rubro: string | null
   empleados: string | null
   codigoPais: string | null
   telefono: string | null
+  telefonoCompleto: string | null
   facturacionAnual: string | null
   problema: string
   objetivo: string
   diagnostico: string
+  diagnosticoResumen: string | null
   leadScore: number
   leadLevel: string
   emailStatus: string | null
   emailError: string | null
   aceptaTerminos: boolean
   fechaAceptacion: Date | null
+  humanVerified: boolean
+  isUnlocked: boolean
+  unlockedAt: Date | null
   createdAt: Date
+  updatedAt: Date
   estadoComercial: string
   notasInternas: string | null
   _count: LeadCountAggregateOutputType | null
@@ -324,48 +366,60 @@ export type LeadWhereInput = {
   OR?: Prisma.LeadWhereInput[]
   NOT?: Prisma.LeadWhereInput | Prisma.LeadWhereInput[]
   id?: Prisma.StringFilter<"Lead"> | string
-  nombre?: Prisma.StringFilter<"Lead"> | string
-  empresa?: Prisma.StringFilter<"Lead"> | string
-  email?: Prisma.StringFilter<"Lead"> | string
+  nombre?: Prisma.StringNullableFilter<"Lead"> | string | null
+  empresa?: Prisma.StringNullableFilter<"Lead"> | string | null
+  email?: Prisma.StringNullableFilter<"Lead"> | string | null
   rubro?: Prisma.StringNullableFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableFilter<"Lead"> | string | null
   codigoPais?: Prisma.StringNullableFilter<"Lead"> | string | null
   telefono?: Prisma.StringNullableFilter<"Lead"> | string | null
+  telefonoCompleto?: Prisma.StringNullableFilter<"Lead"> | string | null
   facturacionAnual?: Prisma.StringNullableFilter<"Lead"> | string | null
   problema?: Prisma.StringFilter<"Lead"> | string
   objetivo?: Prisma.StringFilter<"Lead"> | string
   diagnostico?: Prisma.StringFilter<"Lead"> | string
+  diagnosticoResumen?: Prisma.StringNullableFilter<"Lead"> | string | null
   leadScore?: Prisma.IntFilter<"Lead"> | number
   leadLevel?: Prisma.StringFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableFilter<"Lead"> | string | null
   aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
+  humanVerified?: Prisma.BoolFilter<"Lead"> | boolean
+  isUnlocked?: Prisma.BoolFilter<"Lead"> | boolean
+  unlockedAt?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
   estadoComercial?: Prisma.StringFilter<"Lead"> | string
   notasInternas?: Prisma.StringNullableFilter<"Lead"> | string | null
 }
 
 export type LeadOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  nombre?: Prisma.SortOrder
-  empresa?: Prisma.SortOrder
-  email?: Prisma.SortOrder
+  nombre?: Prisma.SortOrderInput | Prisma.SortOrder
+  empresa?: Prisma.SortOrderInput | Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
   rubro?: Prisma.SortOrderInput | Prisma.SortOrder
   empleados?: Prisma.SortOrderInput | Prisma.SortOrder
   codigoPais?: Prisma.SortOrderInput | Prisma.SortOrder
   telefono?: Prisma.SortOrderInput | Prisma.SortOrder
+  telefonoCompleto?: Prisma.SortOrderInput | Prisma.SortOrder
   facturacionAnual?: Prisma.SortOrderInput | Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
+  diagnosticoResumen?: Prisma.SortOrderInput | Prisma.SortOrder
   leadScore?: Prisma.SortOrder
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   emailError?: Prisma.SortOrderInput | Prisma.SortOrder
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
+  humanVerified?: Prisma.SortOrder
+  isUnlocked?: Prisma.SortOrder
+  unlockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   estadoComercial?: Prisma.SortOrder
   notasInternas?: Prisma.SortOrderInput | Prisma.SortOrder
 }
@@ -375,48 +429,60 @@ export type LeadWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.LeadWhereInput | Prisma.LeadWhereInput[]
   OR?: Prisma.LeadWhereInput[]
   NOT?: Prisma.LeadWhereInput | Prisma.LeadWhereInput[]
-  nombre?: Prisma.StringFilter<"Lead"> | string
-  empresa?: Prisma.StringFilter<"Lead"> | string
-  email?: Prisma.StringFilter<"Lead"> | string
+  nombre?: Prisma.StringNullableFilter<"Lead"> | string | null
+  empresa?: Prisma.StringNullableFilter<"Lead"> | string | null
+  email?: Prisma.StringNullableFilter<"Lead"> | string | null
   rubro?: Prisma.StringNullableFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableFilter<"Lead"> | string | null
   codigoPais?: Prisma.StringNullableFilter<"Lead"> | string | null
   telefono?: Prisma.StringNullableFilter<"Lead"> | string | null
+  telefonoCompleto?: Prisma.StringNullableFilter<"Lead"> | string | null
   facturacionAnual?: Prisma.StringNullableFilter<"Lead"> | string | null
   problema?: Prisma.StringFilter<"Lead"> | string
   objetivo?: Prisma.StringFilter<"Lead"> | string
   diagnostico?: Prisma.StringFilter<"Lead"> | string
+  diagnosticoResumen?: Prisma.StringNullableFilter<"Lead"> | string | null
   leadScore?: Prisma.IntFilter<"Lead"> | number
   leadLevel?: Prisma.StringFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableFilter<"Lead"> | string | null
   aceptaTerminos?: Prisma.BoolFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
+  humanVerified?: Prisma.BoolFilter<"Lead"> | boolean
+  isUnlocked?: Prisma.BoolFilter<"Lead"> | boolean
+  unlockedAt?: Prisma.DateTimeNullableFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Lead"> | Date | string
   estadoComercial?: Prisma.StringFilter<"Lead"> | string
   notasInternas?: Prisma.StringNullableFilter<"Lead"> | string | null
 }, "id">
 
 export type LeadOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  nombre?: Prisma.SortOrder
-  empresa?: Prisma.SortOrder
-  email?: Prisma.SortOrder
+  nombre?: Prisma.SortOrderInput | Prisma.SortOrder
+  empresa?: Prisma.SortOrderInput | Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
   rubro?: Prisma.SortOrderInput | Prisma.SortOrder
   empleados?: Prisma.SortOrderInput | Prisma.SortOrder
   codigoPais?: Prisma.SortOrderInput | Prisma.SortOrder
   telefono?: Prisma.SortOrderInput | Prisma.SortOrder
+  telefonoCompleto?: Prisma.SortOrderInput | Prisma.SortOrder
   facturacionAnual?: Prisma.SortOrderInput | Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
+  diagnosticoResumen?: Prisma.SortOrderInput | Prisma.SortOrder
   leadScore?: Prisma.SortOrder
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   emailError?: Prisma.SortOrderInput | Prisma.SortOrder
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrderInput | Prisma.SortOrder
+  humanVerified?: Prisma.SortOrder
+  isUnlocked?: Prisma.SortOrder
+  unlockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   estadoComercial?: Prisma.SortOrder
   notasInternas?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.LeadCountOrderByAggregateInput
@@ -431,192 +497,240 @@ export type LeadScalarWhereWithAggregatesInput = {
   OR?: Prisma.LeadScalarWhereWithAggregatesInput[]
   NOT?: Prisma.LeadScalarWhereWithAggregatesInput | Prisma.LeadScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Lead"> | string
-  nombre?: Prisma.StringWithAggregatesFilter<"Lead"> | string
-  empresa?: Prisma.StringWithAggregatesFilter<"Lead"> | string
-  email?: Prisma.StringWithAggregatesFilter<"Lead"> | string
+  nombre?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  empresa?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  email?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   rubro?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   empleados?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   codigoPais?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   telefono?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
+  telefonoCompleto?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   facturacionAnual?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   problema?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   objetivo?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   diagnostico?: Prisma.StringWithAggregatesFilter<"Lead"> | string
+  diagnosticoResumen?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   leadScore?: Prisma.IntWithAggregatesFilter<"Lead"> | number
   leadLevel?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   emailStatus?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   emailError?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
   aceptaTerminos?: Prisma.BoolWithAggregatesFilter<"Lead"> | boolean
   fechaAceptacion?: Prisma.DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
+  humanVerified?: Prisma.BoolWithAggregatesFilter<"Lead"> | boolean
+  isUnlocked?: Prisma.BoolWithAggregatesFilter<"Lead"> | boolean
+  unlockedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Lead"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Lead"> | Date | string
   estadoComercial?: Prisma.StringWithAggregatesFilter<"Lead"> | string
   notasInternas?: Prisma.StringNullableWithAggregatesFilter<"Lead"> | string | null
 }
 
 export type LeadCreateInput = {
   id?: string
-  nombre: string
-  empresa: string
-  email: string
+  nombre?: string | null
+  empresa?: string | null
+  email?: string | null
   rubro?: string | null
   empleados?: string | null
   codigoPais?: string | null
   telefono?: string | null
+  telefonoCompleto?: string | null
   facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
-  leadScore: number
-  leadLevel: string
+  diagnosticoResumen?: string | null
+  leadScore?: number
+  leadLevel?: string
   emailStatus?: string | null
   emailError?: string | null
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   estadoComercial?: string
   notasInternas?: string | null
 }
 
 export type LeadUncheckedCreateInput = {
   id?: string
-  nombre: string
-  empresa: string
-  email: string
+  nombre?: string | null
+  empresa?: string | null
+  email?: string | null
   rubro?: string | null
   empleados?: string | null
   codigoPais?: string | null
   telefono?: string | null
+  telefonoCompleto?: string | null
   facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
-  leadScore: number
-  leadLevel: string
+  diagnosticoResumen?: string | null
+  leadScore?: number
+  leadLevel?: string
   emailStatus?: string | null
   emailError?: string | null
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   estadoComercial?: string
   notasInternas?: string | null
 }
 
 export type LeadUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  nombre?: Prisma.StringFieldUpdateOperationsInput | string
-  empresa?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  nombre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  empresa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefonoCompleto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
+  diagnosticoResumen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   leadScore?: Prisma.IntFieldUpdateOperationsInput | number
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  humanVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isUnlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  unlockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
   notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  nombre?: Prisma.StringFieldUpdateOperationsInput | string
-  empresa?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  nombre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  empresa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefonoCompleto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
+  diagnosticoResumen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   leadScore?: Prisma.IntFieldUpdateOperationsInput | number
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  humanVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isUnlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  unlockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
   notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadCreateManyInput = {
   id?: string
-  nombre: string
-  empresa: string
-  email: string
+  nombre?: string | null
+  empresa?: string | null
+  email?: string | null
   rubro?: string | null
   empleados?: string | null
   codigoPais?: string | null
   telefono?: string | null
+  telefonoCompleto?: string | null
   facturacionAnual?: string | null
   problema: string
   objetivo: string
   diagnostico: string
-  leadScore: number
-  leadLevel: string
+  diagnosticoResumen?: string | null
+  leadScore?: number
+  leadLevel?: string
   emailStatus?: string | null
   emailError?: string | null
   aceptaTerminos?: boolean
   fechaAceptacion?: Date | string | null
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: Date | string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   estadoComercial?: string
   notasInternas?: string | null
 }
 
 export type LeadUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  nombre?: Prisma.StringFieldUpdateOperationsInput | string
-  empresa?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  nombre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  empresa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefonoCompleto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
+  diagnosticoResumen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   leadScore?: Prisma.IntFieldUpdateOperationsInput | number
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  humanVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isUnlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  unlockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
   notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type LeadUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  nombre?: Prisma.StringFieldUpdateOperationsInput | string
-  empresa?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  nombre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  empresa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rubro?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   empleados?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codigoPais?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  telefonoCompleto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facturacionAnual?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   problema?: Prisma.StringFieldUpdateOperationsInput | string
   objetivo?: Prisma.StringFieldUpdateOperationsInput | string
   diagnostico?: Prisma.StringFieldUpdateOperationsInput | string
+  diagnosticoResumen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   leadScore?: Prisma.IntFieldUpdateOperationsInput | number
   leadLevel?: Prisma.StringFieldUpdateOperationsInput | string
   emailStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aceptaTerminos?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fechaAceptacion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  humanVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isUnlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  unlockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   estadoComercial?: Prisma.StringFieldUpdateOperationsInput | string
   notasInternas?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -630,17 +744,23 @@ export type LeadCountOrderByAggregateInput = {
   empleados?: Prisma.SortOrder
   codigoPais?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
+  telefonoCompleto?: Prisma.SortOrder
   facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
+  diagnosticoResumen?: Prisma.SortOrder
   leadScore?: Prisma.SortOrder
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
+  humanVerified?: Prisma.SortOrder
+  isUnlocked?: Prisma.SortOrder
+  unlockedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   estadoComercial?: Prisma.SortOrder
   notasInternas?: Prisma.SortOrder
 }
@@ -658,17 +778,23 @@ export type LeadMaxOrderByAggregateInput = {
   empleados?: Prisma.SortOrder
   codigoPais?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
+  telefonoCompleto?: Prisma.SortOrder
   facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
+  diagnosticoResumen?: Prisma.SortOrder
   leadScore?: Prisma.SortOrder
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
+  humanVerified?: Prisma.SortOrder
+  isUnlocked?: Prisma.SortOrder
+  unlockedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   estadoComercial?: Prisma.SortOrder
   notasInternas?: Prisma.SortOrder
 }
@@ -682,17 +808,23 @@ export type LeadMinOrderByAggregateInput = {
   empleados?: Prisma.SortOrder
   codigoPais?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
+  telefonoCompleto?: Prisma.SortOrder
   facturacionAnual?: Prisma.SortOrder
   problema?: Prisma.SortOrder
   objetivo?: Prisma.SortOrder
   diagnostico?: Prisma.SortOrder
+  diagnosticoResumen?: Prisma.SortOrder
   leadScore?: Prisma.SortOrder
   leadLevel?: Prisma.SortOrder
   emailStatus?: Prisma.SortOrder
   emailError?: Prisma.SortOrder
   aceptaTerminos?: Prisma.SortOrder
   fechaAceptacion?: Prisma.SortOrder
+  humanVerified?: Prisma.SortOrder
+  isUnlocked?: Prisma.SortOrder
+  unlockedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   estadoComercial?: Prisma.SortOrder
   notasInternas?: Prisma.SortOrder
 }
@@ -740,17 +872,23 @@ export type LeadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   empleados?: boolean
   codigoPais?: boolean
   telefono?: boolean
+  telefonoCompleto?: boolean
   facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
+  diagnosticoResumen?: boolean
   leadScore?: boolean
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   estadoComercial?: boolean
   notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
@@ -764,17 +902,23 @@ export type LeadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   empleados?: boolean
   codigoPais?: boolean
   telefono?: boolean
+  telefonoCompleto?: boolean
   facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
+  diagnosticoResumen?: boolean
   leadScore?: boolean
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   estadoComercial?: boolean
   notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
@@ -788,17 +932,23 @@ export type LeadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   empleados?: boolean
   codigoPais?: boolean
   telefono?: boolean
+  telefonoCompleto?: boolean
   facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
+  diagnosticoResumen?: boolean
   leadScore?: boolean
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   estadoComercial?: boolean
   notasInternas?: boolean
 }, ExtArgs["result"]["lead"]>
@@ -812,46 +962,58 @@ export type LeadSelectScalar = {
   empleados?: boolean
   codigoPais?: boolean
   telefono?: boolean
+  telefonoCompleto?: boolean
   facturacionAnual?: boolean
   problema?: boolean
   objetivo?: boolean
   diagnostico?: boolean
+  diagnosticoResumen?: boolean
   leadScore?: boolean
   leadLevel?: boolean
   emailStatus?: boolean
   emailError?: boolean
   aceptaTerminos?: boolean
   fechaAceptacion?: boolean
+  humanVerified?: boolean
+  isUnlocked?: boolean
+  unlockedAt?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   estadoComercial?: boolean
   notasInternas?: boolean
 }
 
-export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "codigoPais" | "telefono" | "facturacionAnual" | "problema" | "objetivo" | "diagnostico" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "createdAt" | "estadoComercial" | "notasInternas", ExtArgs["result"]["lead"]>
+export type LeadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "empresa" | "email" | "rubro" | "empleados" | "codigoPais" | "telefono" | "telefonoCompleto" | "facturacionAnual" | "problema" | "objetivo" | "diagnostico" | "diagnosticoResumen" | "leadScore" | "leadLevel" | "emailStatus" | "emailError" | "aceptaTerminos" | "fechaAceptacion" | "humanVerified" | "isUnlocked" | "unlockedAt" | "createdAt" | "updatedAt" | "estadoComercial" | "notasInternas", ExtArgs["result"]["lead"]>
 
 export type $LeadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Lead"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    nombre: string
-    empresa: string
-    email: string
+    nombre: string | null
+    empresa: string | null
+    email: string | null
     rubro: string | null
     empleados: string | null
     codigoPais: string | null
     telefono: string | null
+    telefonoCompleto: string | null
     facturacionAnual: string | null
     problema: string
     objetivo: string
     diagnostico: string
+    diagnosticoResumen: string | null
     leadScore: number
     leadLevel: string
     emailStatus: string | null
     emailError: string | null
     aceptaTerminos: boolean
     fechaAceptacion: Date | null
+    humanVerified: boolean
+    isUnlocked: boolean
+    unlockedAt: Date | null
     createdAt: Date
+    updatedAt: Date
     estadoComercial: string
     notasInternas: string | null
   }, ExtArgs["result"]["lead"]>
@@ -1285,17 +1447,23 @@ export interface LeadFieldRefs {
   readonly empleados: Prisma.FieldRef<"Lead", 'String'>
   readonly codigoPais: Prisma.FieldRef<"Lead", 'String'>
   readonly telefono: Prisma.FieldRef<"Lead", 'String'>
+  readonly telefonoCompleto: Prisma.FieldRef<"Lead", 'String'>
   readonly facturacionAnual: Prisma.FieldRef<"Lead", 'String'>
   readonly problema: Prisma.FieldRef<"Lead", 'String'>
   readonly objetivo: Prisma.FieldRef<"Lead", 'String'>
   readonly diagnostico: Prisma.FieldRef<"Lead", 'String'>
+  readonly diagnosticoResumen: Prisma.FieldRef<"Lead", 'String'>
   readonly leadScore: Prisma.FieldRef<"Lead", 'Int'>
   readonly leadLevel: Prisma.FieldRef<"Lead", 'String'>
   readonly emailStatus: Prisma.FieldRef<"Lead", 'String'>
   readonly emailError: Prisma.FieldRef<"Lead", 'String'>
   readonly aceptaTerminos: Prisma.FieldRef<"Lead", 'Boolean'>
   readonly fechaAceptacion: Prisma.FieldRef<"Lead", 'DateTime'>
+  readonly humanVerified: Prisma.FieldRef<"Lead", 'Boolean'>
+  readonly isUnlocked: Prisma.FieldRef<"Lead", 'Boolean'>
+  readonly unlockedAt: Prisma.FieldRef<"Lead", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Lead", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Lead", 'DateTime'>
   readonly estadoComercial: Prisma.FieldRef<"Lead", 'String'>
   readonly notasInternas: Prisma.FieldRef<"Lead", 'String'>
 }

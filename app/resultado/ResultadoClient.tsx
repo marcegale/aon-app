@@ -1,23 +1,80 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import jsPDF from "jspdf";
 
+type LeadResultado = {
+  id: string;
+  diagnosticoResumen: string | null;
+  diagnostico: string | null;
+  isUnlocked: boolean;
+  nombre?: string | null;
+  email?: string | null;
+};
+
 export default function ResultadoClient() {
   const searchParams = useSearchParams();
-  const diagnostico = searchParams.get("data");
+  const id = searchParams.get("id");
+
+  const [lead, setLead] = useState<LeadResultado | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [unlockLoading, setUnlockLoading] = useState(false);
+  const [unlockError, setUnlockError] = useState("");
+
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).gtag) {
-      (window as any).gtag("event", "conversion", {
-        send_to: "AW-18044003641/5p8CN_zqZAcEInKhxpD",
-        value: 1.0,
-        currency: "USD",
+    if (!id) {
+      setError("Falta el ID del diagnóstico.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchLead = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await fetch(`/api/diagnostico?id=${encodeURIComponent(id)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("No se pudo cargar el diagnóstico.");
+        }
+
+        const data = await res.json();
+        setLead(data.lead);
+
+        if (data.lead?.nombre) setNombre(data.lead.nombre);
+        if (data.lead?.email) setEmail(data.lead.email);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error inesperado.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLead();
+  }, [id]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).gtag && lead?.id) {
+      (window as any).gtag("event", "view_resultado", {
+        lead_id: lead.id,
       });
     }
-  }, []);
+  }, [lead?.id]);
+
+  const diagnosticoCompleto = useMemo(() => {
+    return lead?.diagnostico || "No hay diagnóstico disponible.";
+  }, [lead?.diagnostico]);
 
   const descargarPDF = () => {
     const doc = new jsPDF();
@@ -40,7 +97,7 @@ export default function ResultadoClient() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
 
-    const texto = diagnostico || "No hay diagnóstico disponible.";
+    const texto = diagnosticoCompleto;
     const lineas = doc.splitTextToSize(texto, anchoTexto);
 
     for (const linea of lineas) {
@@ -75,6 +132,82 @@ export default function ResultadoClient() {
 
     doc.save("diagnostico.pdf");
   };
+
+  const handleUnlock = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!id) {
+      setUnlockError("Falta el ID del diagnóstico.");
+      return;
+    }
+
+    if (!nombre.trim() || !email.trim()) {
+      setUnlockError("Completa nombre y email.");
+      return;
+    }
+
+    try {
+      setUnlockLoading(true);
+      setUnlockError("");
+
+      const res = await fetch("/api/diagnostico/unlock", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          nombre: nombre.trim(),
+          email: email.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("No se pudo desbloquear el diagnóstico.");
+      }
+
+      const data = await res.json();
+      setLead(data.lead);
+
+      if (typeof window !== "undefined" && (window as any).gtag) {
+        (window as any).gtag("event", "unlock_diagnostico", {
+          lead_id: id,
+        });
+
+        (window as any).gtag("event", "conversion", {
+          send_to: "AW-18044003641/5p8CN_zqZAcEInKhxpD",
+          value: 1.0,
+          currency: "USD",
+        });
+      }
+    } catch (err) {
+      setUnlockError(err instanceof Error ? err.message : "Error inesperado.");
+    } finally {
+      setUnlockLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#00003C] text-[#FDF6CB]">
+        <section className="mx-auto max-w-6xl px-6 py-10 md:px-8 lg:py-16">
+          <div className="text-sm">Cargando resultado...</div>
+        </section>
+      </main>
+    );
+  }
+
+  if (error || !lead) {
+    return (
+      <main className="min-h-screen bg-[#00003C] text-[#FDF6CB]">
+        <section className="mx-auto max-w-6xl px-6 py-10 md:px-8 lg:py-16">
+          <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm">
+            {error || "No se encontró el diagnóstico."}
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#00003C]">
@@ -120,9 +253,95 @@ export default function ResultadoClient() {
           </div>
 
           <div className="mt-8 rounded-2xl border border-[#E2AB6D]/15 bg-white p-6 md:p-8">
+            <p className="mb-4 text-sm font-medium uppercase tracking-[0.14em] text-[#B07A45]">
+              Resumen ejecutivo
+            </p>
+
             <div className="whitespace-pre-wrap text-[15px] leading-8 text-[#1E2340]">
-              {diagnostico || "No hay diagnóstico disponible."}
+              {lead.diagnosticoResumen || "No hay resumen disponible."}
             </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-[#E2AB6D]/15 bg-white p-6 md:p-8">
+            <p className="mb-4 text-sm font-medium uppercase tracking-[0.14em] text-[#B07A45]">
+              Diagnóstico completo
+            </p>
+
+            {lead.isUnlocked ? (
+              <div className="whitespace-pre-wrap text-[15px] leading-8 text-[#1E2340]">
+                {lead.diagnostico || "No hay diagnóstico disponible."}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="relative overflow-hidden rounded-2xl border border-[#E2AB6D]/15">
+                  <div className="pointer-events-none select-none whitespace-pre-wrap p-6 text-[15px] leading-8 text-[#1E2340] blur-sm opacity-50">
+                    {lead.diagnostico || "No hay diagnóstico disponible."}
+                  </div>
+
+                  <div className="absolute inset-0 bg-white/35" />
+                </div>
+
+                <div className="rounded-2xl border border-[#E2AB6D]/15 bg-[#FDF6CB]/20 p-5">
+                  <h3 className="text-lg font-semibold text-[#00003C]">
+                    Desbloquea el diagnóstico completo
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[#4B4F6B]">
+                    Completa tus datos para acceder al análisis completo y continuar
+                    con la validación con nuestro equipo.
+                  </p>
+
+                  <form onSubmit={handleUnlock} className="mt-5 space-y-4">
+                    <div>
+                      <label
+                        htmlFor="nombre"
+                        className="mb-2 block text-sm font-medium text-[#00003C]"
+                      >
+                        Nombre
+                      </label>
+                      <input
+                        id="nombre"
+                        type="text"
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        className="w-full rounded-2xl border border-[#E2AB6D]/25 bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#B07A45]"
+                        placeholder="Tu nombre"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="mb-2 block text-sm font-medium text-[#00003C]"
+                      >
+                        Email
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full rounded-2xl border border-[#E2AB6D]/25 bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#B07A45]"
+                        placeholder="tu@email.com"
+                      />
+                    </div>
+
+                    {unlockError ? (
+                      <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-700">
+                        {unlockError}
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      disabled={unlockLoading}
+                      className="inline-flex w-full items-center justify-center rounded-2xl bg-[#00003C] px-6 py-3.5 text-sm font-semibold text-[#FDF6CB] transition hover:bg-[#0A0A52] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {unlockLoading ? "Desbloqueando..." : "Desbloquear diagnóstico"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 rounded-2xl border border-[#E2AB6D]/15 bg-[#FDF6CB]/20 p-4">
@@ -146,12 +365,14 @@ export default function ResultadoClient() {
               Validar diagnóstico con nuestro equipo
             </a>
 
-            <button
-              onClick={descargarPDF}
-              className="inline-flex w-full items-center justify-center rounded-2xl border border-[#00003C] px-6 py-3.5 text-sm font-semibold text-[#00003C] transition hover:bg-[#00003C] hover:text-[#FDF6CB] md:w-auto"
-            >
-              Descargar PDF
-            </button>
+            {lead.isUnlocked ? (
+              <button
+                onClick={descargarPDF}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-[#00003C] px-6 py-3.5 text-sm font-semibold text-[#00003C] transition hover:bg-[#00003C] hover:text-[#FDF6CB] md:w-auto"
+              >
+                Descargar PDF
+              </button>
+            ) : null}
           </div>
         </div>
 
