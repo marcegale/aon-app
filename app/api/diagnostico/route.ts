@@ -196,6 +196,13 @@ Devuelve exactamente con esta estructura:
 
     const lead = await prisma.lead.create({
       data: {
+        nombre: "Pendiente",
+        empresa: "Pendiente",
+        email: "pendiente@alwayson.local",
+        codigoPais: "+595",
+        telefono: "000000000",
+        telefonoCompleto: "+595000000000",
+
         rubro: rubro || null,
         empleados: empleados || null,
         facturacionAnual: facturacionAnual || null,
