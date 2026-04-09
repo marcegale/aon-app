@@ -175,9 +175,9 @@ export default function DiagnosticoPage() {
 
   return (
     <main className="min-h-screen bg-[#00003C]">
-      <section className="mx-auto max-w-7xl px-6 py-10 md:px-8 lg:py-16">
-        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
-          <div className="flex flex-col justify-center text-[#FDF6CB] lg:min-h-[720px]">
+      <section className="mx-auto max-w-7xl px-5 py-6 md:px-6 lg:py-8">
+        <div className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
+          <div className="flex flex-col justify-center text-[#FDF6CB] lg:min-h-[calc(100vh-90px)]">
             <div className="mb-6">
               <Image
                 src="/logo-aon.png"
@@ -202,7 +202,7 @@ export default function DiagnosticoPage() {
               inicial con foco en estructura, gestión y oportunidades de mejora.
             </p>
 
-            <div className="mt-8 space-y-4">
+            <div className="mt-6 space-y-3">
               <InfoCard
                 title="Form rápido"
                 text="Solo pedimos la información mínima necesaria para generar el diagnóstico."
@@ -218,7 +218,7 @@ export default function DiagnosticoPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-6 shadow-2xl shadow-black/20 md:p-8">
+          <div className="rounded-[28px] border border-[#E2AB6D]/25 bg-[#FFFDF7] p-5 shadow-2xl shadow-black/20 md:p-6">
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-[#00003C]">
                 Completá tu evaluación inicial
@@ -228,8 +228,8 @@ export default function DiagnosticoPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
                 <FormSelect
                   label="Cantidad de empleados"
                   name="empleados"
@@ -269,7 +269,7 @@ export default function DiagnosticoPage() {
                 name="problema"
                 value={formData.problema}
                 onChange={handleChange}
-                rows={5}
+                rows={4}
                 required
                 disabled={loading}
               />
@@ -279,7 +279,7 @@ export default function DiagnosticoPage() {
                 name="objetivo"
                 value={formData.objetivo}
                 onChange={handleChange}
-                rows={5}
+                rows={4}
                 required
                 disabled={loading}
               />
@@ -344,7 +344,7 @@ export default function DiagnosticoPage() {
               </button>
 
               {loading && (
-                <div className="rounded-2xl border border-[#E2AB6D]/15 bg-[#F7F1DE] p-5 text-center">
+                <div className="rounded-2xl border border-[#E2AB6D]/15 bg-[#F7F1DE] p-4 text-center">
                   <div className="mb-3 font-semibold text-[#00003C]">
                     AON está trabajando en tu diagnóstico...
                   </div>
@@ -373,7 +373,7 @@ export default function DiagnosticoPage() {
 
 function InfoCard({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
       <p className="font-medium text-[#FDF6CB]">{title}</p>
       <p className="mt-1 text-sm leading-6 text-[#FDF6CB]/70">{text}</p>
     </div>
@@ -460,7 +460,7 @@ function FormTextarea({
         rows={rows}
         required={required}
         disabled={disabled}
-        className="min-h-[130px] w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
+        className="min-h-[96px] w-full rounded-2xl border border-[#D8D3C4] bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition placeholder:text-[#8A8DA8] focus:border-[#E2AB6D] focus:ring-2 focus:ring-[#E2AB6D]/20 disabled:cursor-not-allowed disabled:opacity-70"
       />
     </div>
   );
