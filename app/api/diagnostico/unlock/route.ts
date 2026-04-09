@@ -24,7 +24,14 @@ export async function PATCH(request: Request) {
         { status: 404 }
       );
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Email inválido." },
+        { status: 400 }
+      );
+    }
     const lead = await prisma.lead.update({
       where: { id },
       data: {

@@ -142,9 +142,16 @@ export default function ResultadoClient() {
     }
 
     if (!nombre.trim() || !email.trim()) {
-      setUnlockError("Completa nombre y email.");
-      return;
-    }
+  setUnlockError("Completa nombre y email.");
+  return;
+}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailRegex.test(email)) {
+  setUnlockError("Ingresa un email válido.");
+  return;
+}
 
     try {
       setUnlockLoading(true);
@@ -323,6 +330,7 @@ export default function ResultadoClient() {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-2xl border border-[#E2AB6D]/25 bg-white px-4 py-3 text-sm text-[#00003C] outline-none transition focus:border-[#B07A45]"
             placeholder="tu@email.com"
+            required
           />
         </div>
 
