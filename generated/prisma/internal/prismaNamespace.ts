@@ -384,7 +384,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  Lead: 'Lead'
+  Lead: 'Lead',
+  rrhh_processes: 'rrhh_processes'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -400,7 +401,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "lead"
+    modelProps: "lead" | "rrhh_processes"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -478,6 +479,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    rrhh_processes: {
+      payload: Prisma.$rrhh_processesPayload<ExtArgs>
+      fields: Prisma.rrhh_processesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.rrhh_processesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.rrhh_processesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        findFirst: {
+          args: Prisma.rrhh_processesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.rrhh_processesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        findMany: {
+          args: Prisma.rrhh_processesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>[]
+        }
+        create: {
+          args: Prisma.rrhh_processesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        createMany: {
+          args: Prisma.rrhh_processesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.rrhh_processesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>[]
+        }
+        delete: {
+          args: Prisma.rrhh_processesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        update: {
+          args: Prisma.rrhh_processesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        deleteMany: {
+          args: Prisma.rrhh_processesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.rrhh_processesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.rrhh_processesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>[]
+        }
+        upsert: {
+          args: Prisma.rrhh_processesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rrhh_processesPayload>
+        }
+        aggregate: {
+          args: Prisma.Rrhh_processesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRrhh_processes>
+        }
+        groupBy: {
+          args: Prisma.rrhh_processesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Rrhh_processesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.rrhh_processesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Rrhh_processesCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -550,12 +625,40 @@ export const LeadScalarFieldEnum = {
 export type LeadScalarFieldEnum = (typeof LeadScalarFieldEnum)[keyof typeof LeadScalarFieldEnum]
 
 
+export const Rrhh_processesScalarFieldEnum = {
+  id: 'id',
+  tenant_id: 'tenant_id',
+  user_id: 'user_id',
+  input: 'input',
+  output: 'output',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Rrhh_processesScalarFieldEnum = (typeof Rrhh_processesScalarFieldEnum)[keyof typeof Rrhh_processesScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -572,6 +675,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -626,6 +738,20 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -738,6 +864,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   lead?: Prisma.LeadOmit
+  rrhh_processes?: Prisma.rrhh_processesOmit
 }
 
 /* Types for Logging */

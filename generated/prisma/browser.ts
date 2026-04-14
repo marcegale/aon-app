@@ -22,3 +22,8 @@ export * from './enums';
  * 
  */
 export type Lead = Prisma.LeadModel
+/**
+ * Model rrhh_processes
+ * 
+ */
+export type rrhh_processes = Prisma.rrhh_processesModel

@@ -36,3 +36,13 @@ model Lead {
   estadoComercial    String    @default("Nuevo")
   notasInternas      String?
 }
+
+model rrhh_processes {
+  id         String   @id
+  tenant_id  String
+  user_id    String
+  input      Json
+  output     Json?
+  created_at DateTime
+  updated_at DateTime
+}
