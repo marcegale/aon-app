@@ -51,3 +51,18 @@ export type Lead = Prisma.LeadModel
  * 
  */
 export type rrhh_processes = Prisma.rrhh_processesModel
+/**
+ * Model Tenant
+ * 
+ */
+export type Tenant = Prisma.TenantModel
+/**
+ * Model TenantDocument
+ * 
+ */
+export type TenantDocument = Prisma.TenantDocumentModel
+/**
+ * Model TenantAnalysis
+ * 
+ */
+export type TenantAnalysis = Prisma.TenantAnalysisModel

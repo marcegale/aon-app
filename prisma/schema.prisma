@@ -46,3 +46,53 @@ model rrhh_processes {
   created_at DateTime
   updated_at DateTime
 }
+
+model Tenant {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents TenantDocument[]
+  analyses  TenantAnalysis[]
+}
+
+model TenantDocument {
+  id          String   @id @default(cuid())
+  tenantId    String
+    tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category    String
+  title       String
+  description String
+  status      String
+  source      String
+  fileUrl     String?
+  fileName    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@map("tenant_documents")
+}
+
+model TenantAnalysis {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mode          String
+  summary       String
+  risks         String[]
+  opportunities String[]
+  priority      String?
+  globalScore   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("tenant_analyses")
+  rawData Json?
+}

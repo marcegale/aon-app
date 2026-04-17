@@ -385,7 +385,10 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   Lead: 'Lead',
-  rrhh_processes: 'rrhh_processes'
+  rrhh_processes: 'rrhh_processes',
+  Tenant: 'Tenant',
+  TenantDocument: 'TenantDocument',
+  TenantAnalysis: 'TenantAnalysis'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -401,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "lead" | "rrhh_processes"
+    modelProps: "lead" | "rrhh_processes" | "tenant" | "tenantDocument" | "tenantAnalysis"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -553,6 +556,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Tenant: {
+      payload: Prisma.$TenantPayload<ExtArgs>
+      fields: Prisma.TenantFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TenantFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TenantFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        findFirst: {
+          args: Prisma.TenantFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TenantFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        findMany: {
+          args: Prisma.TenantFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>[]
+        }
+        create: {
+          args: Prisma.TenantCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        createMany: {
+          args: Prisma.TenantCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TenantCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>[]
+        }
+        delete: {
+          args: Prisma.TenantDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        update: {
+          args: Prisma.TenantUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        deleteMany: {
+          args: Prisma.TenantDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TenantUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TenantUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>[]
+        }
+        upsert: {
+          args: Prisma.TenantUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantPayload>
+        }
+        aggregate: {
+          args: Prisma.TenantAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTenant>
+        }
+        groupBy: {
+          args: Prisma.TenantGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TenantCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantCountAggregateOutputType> | number
+        }
+      }
+    }
+    TenantDocument: {
+      payload: Prisma.$TenantDocumentPayload<ExtArgs>
+      fields: Prisma.TenantDocumentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TenantDocumentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TenantDocumentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        findFirst: {
+          args: Prisma.TenantDocumentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TenantDocumentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        findMany: {
+          args: Prisma.TenantDocumentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>[]
+        }
+        create: {
+          args: Prisma.TenantDocumentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        createMany: {
+          args: Prisma.TenantDocumentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TenantDocumentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>[]
+        }
+        delete: {
+          args: Prisma.TenantDocumentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        update: {
+          args: Prisma.TenantDocumentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        deleteMany: {
+          args: Prisma.TenantDocumentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TenantDocumentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TenantDocumentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>[]
+        }
+        upsert: {
+          args: Prisma.TenantDocumentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantDocumentPayload>
+        }
+        aggregate: {
+          args: Prisma.TenantDocumentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTenantDocument>
+        }
+        groupBy: {
+          args: Prisma.TenantDocumentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantDocumentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TenantDocumentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantDocumentCountAggregateOutputType> | number
+        }
+      }
+    }
+    TenantAnalysis: {
+      payload: Prisma.$TenantAnalysisPayload<ExtArgs>
+      fields: Prisma.TenantAnalysisFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TenantAnalysisFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TenantAnalysisFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        findFirst: {
+          args: Prisma.TenantAnalysisFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TenantAnalysisFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        findMany: {
+          args: Prisma.TenantAnalysisFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>[]
+        }
+        create: {
+          args: Prisma.TenantAnalysisCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        createMany: {
+          args: Prisma.TenantAnalysisCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TenantAnalysisCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>[]
+        }
+        delete: {
+          args: Prisma.TenantAnalysisDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        update: {
+          args: Prisma.TenantAnalysisUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        deleteMany: {
+          args: Prisma.TenantAnalysisDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TenantAnalysisUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TenantAnalysisUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>[]
+        }
+        upsert: {
+          args: Prisma.TenantAnalysisUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TenantAnalysisPayload>
+        }
+        aggregate: {
+          args: Prisma.TenantAnalysisAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTenantAnalysis>
+        }
+        groupBy: {
+          args: Prisma.TenantAnalysisGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantAnalysisGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TenantAnalysisCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantAnalysisCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -636,6 +861,52 @@ export const Rrhh_processesScalarFieldEnum = {
 } as const
 
 export type Rrhh_processesScalarFieldEnum = (typeof Rrhh_processesScalarFieldEnum)[keyof typeof Rrhh_processesScalarFieldEnum]
+
+
+export const TenantScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TenantScalarFieldEnum = (typeof TenantScalarFieldEnum)[keyof typeof TenantScalarFieldEnum]
+
+
+export const TenantDocumentScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  category: 'category',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  source: 'source',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TenantDocumentScalarFieldEnum = (typeof TenantDocumentScalarFieldEnum)[keyof typeof TenantDocumentScalarFieldEnum]
+
+
+export const TenantAnalysisScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  mode: 'mode',
+  summary: 'summary',
+  risks: 'risks',
+  opportunities: 'opportunities',
+  priority: 'priority',
+  globalScore: 'globalScore',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  rawData: 'rawData'
+} as const
+
+export type TenantAnalysisScalarFieldEnum = (typeof TenantAnalysisScalarFieldEnum)[keyof typeof TenantAnalysisScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -865,6 +1136,9 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   lead?: Prisma.LeadOmit
   rrhh_processes?: Prisma.rrhh_processesOmit
+  tenant?: Prisma.TenantOmit
+  tenantDocument?: Prisma.TenantDocumentOmit
+  tenantAnalysis?: Prisma.TenantAnalysisOmit
 }
 
 /* Types for Logging */

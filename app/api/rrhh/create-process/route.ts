@@ -238,7 +238,9 @@ export async function POST(request: Request) {
     };
 
     // 1) Guardar input (mock DB).
+    console.log("ANTES DE CREATE");
     const processRecord = await createRecruitmentProcess(input);
+    console.log("DESPUES DE CREATE");
 
     const openai = getOpenAIClient();
     const prompt = buildPrompt(input);

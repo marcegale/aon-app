@@ -10,4 +10,7 @@
  */
 export type * from './models/Lead'
 export type * from './models/rrhh_processes'
+export type * from './models/Tenant'
+export type * from './models/TenantDocument'
+export type * from './models/TenantAnalysis'
 export type * from './commonInputTypes'

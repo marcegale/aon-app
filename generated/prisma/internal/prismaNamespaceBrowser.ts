@@ -52,7 +52,10 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   Lead: 'Lead',
-  rrhh_processes: 'rrhh_processes'
+  rrhh_processes: 'rrhh_processes',
+  Tenant: 'Tenant',
+  TenantDocument: 'TenantDocument',
+  TenantAnalysis: 'TenantAnalysis'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -115,6 +118,52 @@ export const Rrhh_processesScalarFieldEnum = {
 } as const
 
 export type Rrhh_processesScalarFieldEnum = (typeof Rrhh_processesScalarFieldEnum)[keyof typeof Rrhh_processesScalarFieldEnum]
+
+
+export const TenantScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TenantScalarFieldEnum = (typeof TenantScalarFieldEnum)[keyof typeof TenantScalarFieldEnum]
+
+
+export const TenantDocumentScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  category: 'category',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  source: 'source',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TenantDocumentScalarFieldEnum = (typeof TenantDocumentScalarFieldEnum)[keyof typeof TenantDocumentScalarFieldEnum]
+
+
+export const TenantAnalysisScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  mode: 'mode',
+  summary: 'summary',
+  risks: 'risks',
+  opportunities: 'opportunities',
+  priority: 'priority',
+  globalScore: 'globalScore',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  rawData: 'rawData'
+} as const
+
+export type TenantAnalysisScalarFieldEnum = (typeof TenantAnalysisScalarFieldEnum)[keyof typeof TenantAnalysisScalarFieldEnum]
 
 
 export const SortOrder = {
