@@ -4,9 +4,9 @@ export type TenantAuth = {
 };
 
 export const TENANT_CREDENTIALS: Record<string, TenantAuth> = {
-  acme: {
-    username: "admin_acme",
-    password: "1234",
+  sandwichero: {
+    username: "admin_sandwichero",
+    password: "$$elsandwichero.123$$",
   },
   nova: {
     username: "admin_nova",
