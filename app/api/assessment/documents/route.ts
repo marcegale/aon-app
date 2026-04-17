@@ -3,7 +3,7 @@ import { upsertTenantDocumentByCategory } from "@/app/lib/tenant-documents-store
 type UpsertTenantDocumentInput = Parameters<
   typeof upsertTenantDocumentByCategory
 >[0];
-import { supabaseServer } from "@/app/lib/supabase-server";
+
 import { prisma } from "@/app/lib/prisma";
 
 function buildStoragePath(params: {
@@ -150,6 +150,7 @@ export async function POST(request: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const fileBuffer = Buffer.from(arrayBuffer);
 
+      const { supabaseServer } = await import("@/app/lib/supabase-server");
       const { error: uploadError } = await supabaseServer.storage
         .from("tenant-documents")
         .upload(storagePath, fileBuffer, {
