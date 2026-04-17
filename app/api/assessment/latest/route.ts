@@ -49,6 +49,9 @@ export async function GET(req: Request) {
       {
         error: "Error obteniendo assessment",
         detail: error?.message || "unknown",
+        code: error?.code || null,
+        meta: error?.meta || null,
+        stack: error?.stack || null,
       },
       { status: 500 }
     );
