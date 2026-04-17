@@ -6,7 +6,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const tenantSlug = searchParams.get("tenantSlug");
 
-    if (!tenantSlug) {
+    const cleanSlug =
+      typeof tenantSlug === "string" && tenantSlug.trim().length > 0
+        ? tenantSlug.trim().toLowerCase()
+        : null;
+
+    if (!cleanSlug) {
       return NextResponse.json(
         { error: "tenantSlug requerido" },
         { status: 400 }
@@ -14,7 +19,7 @@ export async function GET(req: Request) {
     }
 
     const tenant = await prisma.tenant.findUnique({
-      where: { slug: tenantSlug },
+      where: { slug: cleanSlug },
     });
 
     if (!tenant) {
