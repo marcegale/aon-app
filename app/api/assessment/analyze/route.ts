@@ -60,37 +60,37 @@ export async function POST(req: Request) {
         : "Optimizar áreas con mayor rendimiento";
 
     const scoreValue =
-  typeof globalScore?.percentage === "number"
-    ? Math.round(globalScore.percentage)
-    : 0;
+      typeof globalScore?.percentage === "number"
+        ? Math.round(globalScore.percentage)
+        : 0;
 
-const executiveDiagnosis =
-  scoreValue >= 80
-    ? "La organización presenta una base operativa relativamente sólida, aunque todavía existen oportunidades puntuales para reforzar consistencia, estandarización y capacidad de escala."
-    : scoreValue >= 60
-    ? "La organización muestra capacidades funcionales relevantes, pero con brechas que limitan control, previsibilidad y eficiencia transversal."
-    : "La organización presenta fragilidades estructurales que afectan ejecución, control y capacidad de crecimiento sostenido.";
+    const executiveDiagnosis =
+      scoreValue >= 80
+        ? "La organización presenta una base operativa relativamente sólida, aunque todavía existen oportunidades puntuales para reforzar consistencia, estandarización y capacidad de escala."
+        : scoreValue >= 60
+        ? "La organización muestra capacidades funcionales relevantes, pero con brechas que limitan control, previsibilidad y eficiencia transversal."
+        : "La organización presenta fragilidades estructurales que afectan ejecución, control y capacidad de crecimiento sostenido.";
 
-const strategicImplication =
-  risks.length > 0
-    ? `La principal implicancia estratégica es que la debilidad en ${weakest} puede comprometer no solo la operación diaria, sino también la capacidad de escalar con orden, sostener márgenes y profesionalizar la toma de decisiones.`
-    : "No se observan brechas críticas inmediatas, pero sí margen para fortalecer estructura, trazabilidad y disciplina operativa.";
+    const strategicImplication =
+      risks.length > 0
+        ? `La principal implicancia estratégica es que la debilidad en ${weakest} puede comprometer no solo la operación diaria, sino también la capacidad de escalar con orden, sostener márgenes y profesionalizar la toma de decisiones.`
+        : "No se observan brechas críticas inmediatas, pero sí margen para fortalecer estructura, trazabilidad y disciplina operativa.";
 
-const recommendedActions =
-  risks.length > 0
-    ? [
-        `Definir un plan de intervención específico sobre ${weakest}.`,
-        "Asignar responsable directo, plazo y criterio de éxito por frente crítico.",
-        "Estandarizar seguimiento con indicadores periódicos y revisión ejecutiva.",
-        strongest
-          ? `Usar ${strongest} como capacidad de apoyo para acelerar mejoras.`
-          : "Apoyarse en las áreas más estables para sostener la transición.",
-      ]
-    : [
-        "Consolidar buenas prácticas actuales.",
-        "Formalizar métricas y rutinas de seguimiento.",
-        "Priorizar mejoras incrementales sobre eficiencia y escalabilidad.",
-      ];
+    const recommendedActions =
+      risks.length > 0
+        ? [
+            `Definir un plan de intervención específico sobre ${weakest}.`,
+            "Asignar responsable directo, plazo y criterio de éxito por frente crítico.",
+            "Estandarizar seguimiento con indicadores periódicos y revisión ejecutiva.",
+            strongest
+              ? `Usar ${strongest} como capacidad de apoyo para acelerar mejoras.`
+              : "Apoyarse en las áreas más estables para sostener la transición.",
+          ]
+        : [
+            "Consolidar buenas prácticas actuales.",
+            "Formalizar métricas y rutinas de seguimiento.",
+            "Priorizar mejoras incrementales sobre eficiencia y escalabilidad.",
+          ];
 
     return NextResponse.json({
       ok: true,
@@ -106,7 +106,6 @@ const recommendedActions =
         recommendedActions,
       },
     });
-
   } catch (error) {
     console.error("ANALYZE ERROR:", error);
 
