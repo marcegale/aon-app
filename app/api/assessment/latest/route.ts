@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenant.findFirst({
       where: { slug: cleanSlug },
     });
 
