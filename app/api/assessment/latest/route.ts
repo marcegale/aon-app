@@ -42,11 +42,14 @@ export async function GET(req: Request) {
       ok: true,
       data: latest,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("ERROR GET LATEST ASSESSMENT:", error);
 
     return NextResponse.json(
-      { error: "Error obteniendo assessment" },
+      {
+        error: "Error obteniendo assessment",
+        detail: error?.message || "unknown",
+      },
       { status: 500 }
     );
   }
