@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { prisma } from "@/app/lib/prisma";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 type BlockScoreInput = {
   blockId: string;
@@ -86,6 +81,12 @@ Reglas:
 
     const model = mode === "premium" ? "gpt-4.1" : "gpt-4.1-mini";
 
+    const OpenAI = (await import("openai")).default;
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    
     const completion = await openai.chat.completions.create({
       model,
       temperature: 0.3,
