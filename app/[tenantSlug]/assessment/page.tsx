@@ -77,7 +77,7 @@ const [focusHelpOpen, setFocusHelpOpen] = useState(false);
 const [focusHelpLoading, setFocusHelpLoading] = useState(false);
 const [focusHelpText, setFocusHelpText] = useState("");
 const [focusHelpQuestion, setFocusHelpQuestion] = useState("");
-
+const [hasLoadedInitialAssessment, setHasLoadedInitialAssessment] = useState(false);
 
 if (!tenantSlugValue) {
   return (
@@ -321,11 +321,13 @@ useEffect(() => {
 
       const data = await res.json();
 
-      if (!data?.ok || !data?.data?.rawData?.blockAnswers) return;
-
-      setBlockAnswers(data.data.rawData.blockAnswers);
+      if (data?.ok && data?.data?.rawData?.blockAnswers) {
+        setBlockAnswers(data.data.rawData.blockAnswers);
+      }
     } catch (error) {
       console.error("Error cargando assessment previo:", error);
+    } finally {
+      setHasLoadedInitialAssessment(true);
     }
   };
 
@@ -334,6 +336,7 @@ useEffect(() => {
 
 useEffect(() => {
   if (!tenantSlugValue) return;
+  if (!hasLoadedInitialAssessment) return;
   if (!blockAnswers || blockAnswers.length === 0) return;
 
   const timeout = setTimeout(async () => {
@@ -371,6 +374,7 @@ useEffect(() => {
   weakestBlocks,
   aiAnalysis,
   analysisMode,
+  hasLoadedInitialAssessment
 ]);
 
 const handleDownloadPdf = () => {
