@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useRef, useEffect, useMemo, useState } from "react";
 
 type ParsedInvoiceItem = {
   descripcion: string;
@@ -342,12 +342,14 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
 
   type FileItem = {
     file: File;
+    previewUrl: string;
     status: "pending" | "processing" | "done" | "error";
     result?: string;
     parsed?: ParsedInvoice | null;
     originalParsed?: ParsedInvoice | null;
     isEditing?: boolean;
     isSelected?: boolean;
+    isValidated?: boolean;
   };
 
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -355,6 +357,23 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   const [result, setResult] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const reviewPreviewRef = useRef<HTMLDivElement | null>(null);
+  const reviewImageRef = useRef<HTMLImageElement | null>(null);
+
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewIndex, setReviewIndex] = useState<number | null>(null);
+  const [reviewZoom, setReviewZoom] = useState(1);
+  const [reviewRotation, setReviewRotation] = useState(0);
+  const [lensState, setLensState] = useState<{
+    containerX: number;
+    containerY: number;
+    imageX: number;
+    imageY: number;
+    baseLeft: number;
+    baseTop: number;
+    baseWidth: number;
+    baseHeight: number;
+  } | null>(null);
 
   const totalFilesLabel = useMemo(() => {
     if (files.length === 0) return "Ningún archivo cargado";
@@ -394,6 +413,27 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   const endIndex = startIndex + pageSize;
   const paginatedFiles = files.slice(startIndex, endIndex);
 
+  const currentReviewItem =
+    reviewIndex !== null ? files[reviewIndex] ?? null : null;
+
+  const currentReviewValidation = currentReviewItem?.parsed
+    ? validateInvoice(currentReviewItem.parsed)
+    : null;
+
+  const validatedCount = files.filter((item) => item.isValidated).length;
+  const reviewableCount = files.filter(
+    (item) => item.status === "done" && item.parsed
+  ).length;
+
+  const previousReviewIndex =
+    reviewIndex !== null ? getPreviousReviewableIndex(files, reviewIndex - 1) : null;
+
+  const nextReviewIndex =
+    reviewIndex !== null ? getNextReviewableIndex(files, reviewIndex + 1) : null;
+
+  const canExportValidatedBatch =
+  reviewableCount > 0 && validatedCount === reviewableCount;
+
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
@@ -416,16 +456,207 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files || []).map((file) => ({
       file,
+      previewUrl: URL.createObjectURL(file),
       status: "pending" as const,
       isSelected: true,
+      isValidated: false,
     }));
 
-        setFiles(selectedFiles);
-        setPage(1);
+    setFiles(selectedFiles);
+    setPage(1);
+    setIsReviewOpen(false);
+    setReviewIndex(null);
   }
+
+  function getNextReviewableIndex(items: FileItem[], startAt = 0) {
+    for (let i = startAt; i < items.length; i++) {
+      if (items[i].status === "done" && items[i].parsed && !items[i].isValidated) {
+        return i;
+      }
+    }
+
+    return null;
+  }
+
+  function openReviewFlow(items: FileItem[]) {
+    const nextIndex = getNextReviewableIndex(items, 0);
+
+    if (nextIndex === null) {
+      setIsReviewOpen(false);
+      setReviewIndex(null);
+      return;
+    }
+
+    setReviewZoom(1);
+    setReviewRotation(0);
+    setReviewIndex(nextIndex);
+    setIsReviewOpen(true);
+  }
+
+  function handleValidateCurrentInvoice() {
+    if (reviewIndex === null) return;
+
+    let nextIndexToOpen: number | null = null;
+
+    setFiles((prev) => {
+      const updated = prev.map((item, idx) => {
+        if (idx !== reviewIndex) return item;
+        if (!item.parsed) return item;
+
+        return {
+          ...item,
+          isValidated: true,
+          parsed: {
+            ...item.parsed,
+            numeroFactura: {
+              establecimiento:
+                item.parsed.numeroFactura?.establecimiento?.trim() ?? "",
+              puntoExpedicion:
+                item.parsed.numeroFactura?.puntoExpedicion?.trim() ?? "",
+              numero: item.parsed.numeroFactura?.numero?.trim() ?? "",
+            },
+          },
+          originalParsed: item.parsed,
+          isEditing: false,
+        };
+      });
+
+      const nextPendingIndex = getNextReviewableIndex(updated, reviewIndex + 1);
+      const lastPendingIndex = getLastPendingReviewIndex(updated);
+
+      if (nextPendingIndex !== null) {
+        nextIndexToOpen = nextPendingIndex;
+      } else if (lastPendingIndex !== null) {
+        nextIndexToOpen = lastPendingIndex;
+      }
+
+      return updated;
+    });
+
+    setTimeout(() => {
+      if (nextIndexToOpen !== null) {
+        setReviewIndex(nextIndexToOpen);
+        setReviewZoom(1);
+        setReviewRotation(0);
+        setLensState(null);
+        return;
+      }
+
+      handleFinishReviewFlow();
+    }, 0);
+  }
+
+  function getPreviousReviewableIndex(items: FileItem[], startAt: number) {
+    for (let i = startAt; i >= 0; i--) {
+      if (items[i].status === "done" && items[i].parsed) {
+        return i;
+      }
+    }
+
+    return null;
+  }
+
+  function getLastPendingReviewIndex(items: FileItem[]) {
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (items[i].status === "done" && items[i].parsed && !items[i].isValidated) {
+      return i;
+    }
+  }
+
+  return null;
+}
+
+  function handleGoToPreviousReview() {
+    if (reviewIndex === null) return;
+
+    const previousIndex = getPreviousReviewableIndex(files, reviewIndex - 1);
+
+    if (previousIndex === null) return;
+
+    setReviewIndex(previousIndex);
+    setReviewZoom(1);
+    setReviewRotation(0);
+    setLensState(null);
+  }
+
+  function handleGoToNextReview() {
+    if (reviewIndex === null) return;
+
+    const nextIndex = getNextReviewableIndex(files, reviewIndex + 1);
+
+    if (nextIndex === null) return;
+
+    setReviewIndex(nextIndex);
+    setReviewZoom(1);
+    setReviewRotation(0);
+    setLensState(null);
+  }      
+
+  function handleMouseMoveLens(e: React.MouseEvent<HTMLDivElement>) {
+  const container = reviewPreviewRef.current;
+  const img = reviewImageRef.current;
+
+  if (!container || !img) {
+      setLensState(null);
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+
+    const containerX = e.clientX - containerRect.left;
+    const containerY = e.clientY - containerRect.top;
+
+    const baseWidth = img.offsetWidth;
+    const baseHeight = img.offsetHeight;
+
+    const baseLeft = (container.clientWidth - baseWidth) / 2;
+    const baseTop = (container.clientHeight - baseHeight) / 2;
+
+    const centerX = baseLeft + baseWidth / 2;
+    const centerY = baseTop + baseHeight / 2;
+
+    const dx = (containerX - centerX) / reviewZoom;
+    const dy = (containerY - centerY) / reviewZoom;
+
+    const angle = (-reviewRotation * Math.PI) / 180;
+    const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
+    const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
+
+    const imageX = rotatedX + baseWidth / 2;
+    const imageY = rotatedY + baseHeight / 2;
+
+    const isInsideImage =
+      imageX >= 0 &&
+      imageX <= baseWidth &&
+      imageY >= 0 &&
+      imageY <= baseHeight;
+
+    if (!isInsideImage) {
+      setLensState(null);
+      return;
+    }
+
+    setLensState({
+      containerX,
+      containerY,
+      imageX,
+      imageY,
+      baseLeft,
+      baseTop,
+      baseWidth,
+      baseHeight,
+    });
+  }
+
+  function handleMouseLeaveLens() {
+    setLensState(null);
+  }
+
 
 async function handleProcess() {
   if (files.length === 0) return;
+
+  setLoading(true);
 
   for (let i = 0; i < files.length; i++) {
     setFiles((prev) =>
@@ -444,24 +675,24 @@ async function handleProcess() {
       });
 
       const data = await res.json();
+      const parsed = parseResult(data.raw);
 
-    setFiles((prev) =>
-      prev.map((f, idx) => {
-        if (idx !== i) return f;
+      setFiles((prev) =>
+        prev.map((f, idx) => {
+          if (idx !== i) return f;
 
-        const parsed = parseResult(data.raw);
-
-      return {
-        ...f,
-        status: "done",
-        result: data.raw,
-        parsed,
-        originalParsed: parsed,
-        isEditing: false,
-        isSelected: f.isSelected ?? true,
-      };
-      })
-    );
+          return {
+            ...f,
+            status: "done",
+            result: data.raw,
+            parsed,
+            originalParsed: parsed,
+            isEditing: false,
+            isSelected: f.isSelected ?? true,
+            isValidated: false,
+          };
+        })
+      );
     } catch (error) {
       setFiles((prev) =>
         prev.map((f, idx) =>
@@ -470,6 +701,15 @@ async function handleProcess() {
       );
     }
   }
+
+  setLoading(false);
+
+  openReviewFlow(
+    files.map((item) => ({
+      ...item,
+      isValidated: item.isValidated ?? false,
+    }))
+  );
 }
 
 function handleEdit(index: number) {
@@ -508,6 +748,22 @@ function handleSaveEdit(index: number) {
   );
 }
 
+function handleCloseReview() {
+  setIsReviewOpen(false);
+  setReviewIndex(null);
+  setReviewZoom(1);
+  setReviewRotation(0);
+  setLensState(null);
+}
+
+function handleFinishReviewFlow() {
+  setIsReviewOpen(false);
+  setReviewIndex(null);
+  setReviewZoom(1);
+  setReviewRotation(0);
+  setLensState(null);
+}
+
 function handleExportJSON(index: number) {
   const item = files[index];
   if (!item?.parsed) return;
@@ -526,10 +782,16 @@ function handleExportCSV(index: number) {
 
 function handleExportBatch() {
   const selected = files.filter(
-    (f) => f.isSelected && f.parsed
+    (f) => f.isSelected && f.parsed && f.isValidated
   );
 
   if (selected.length === 0) return;
+
+  const unvalidatedSelectedCount = files.filter(
+    (f) => f.isSelected && f.parsed && !f.isValidated
+  ).length;
+
+  if (unvalidatedSelectedCount > 0) return;
 
   const rows = selected.flatMap((item, fileIndex) => {
     const data = item.parsed!;
@@ -588,6 +850,33 @@ function handleParsedFieldChange(
         parsed: {
           ...item.parsed,
           [field]: value,
+        },
+      };
+    })
+  );
+}
+
+function handleInvoiceNumberChange(
+  fileIndex: number,
+  field: "establecimiento" | "puntoExpedicion" | "numero",
+  value: string
+) {
+  setFiles((prev) =>
+    prev.map((item, idx) => {
+      if (idx !== fileIndex || !item.parsed) return item;
+
+      return {
+        ...item,
+        parsed: {
+          ...item.parsed,
+          numeroFactura: {
+            establecimiento:
+              item.parsed.numeroFactura?.establecimiento ?? "",
+            puntoExpedicion:
+              item.parsed.numeroFactura?.puntoExpedicion ?? "",
+            numero: item.parsed.numeroFactura?.numero ?? "",
+            [field]: value,
+          },
         },
       };
     })
@@ -727,26 +1016,49 @@ function handleParsedItemChange(
                 <button
                   type="button"
                   onClick={handleExportBatch}
-                  disabled={!canExportBatch}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  canExportBatch
-                    ? "border border-[#C9A24D]/25 bg-[#C9A24D]/10 text-[#E7C980] hover:bg-[#C9A24D]/15"
-                    : "border border-red-500/20 bg-red-500/10 text-red-300 cursor-not-allowed opacity-60"
-                }`}
+                  disabled={!canExportValidatedBatch}
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Exportar lote completo
+                  Exportar lote CSV
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleProcess}
-                disabled={files.length === 0 || loading}
-                className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {loading ? "Procesando..." : "Procesar"}
-              </button>
+              <div className="flex items-center gap-3">
+                {reviewableCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => openReviewFlow(files)}
+                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
+                  >
+                    Revisar lote
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleProcess}
+                  disabled={files.length === 0 || loading}
+                  className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {loading ? "Procesando..." : "Procesar"}
+                </button>
+              </div>
             </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/55">
+              <span>
+                Procesadas: {reviewableCount}
+              </span>
+              <span>
+                Validadas: {validatedCount}
+              </span>
+              {!canExportValidatedBatch && reviewableCount > 0 && (
+                <span className="text-[#E7C980]">
+                  Debes validar todas las facturas antes de exportar el lote.
+                </span>
+              )}
+            </div>
+
             <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-medium text-white">
@@ -841,7 +1153,6 @@ function handleParsedItemChange(
                           </p>
                         </div>
                       </div>
-
                       <div className="shrink-0 text-sm">
                         {item.status === "pending" && (
                           <span className="text-white/40">Pendiente</span>
@@ -852,337 +1163,17 @@ function handleParsedItemChange(
                         {item.status === "done" && (
                           <span className="text-emerald-400">✔ Procesado</span>
                         )}
+                        {item.isValidated && (
+                          <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
+                            Validado
+                          </span>
+                        )}
                         {item.status === "error" && (
                           <span className="text-red-400">✖ Error</span>
                         )}
                       </div>
+
                     </div>
-
-                    {item.result && (
-                      <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
-                          Resultado
-                        </p>
-                        {(() => {
-        const data = item.parsed ?? parseResult(item.result);
-        const validation = validateInvoice(data);
-
-        if (!data) {
-          return (
-            <pre className="mt-2 max-h-56 overflow-auto text-xs text-white/80">
-              {item.result}
-            </pre>
-          );
-        }
-
-        return (
-          <div className="mt-3 space-y-4 text-sm text-white/80">
-            <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
-                Datos extraídos
-              </p>
-
-              <span
-                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                  validation.issues.length === 0
-                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                    : "border-amber-500/20 bg-amber-500/10 text-amber-300"
-                }`}
-              >
-                {validation.issues.length === 0 ? "Válido" : "Revisar"}
-              </span>
-            </div>
-
-              {!item.isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => handleEdit(index)}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
-                >
-                  Editar
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveEdit(index)}
-                    className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/15"
-                  >
-                    Guardar cambios
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCancelEdit(index)}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              )}
-
-              {item.parsed && !item.isEditing && (
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleExportJSON(index)}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
-                  >
-                    Exportar JSON
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleExportCSV(index)}
-                    className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-3 py-1.5 text-xs font-medium text-[#E7C980] transition hover:bg-[#C9A24D]/15"
-                  >
-                    Exportar CSV
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {validation.issues.length > 0 && (
-              <div className="space-y-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-300">
-                  Validaciones
-                </p>
-
-                <div className="space-y-2">
-                  {validation.issues.map((issue, issueIndex) => (
-                    <div
-                      key={`${issue.field}-${issueIndex}`}
-                      className="text-sm text-white/85"
-                    >
-                      <span
-                        className={`mr-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          issue.type === "error"
-                            ? "bg-red-500/15 text-red-300"
-                            : "bg-amber-500/15 text-amber-300"
-                        }`}
-                      >
-                        {issue.type === "error" ? "Error" : "Warning"}
-                      </span>
-
-                      <span>{issue.message}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-
-              {/* PROVEEDOR */}
-              <div>
-                <p className="text-xs text-white/40">Proveedor</p>
-                {!item.isEditing ? (
-                  <p className="font-medium text-white">{data.proveedor}</p>
-                ) : (
-                  <input
-                    value={data.proveedor ?? ""}
-                    onChange={(e) =>
-                      handleParsedFieldChange(index, "proveedor", e.target.value)
-                    }
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                  />
-                )}
-              </div>
-
-              {/* FECHA */}
-              <div>
-                <p className="text-xs text-white/40">Fecha</p>
-                {!item.isEditing ? (
-                  <p className="font-medium text-white">{data.fecha}</p>
-                ) : (
-                  <input
-                    value={data.fecha ?? ""}
-                    onChange={(e) =>
-                      handleParsedFieldChange(index, "fecha", e.target.value)
-                    }
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                  />
-                )}
-              </div>
-
-              {/* NUMERO FACTURA */}
-              <div>
-                <p className="text-xs text-white/40">N° Factura</p>
-                <p className="font-medium text-white">
-                  {data.numeroFactura?.establecimiento} -{" "}
-                  {data.numeroFactura?.puntoExpedicion} -{" "}
-                  {data.numeroFactura?.numero}
-                </p>
-              </div>
-
-              {/* TIMBRADO */}
-              <div>
-                <p className="text-xs text-white/40">Timbrado</p>
-                <p className="font-medium text-white">{data.timbrado}</p>
-              </div>
-
-              {/* VENCIMIENTO TIMBRADO */}
-              <div>
-                <p className="text-xs text-white/40">Vencimiento Timbrado</p>
-                <p className="font-medium text-white">{data.vencimientoTimbrado}</p>
-              </div>
-
-              {/* MONEDA */}
-              <div>
-                <p className="text-xs text-white/40">Moneda</p>
-                {!item.isEditing ? (
-                  <p className="font-medium text-white">{data.moneda}</p>
-                ) : (
-                  <input
-                    value={data.moneda ?? ""}
-                    onChange={(e) =>
-                      handleParsedFieldChange(index, "moneda", e.target.value)
-                    }
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                  />
-                )}
-              </div>
-
-              {/* TOTAL */}
-              <div>
-                <p className="text-xs text-white/40">Total</p>
-                {!item.isEditing ? (
-                  <p className="font-medium text-white">
-                    {formatNumber(data.total, data.moneda)} {data.moneda}
-                  </p>
-                ) : (
-                  <input
-                    value={String(data.total ?? "")}
-                    onChange={(e) =>
-                      handleParsedFieldChange(index, "total", e.target.value)
-                    }
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                  />
-                )}
-              </div>
-
-              {/* IVA 5 */}
-              <div>
-                <p className="text-xs text-white/40">IVA 5%</p>
-                <p className="font-medium text-white">
-                  {formatNumber(data.iva5, data.moneda)}
-                </p>
-              </div>
-
-              {/* IVA 10 */}
-              <div>
-                <p className="text-xs text-white/40">IVA 10%</p>
-                <p className="font-medium text-white">
-                  {formatNumber(data.iva10, data.moneda)}
-                </p>
-              </div>
-
-              {/* EXENTO */}
-              <div>
-                <p className="text-xs text-white/40">Exento</p>
-                <p className="font-medium text-white">
-                  {formatNumber(data.ivaExento, data.moneda)}
-                </p>
-              </div>
-
-              {/* IVA TOTAL */}
-              <div>
-                <p className="text-xs text-white/40">IVA Total</p>
-                <p className="font-medium text-white">
-                  {formatNumber(data.ivaTotal, data.moneda)}
-                </p>
-              </div>
-
-            </div>
-
-            {data.actividadesProveedor?.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs text-white/40">Actividades del proveedor</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {data.actividadesProveedor.map((act, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80"
-                    >
-                      {act}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {data.items && (
-              <div className="overflow-hidden rounded-lg border border-white/10">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-white/5 text-xs uppercase text-white/40">
-                    <tr>
-                      <th className="px-3 py-2">Descripción</th>
-                      <th className="px-3 py-2 text-center">IVA</th>
-                      <th className="px-3 py-2 text-right">Monto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((row: ParsedInvoiceItem, i: number) => (
-                      <tr key={i} className="border-t border-white/10">
-                        <td className="px-3 py-2 text-white/80">
-                          {!item.isEditing ? (
-                            row.descripcion
-                          ) : (
-                            <input
-                              value={row.descripcion ?? ""}
-                              onChange={(e) =>
-                                handleParsedItemChange(index, i, "descripcion", e.target.value)
-                              }
-                              className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                            />
-                          )}
-                        </td>
-
-                        <td className="px-3 py-2 text-center text-white">
-                          {!item.isEditing ? (
-                            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/80">
-                              {row.ivaTipo}
-                            </span>
-                          ) : (
-                            <select
-                              value={String(row.ivaTipo ?? "10").toUpperCase()}
-                              onChange={(e) =>
-                                handleParsedItemChange(index, i, "ivaTipo", e.target.value)
-                              }
-                              className="rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                            >
-                              <option value="EXENTO">Exento</option>
-                              <option value="5">5%</option>
-                              <option value="10">10%</option>
-                            </select>
-                          )}
-                        </td>
-
-                        <td className="px-3 py-2 text-right text-white">
-                          {!item.isEditing ? (
-                            formatNumber(row.monto, data.moneda)
-                          ) : (
-                            <input
-                              value={String(row.monto ?? "")}
-                              onChange={(e) =>
-                                handleParsedItemChange(index, i, "monto", e.target.value)
-                              }
-                              className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-right text-sm text-white outline-none"
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-                      </div>
-                    )}
                   </div>
                 );
               })
@@ -1205,6 +1196,430 @@ function handleParsedItemChange(
             )}
           </div>
         </div>
+        {isReviewOpen && currentReviewItem && currentReviewItem.parsed && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/80 p-6 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-8xl overflow-hidden rounded-3xl border border-white/10 bg-[#08101F] shadow-2xl">
+            <div className="flex flex-col gap-4 border-b border-white/10 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-[#C9A24D]">
+                  Validación de factura
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-white">
+                  {currentReviewItem.file.name}
+                </h3>
+                <p className="mt-1 text-sm text-white/55">
+                  Revisión {reviewIndex !== null ? reviewIndex + 1 : 0} de {files.length}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleGoToPreviousReview}
+                  disabled={previousReviewIndex === null}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGoToNextReview}
+                  disabled={nextReviewIndex === null}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Siguiente
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCloseReview}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75 hover:bg-white/10"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="grid h-[calc(92vh-88px)] gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="min-h-[420px] border-b border-white/10 bg-[#030712] lg:border-b-0 lg:border-r">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/45">
+                    Vista previa
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReviewZoom((prev) => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                    >
+                      Zoom -
+                    </button>
+
+                    <span className="min-w-[64px] text-center text-xs text-white/55">
+                      {Math.round(reviewZoom * 100)}%
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setReviewZoom((prev) => Math.min(3, Number((prev + 0.1).toFixed(2))))}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                    >
+                      Zoom +
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setReviewRotation((prev) => (prev - 90 + 360) % 360)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                    >
+                      Rotar -
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setReviewRotation((prev) => (prev + 90) % 360)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                    >
+                      Rotar +
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReviewZoom(1);
+                        setReviewRotation(0);
+                      }}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex h-[72vh] items-center justify-center overflow-auto p-4">
+                  {currentReviewItem.file.type === "application/pdf" ? (
+                    <iframe
+                      src={currentReviewItem.previewUrl}
+                      title={currentReviewItem.file.name}
+                      className="h-full w-full rounded-xl bg-white"
+                    />
+                  ) : (
+                    <div
+                      ref={reviewPreviewRef}
+                      className="relative flex h-full w-full items-center justify-center overflow-hidden"
+                      onMouseMove={handleMouseMoveLens}
+                      onMouseLeave={handleMouseLeaveLens}
+                    >
+                      <img
+                        ref={reviewImageRef}
+                        data-review-image="true"
+                        src={currentReviewItem.previewUrl}
+                        alt={currentReviewItem.file.name}
+                        className="max-h-full max-w-full object-contain transition-transform duration-200"
+                        style={{
+                          transform: `scale(${reviewZoom}) rotate(${reviewRotation}deg)`,
+                          transformOrigin: "center center",
+                        }}
+                      />
+
+                      {lensState && (
+                        <div
+                          className="pointer-events-none absolute overflow-hidden rounded-full border border-white/20 shadow-xl"
+                          style={{
+                            width: 400,
+                            height: 400,
+                            left: lensState.containerX - 85,
+                            top: lensState.containerY - 85,
+                            backgroundColor: "#020617",
+                          }}
+                        >
+                          <img
+                            src={currentReviewItem.previewUrl}
+                            alt=""
+                            className="absolute max-w-none select-none"
+                            style={{
+                              left: lensState.baseLeft - (lensState.containerX - 85),
+                              top: lensState.baseTop - (lensState.containerY - 85),
+                              width: lensState.baseWidth,
+                              height: lensState.baseHeight,
+                              objectFit: "contain",
+                              transform: `scale(${reviewZoom * 3.0}) rotate(${reviewRotation}deg)`,
+                              transformOrigin: `${lensState.imageX}px ${lensState.imageY}px`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex min-h-0 h-full flex-col overflow-hidden">
+
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+                  <div className="space-y-6">
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="text-sm font-semibold text-white">
+                      Datos principales
+                    </h4>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Proveedor
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.proveedor ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(reviewIndex!, "proveedor", e.target.value)
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Fecha
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.fecha ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(reviewIndex!, "fecha", e.target.value)
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+                      <div className="md:col-span-2">
+                        <div className="rounded-2xl border border-white/10 bg-[#0B1120] p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-white/45">
+                            Número de factura
+                          </p>
+
+                          <div className="mt-3 grid gap-3 md:grid-cols-3">
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                                Establecimiento
+                              </span>
+                              <input
+                                value={String(
+                                  currentReviewItem.parsed.numeroFactura?.establecimiento ?? ""
+                                )}
+                                onChange={(e) =>
+                                  handleInvoiceNumberChange(
+                                    reviewIndex!,
+                                    "establecimiento",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                              />
+                            </label>
+
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                                Punto de expedición
+                              </span>
+                              <input
+                                value={String(
+                                  currentReviewItem.parsed.numeroFactura?.puntoExpedicion ?? ""
+                                )}
+                                onChange={(e) =>
+                                  handleInvoiceNumberChange(
+                                    reviewIndex!,
+                                    "puntoExpedicion",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                              />
+                            </label>
+
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                                Número
+                              </span>
+                              <input
+                                value={String(currentReviewItem.parsed.numeroFactura?.numero ?? "")}
+                                onChange={(e) =>
+                                  handleInvoiceNumberChange(
+                                    reviewIndex!,
+                                    "numero",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Total
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.total ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(reviewIndex!, "total", e.target.value)
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Moneda
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.moneda ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(reviewIndex!, "moneda", e.target.value)
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Timbrado
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.timbrado ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(reviewIndex!, "timbrado", e.target.value)
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Vencimiento timbrado
+                        </span>
+                        <input
+                          value={String(currentReviewItem.parsed.vencimientoTimbrado ?? "")}
+                          onChange={(e) =>
+                            handleParsedFieldChange(
+                              reviewIndex!,
+                              "vencimientoTimbrado",
+                              e.target.value
+                            )
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="text-sm font-semibold text-white">
+                      Validaciones
+                    </h4>
+
+                    <div className="mt-4 space-y-2">
+                      {currentReviewValidation?.issues.length ? (
+                        currentReviewValidation.issues.map((issue, idx) => (
+                          <div
+                            key={`${issue.field}-${idx}`}
+                            className={`rounded-xl border px-3 py-2 text-sm ${
+                              issue.type === "error"
+                                ? "border-red-500/20 bg-red-500/10 text-red-200"
+                                : "border-amber-500/20 bg-amber-500/10 text-amber-200"
+                            }`}
+                          >
+                            <span className="font-medium">{issue.field}:</span> {issue.message}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+                          Sin observaciones. La factura está lista para validar.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="text-sm font-semibold text-white">
+                      Items
+                    </h4>
+
+                    <div className="mt-4 space-y-3">
+                      {currentReviewItem.parsed.items.map((row, itemIndex) => (
+                        <div
+                          key={itemIndex}
+                          className="grid gap-3 rounded-xl border border-white/10 bg-[#0B1120] p-3 md:grid-cols-[1.5fr_0.7fr_0.5fr]"
+                        >
+                          <input
+                            value={String(row.descripcion ?? "")}
+                            onChange={(e) =>
+                              handleParsedItemChange(
+                                reviewIndex!,
+                                itemIndex,
+                                "descripcion",
+                                e.target.value
+                              )
+                            }
+                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                          />
+
+                          <input
+                            value={String(row.monto ?? "")}
+                            onChange={(e) =>
+                              handleParsedItemChange(
+                                reviewIndex!,
+                                itemIndex,
+                                "monto",
+                                e.target.value
+                              )
+                            }
+                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                          />
+
+                          <input
+                            value={String(row.ivaTipo ?? "")}
+                            onChange={(e) =>
+                              handleParsedItemChange(
+                                reviewIndex!,
+                                itemIndex,
+                                "ivaTipo",
+                                e.target.value
+                              )
+                            }
+                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="shrink-0 border-t border-white/10 bg-[#08101F] px-6 pt-3 pb-5">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCloseReview}
+                    className="inline-flex h-10 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-white hover:bg-white/10"
+                  >
+                    Guardar y salir
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleValidateCurrentInvoice}
+                    className="inline-flex h-10 items-center rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-3 text-sm font-medium text-[#E7C980] hover:bg-[#C9A24D]/15"
+                  >
+                    Validar y continuar
+                  </button>
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
