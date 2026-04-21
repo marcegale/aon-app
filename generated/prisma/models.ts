@@ -9,8 +9,10 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/Lead'
+export type * from './models/User'
 export type * from './models/rrhh_processes'
 export type * from './models/Tenant'
+export type * from './models/TenantMembership'
 export type * from './models/TenantDocument'
 export type * from './models/TenantAnalysis'
 export type * from './commonInputTypes'

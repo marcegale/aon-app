@@ -47,6 +47,11 @@ export { Prisma }
  */
 export type Lead = Prisma.LeadModel
 /**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
  * Model rrhh_processes
  * 
  */
@@ -56,6 +61,11 @@ export type rrhh_processes = Prisma.rrhh_processesModel
  * 
  */
 export type Tenant = Prisma.TenantModel
+/**
+ * Model TenantMembership
+ * 
+ */
+export type TenantMembership = Prisma.TenantMembershipModel
 /**
  * Model TenantDocument
  * 
