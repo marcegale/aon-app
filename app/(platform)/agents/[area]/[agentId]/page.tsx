@@ -26,7 +26,45 @@ type ParsedInvoice = {
   ivaTotal: number | string;
   actividadesProveedor: string[];
   items: ParsedInvoiceItem[];
+  ivaCalculado?: {
+    gravada10: number;
+    gravada5: number;
+    exento: number;
+    iva10: number;
+    iva5: number;
+    ivaTotal: number;
+  };
 };
+
+function calcularIVACompleto(items: ParsedInvoiceItem[]) {
+  let gravada10 = 0;
+  let gravada5 = 0;
+  let exento = 0;
+
+  items.forEach((item) => {
+    const monto = Number(item.monto || 0);
+
+    if (item.ivaTipo === "10") {
+      gravada10 += monto;
+    } else if (item.ivaTipo === "5") {
+      gravada5 += monto;
+    } else {
+      exento += monto;
+    }
+  });
+
+  const iva10 = Math.ceil(gravada10 / 11);
+  const iva5 = Math.ceil(gravada5 / 21);
+
+  return {
+    gravada10,
+    gravada5,
+    exento,
+    iva10,
+    iva5,
+    ivaTotal: iva10 + iva5,
+  };
+}
 
 type ValidationIssue = {
   type: "error" | "warning";
@@ -143,6 +181,7 @@ function validateInvoice(data: ParsedInvoice | null): ValidationResult {
     };
   }
 
+  
   function parseDateSafe(value?: string) {
     if (!value) return null;
 
@@ -350,9 +389,18 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
     isEditing?: boolean;
     isSelected?: boolean;
     isValidated?: boolean;
+    isDeducible?: boolean;
+    facturaId?: string;
+    ordenValidacion?: number;
+    storagePath?: string;
+    archivoTipo?: string;
+    archivoSizeBytes?: number;
+    localId: string;
   };
 
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [showAllValidatedToast, setShowAllValidatedToast] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [page, setPage] = useState(1);
@@ -435,6 +483,30 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   reviewableCount > 0 && validatedCount === reviewableCount;
 
   useEffect(() => {
+    const saved = localStorage.getItem("invoice_files");
+
+    if (saved) {
+      try {
+        setFiles(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!completionMessage) return;
+
+    const timeout = setTimeout(() => {
+      setCompletionMessage(null);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [completionMessage]);
+
+  useEffect(() => {
+    localStorage.setItem("invoice_files", JSON.stringify(files));
+  }, [files]);
+
+  useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
@@ -455,17 +527,74 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
 
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files || []).map((file) => ({
+      localId: crypto.randomUUID(),
       file,
       previewUrl: URL.createObjectURL(file),
       status: "pending" as const,
       isSelected: true,
       isValidated: false,
+      isDeducible: true,
     }));
 
-    setFiles(selectedFiles);
+    setFiles((prev) => [...prev, ...selectedFiles]);
     setPage(1);
-    setIsReviewOpen(false);
+  }
+
+  function handleRemoveFile(fileIndex: number) {
+    setFiles((prev) => prev.filter((_, idx) => idx !== fileIndex));
+
+    if (reviewIndex === fileIndex) {
+      setReviewIndex(null);
+      setIsReviewOpen(false);
+    }
+
+    if (reviewIndex !== null && reviewIndex > fileIndex) {
+      setReviewIndex(reviewIndex - 1);
+    }
+  }
+
+  function handleRemoveCurrentReviewFile() {
+    if (reviewIndex === null) return;
+
+    setFiles((prev) => {
+      const updated = prev.filter((_, idx) => idx !== reviewIndex);
+
+      const nextIndex = getNextReviewableIndex(updated, reviewIndex);
+      const fallbackIndex = getNextReviewableIndex(updated, 0);
+      const targetIndex = nextIndex ?? fallbackIndex;
+
+      if (targetIndex !== null) {
+        setReviewIndex(targetIndex);
+        setReviewZoom(1);
+        setReviewRotation(0);
+        setLensState(null);
+        return updated;
+      }
+
+      setIsReviewOpen(false);
+      setReviewIndex(null);
+      setReviewZoom(1);
+      setReviewRotation(0);
+      setLensState(null);
+
+      showAllValidatedMessage();
+      
+      setIsReviewOpen(false);
+      setReviewIndex(null);
+
+      setTimeout(() => {
+        setCompletionMessage("Todas las facturas están validadas");
+      }, 50);
+
+      return updated;
+    });
+  }
+
+  function handleClearFiles() {
+    setFiles([]);
+    setPage(1);
     setReviewIndex(null);
+    setIsReviewOpen(false);
   }
 
   function getNextReviewableIndex(items: FileItem[], startAt = 0) {
@@ -482,6 +611,13 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
     const nextIndex = getNextReviewableIndex(items, 0);
 
     if (nextIndex === null) {
+      const hasProcessingFiles = items.some((item) => item.status === "processing");
+
+      if (hasProcessingFiles) {
+        setIsReviewOpen(true);
+        return;
+      }
+
       setIsReviewOpen(false);
       setReviewIndex(null);
       return;
@@ -506,6 +642,8 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
         return {
           ...item,
           isValidated: true,
+          facturaId: item.facturaId ?? `fac_${crypto.randomUUID()}`, // NUEVO
+          ordenValidacion: Date.now(),
           parsed: {
             ...item.parsed,
             numeroFactura: {
@@ -543,6 +681,7 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
       }
 
       handleFinishReviewFlow();
+      showAllValidatedMessage();
     }, 0);
   }
 
@@ -658,58 +797,105 @@ async function handleProcess() {
 
   setLoading(true);
 
-  for (let i = 0; i < files.length; i++) {
+  const indexesToProcess = files
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.status === "pending" || item.status === "error")
+    .map(({ index }) => index);
+
+  const processOneFile = async (fileIndex: number, attempt = 1): Promise<void> => {
     setFiles((prev) =>
       prev.map((f, idx) =>
-        idx === i ? { ...f, status: "processing" } : f
+        idx === fileIndex ? { ...f, status: "processing" } : f
       )
     );
 
     try {
       const formData = new FormData();
-      formData.append("file", files[i].file);
+      formData.append("file", files[fileIndex].file);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
 
       const res = await fetch("/api/agents/accounting/process", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        throw new Error(`Process failed with status ${res.status}`);
+      }
 
       const data = await res.json();
       const parsed = parseResult(data.raw);
 
+      const normalizedParsed = parsed
+        ? ({
+            ...parsed,
+            proveedor:
+              (parsed as any).proveedor ||
+              (parsed as any).razonSocialEmisor ||
+              "",
+            fecha:
+              (parsed as any).fecha ||
+              (parsed as any).fechaEmision ||
+              "",
+            items: ((parsed as any).items || []).map((item: any) => ({
+              ...item,
+              monto: item.monto ?? item.montoTotal ?? 0,
+            })),
+          } as any)
+        : null;
+
+      if (normalizedParsed) {
+        normalizedParsed.ivaCalculado = calcularIVACompleto(
+          normalizedParsed.items
+        );
+      }
+
       setFiles((prev) =>
         prev.map((f, idx) => {
-          if (idx !== i) return f;
+          if (idx !== fileIndex) return f;
 
           return {
             ...f,
             status: "done",
             result: data.raw,
-            parsed,
-            originalParsed: parsed,
+            parsed: normalizedParsed,
+            originalParsed: normalizedParsed,
+            facturaId: data.facturaId,
+            storagePath: data.storagePath,
+            archivoTipo: data.fileType,
+            archivoSizeBytes: data.fileSize,
             isEditing: false,
             isSelected: f.isSelected ?? true,
             isValidated: false,
+            isDeducible: true,
           };
         })
       );
     } catch (error) {
+      if (attempt < 2) {
+        await processOneFile(fileIndex, attempt + 1);
+        return;
+      }
+
       setFiles((prev) =>
         prev.map((f, idx) =>
-          idx === i ? { ...f, status: "error" } : f
+          idx === fileIndex ? { ...f, status: "error" } : f
         )
       );
     }
+  };
+
+  for (let i = 0; i < indexesToProcess.length; i += 2) {
+    const batch = indexesToProcess.slice(i, i + 2);
+    await Promise.all(batch.map((fileIndex) => processOneFile(fileIndex)));
   }
 
   setLoading(false);
-
-  openReviewFlow(
-    files.map((item) => ({
-      ...item,
-      isValidated: item.isValidated ?? false,
-    }))
-  );
 }
 
 function handleEdit(index: number) {
@@ -756,12 +942,75 @@ function handleCloseReview() {
   setLensState(null);
 }
 
+function buildSupabaseInvoiceRows(filesToExport: FileItem[]) {
+  return filesToExport
+    .filter((item) => item.isSelected && item.isValidated && item.parsed)
+    .flatMap((item) => {
+      const data = item.parsed!;
+      const facturaId = item.facturaId ?? `fac_${crypto.randomUUID()}`;
+
+      return (data.items || []).map((row, itemIndex) => ({
+        factura_id: facturaId,
+        item_index: itemIndex + 1,
+
+        archivo_nombre: item.file.name,
+        orden_validacion: item.ordenValidacion ?? null,
+
+        storage_path: item.storagePath ?? null,
+        archivo_tipo: item.archivoTipo ?? null,
+        archivo_size_bytes: item.archivoSizeBytes ?? null,
+
+        proveedor_razon_social: data.proveedor ?? "",
+        fecha_emision: data.fecha ?? "",
+        moneda: data.moneda ?? "",
+        total_factura: Number(data.total || 0),
+
+        numero_factura_establecimiento:
+          data.numeroFactura?.establecimiento ?? "",
+        numero_factura_punto_expedicion:
+          data.numeroFactura?.puntoExpedicion ?? "",
+        numero_factura_numero:
+          data.numeroFactura?.numero ?? "",
+
+        timbrado: data.timbrado ?? "",
+        vencimiento_timbrado: data.vencimientoTimbrado ?? "",
+
+        item_descripcion: row.descripcion ?? "",
+        item_monto_total: Number(row.monto || 0),
+        item_iva_tipo: row.ivaTipo ?? "EXENTO",
+
+        deducible: item.isDeducible ?? true,
+        validado: item.isValidated ?? false,
+
+        raw_json: item.result ?? null,
+      }));
+    });
+}
+
 function handleFinishReviewFlow() {
+  const supabaseRows = buildSupabaseInvoiceRows(files);
+
+  fetch("/api/invoice-items", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ rows: supabaseRows }),
+  });
+
   setIsReviewOpen(false);
   setReviewIndex(null);
   setReviewZoom(1);
   setReviewRotation(0);
   setLensState(null);
+}
+
+function showAllValidatedMessage() {
+  setShowAllValidatedToast(true);
+
+  setTimeout(() => {
+    setShowAllValidatedToast(false);
+  }, 3000);
 }
 
 function handleExportJSON(index: number) {
@@ -780,7 +1029,7 @@ function handleExportCSV(index: number) {
   download(`${item.file.name}-parsed.csv`, csv, "text/csv");
 }
 
-function handleExportBatch() {
+async function handleExportBatch() {
   const selected = files.filter(
     (f) => f.isSelected && f.parsed && f.isValidated
   );
@@ -792,6 +1041,23 @@ function handleExportBatch() {
   ).length;
 
   if (unvalidatedSelectedCount > 0) return;
+
+  const supabaseRows = buildSupabaseInvoiceRows(files);
+  console.log("SUPABASE ROWS READY:", supabaseRows);
+
+  const saveResponse = await fetch("/api/agents/accounting/save", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ rows: supabaseRows }),
+  });
+
+  const saveResult = await saveResponse.json();
+  console.log("SAVE STATUS:", saveResponse.status);
+  console.log("SAVE RESULT:", saveResult);
+
+  if (!saveResponse.ok) return;
 
   const rows = selected.flatMap((item, fileIndex) => {
     const data = item.parsed!;
@@ -805,6 +1071,7 @@ function handleExportBatch() {
       data.total,
       row.descripcion,
       row.monto,
+      item.isDeducible ? "SI" : "NO",
     ]);
   });
 
@@ -817,6 +1084,7 @@ function handleExportBatch() {
     "total",
     "descripcion",
     "monto",
+    "deducible",
   ];
 
   const csv = [header, ...rows]
@@ -824,6 +1092,10 @@ function handleExportBatch() {
     .join("\n");
 
   download("lote_facturas.csv", csv, "text/csv");
+  setFiles((prev) => prev.filter((f) => !f.isSelected));
+  setPage(1);
+  setReviewIndex(null);
+  setIsReviewOpen(false);
 }
 
 function handleToggleSelected(index: number) {
@@ -893,19 +1165,26 @@ function handleParsedItemChange(
     prev.map((item, idx) => {
       if (idx !== fileIndex || !item.parsed) return item;
 
+      const updatedItems = item.parsed.items.map((row, rowIndex) =>
+        rowIndex === itemIndex
+          ? {
+              ...row,
+              [field]: field === "monto" ? Number(value) || 0 : value,
+            }
+          : row
+      );
+
+      const updatedParsed = {
+        ...item.parsed,
+        items: updatedItems,
+      };
+
+      // 🔥 recalcular IVA en tiempo real
+      updatedParsed.ivaCalculado = calcularIVACompleto(updatedItems);
+
       return {
         ...item,
-        parsed: {
-          ...item.parsed,
-          items: item.parsed.items.map((row, rowIndex) =>
-            rowIndex === itemIndex
-              ? {
-                  ...row,
-                  [field]: value,
-                }
-              : row
-          ),
-        },
+        parsed: updatedParsed,
       };
     })
   );
@@ -1132,7 +1411,7 @@ function handleParsedItemChange(
 
                   return (
                   <div
-                    key={`${item.file.name}-${item.file.size}`}
+                    key={item.localId}
                     className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -1153,7 +1432,14 @@ function handleParsedItemChange(
                           </p>
                         </div>
                       </div>
-                      <div className="shrink-0 text-sm">
+                      <div className="flex shrink-0 items-center gap-3 text-sm">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="rounded-lg border border-red-500/20 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10"
+                        >
+                          Eliminar
+                        </button>
                         {item.status === "pending" && (
                           <span className="text-white/40">Pendiente</span>
                         )}
@@ -1392,6 +1678,11 @@ function handleParsedItemChange(
                           className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
+                      <label className="space-y-2">
+                        <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                          Deducible
+                        </span>
+                      </label>
                       <div className="md:col-span-2">
                         <div className="rounded-2xl border border-white/10 bg-[#0B1120] p-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-white/45">
@@ -1518,7 +1809,6 @@ function handleParsedItemChange(
                     <h4 className="text-sm font-semibold text-white">
                       Validaciones
                     </h4>
-
                     <div className="mt-4 space-y-2">
                       {currentReviewValidation?.issues.length ? (
                         currentReviewValidation.issues.map((issue, idx) => (
@@ -1540,7 +1830,6 @@ function handleParsedItemChange(
                       )}
                     </div>
                   </div>
-
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <h4 className="text-sm font-semibold text-white">
                       Items
@@ -1578,8 +1867,8 @@ function handleParsedItemChange(
                             className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
                           />
 
-                          <input
-                            value={String(row.ivaTipo ?? "")}
+                          <select
+                            value={row.ivaTipo ?? ""}
                             onChange={(e) =>
                               handleParsedItemChange(
                                 reviewIndex!,
@@ -1589,9 +1878,34 @@ function handleParsedItemChange(
                               )
                             }
                             className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
-                          />
+                          >
+                            <option value="10">IVA 10%</option>
+                            <option value="5">IVA 5%</option>
+                            <option value="EXENTO">Exenta</option>
+                          </select>
                         </div>
                       ))}
+                      {currentReviewItem.parsed?.ivaCalculado && (
+                        <div className="mt-4 rounded-2xl border border-white/10 bg-[#0B1120] p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-white/45">
+                            Resumen IVA
+                          </p>
+
+                          <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-white">
+                            <p>Gravada 10%: {currentReviewItem.parsed.ivaCalculado.gravada10}</p>
+                            <p>IVA 10%: {currentReviewItem.parsed.ivaCalculado.iva10}</p>
+
+                            <p>Gravada 5%: {currentReviewItem.parsed.ivaCalculado.gravada5}</p>
+                            <p>IVA 5%: {currentReviewItem.parsed.ivaCalculado.iva5}</p>
+
+                            <p>Exento: {currentReviewItem.parsed.ivaCalculado.exento}</p>
+
+                            <p className="col-span-2 font-semibold">
+                              IVA Total: {currentReviewItem.parsed.ivaCalculado.ivaTotal}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1605,7 +1919,35 @@ function handleParsedItemChange(
                   >
                     Guardar y salir
                   </button>
-
+                  <button
+                    type="button"
+                    onClick={handleRemoveCurrentReviewFile}
+                    className="h-10 rounded-lg border border-red-500/20 bg-red-500/10 px-4 text-sm font-medium text-red-300 hover:bg-red-500/20"
+                  >
+                    Eliminar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFiles((prev) =>
+                        prev.map((f, idx) =>
+                          idx === reviewIndex
+                            ? { ...f, isDeducible: !f.isDeducible }
+                            : f
+                        )
+                      )
+                    }
+                    className={`h-10 px-4 rounded-lg text-sm font-medium border flex items-center justify-center ${
+                      currentReviewItem.isDeducible !== false
+                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                        : "border-red-500/20 bg-red-500/10 text-red-300"
+                    }`}
+                  >
+                    {currentReviewItem.isDeducible !== false
+                      ? "Deducible"
+                      : "No deducible"}
+                  </button>
+                
                   <button
                     type="button"
                     onClick={handleValidateCurrentInvoice}
@@ -1621,6 +1963,13 @@ function handleParsedItemChange(
         </div>
       )}
       </div>
+      {showAllValidatedToast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className="rounded-xl border border-emerald-500/20 bg-[#052e1a] px-4 py-3 text-sm font-medium text-emerald-200 shadow-xl">
+            Todas las facturas están validadas
+          </div>
+        </div>
+      )}
     </div>
   );
 }
