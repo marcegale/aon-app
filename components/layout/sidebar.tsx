@@ -9,11 +9,11 @@ const navItems = [
     href: "/agents/accounting/invoice-processor",
     short: "F",
   },
-  {
-    name: "Uso / Créditos",
-    href: "/admin/usage",
-    short: "U",
-  },
+  // {
+  //   name: "Uso / Créditos",
+  //   href: "/admin/usage",
+  //   short: "U",
+  // },
   {
     name: "Cerrar sesión",
     href: "/logout",
