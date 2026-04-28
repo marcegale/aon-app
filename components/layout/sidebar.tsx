@@ -55,6 +55,7 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={item.href === "/logout" ? false : undefined}
               className={`block rounded-xl px-4 py-3 transition ${
                 collapsed ? "text-center" : ""
               } ${
