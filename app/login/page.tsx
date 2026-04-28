@@ -1,4 +1,5 @@
 import { PublicShell } from "../../components/public/public-shell";
+import { loginAction } from "./actions";
 
 export default function LoginPage() {
   return (
@@ -62,7 +63,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <form className="mt-8 space-y-5">
+          <form action={loginAction} className="mt-8 space-y-5">
             <div>
               <label
                 htmlFor="email"
@@ -75,6 +76,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder="nombre@empresa.com"
+                required
                 className="mt-2 w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
               />
             </div>
@@ -91,6 +93,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 placeholder="••••••••••••"
+                required
                 className="mt-2 w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
               />
             </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { use, useRef, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
+import { supabase } from "@/lib/supabase/client";
 
 type ParsedInvoiceItem = {
   descripcion: string;
@@ -139,6 +141,15 @@ function download(filename: string, content: string, type = "text/plain") {
   URL.revokeObjectURL(url);
 }
 
+function downloadExcel(filename: string, header: string[], rows: any[][]) {
+  const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+
+  XLSX.writeFile(workbook, filename);
+}
+
 function formatNumber(value: number | string, currency?: string) {
   const num =
     typeof value === "string"
@@ -167,215 +178,229 @@ function parseLocalizedNumber(value: number | string) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-function validateInvoice(data: ParsedInvoice | null): ValidationResult {
-  if (!data) {
-    return {
-      isValid: false,
-      issues: [
-        {
-          type: "error",
-          field: "general",
-          message: "No se pudo interpretar la factura procesada.",
-        },
-      ],
-    };
+function formatInvoiceDate(value?: string | null) {
+  if (!value) return "";
+
+  const raw = String(value).trim();
+
+  let day: number | null = null;
+  let month: number | null = null;
+  let year: number | null = null;
+
+  // YYYY-MM-DD o YYYY/MM/DD
+  const isoMatch = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (isoMatch) {
+    year = Number(isoMatch[1]);
+    month = Number(isoMatch[2]);
+    day = Number(isoMatch[3]);
   }
 
-  
-  function parseDateSafe(value?: string) {
-    if (!value) return null;
+  // DD/MM/YYYY o DD-MM-YYYY
+  const localMatch = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+  if (!day && localMatch) {
+    day = Number(localMatch[1]);
+    month = Number(localMatch[2]);
+    year = Number(localMatch[3]);
 
-    const trimmed = value.trim();
+    if (year < 100) year += 2000;
+  }
 
-    // intenta YYYY-MM-DD
-    const iso = new Date(trimmed);
-    if (!isNaN(iso.getTime())) return iso;
+  if (
+    !day ||
+    !month ||
+    !year ||
+    day < 1 ||
+    day > 31 ||
+    month < 1 ||
+    month > 12 ||
+    year < 2025 ||
+    year > 2100
+  ) {
+    return "";
+  }
 
-    // intenta DD/MM/YYYY
-    const parts = trimmed.split("/");
-    if (parts.length === 3) {
-      const [d, m, y] = parts.map(Number);
-      const date = new Date(y, m - 1, d);
-      if (!isNaN(date.getTime())) return date;
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+
+  return `${dd}/${mm}/${year}`;
+}
+
+function isValidInvoiceDate(value?: string | null) {
+  if (!value) return false;
+
+  const match = String(value).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return false;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+
+  return (
+    day >= 1 &&
+    day <= 31 &&
+    month >= 1 &&
+    month <= 12 &&
+    year >= 2025 &&
+    year <= 2100
+  );
+}
+
+function getItemsTotal(items: any[] = []) {
+  return items.reduce((sum, item) => {
+    return sum + Number(item.monto ?? item.montoTotal ?? 0);
+  }, 0);
+}
+
+function calcularResumenIVA(items: any[]) {
+  let totalExenta = 0;
+  let total5 = 0;
+  let total10 = 0;
+
+  items.forEach((item) => {
+    const monto = Number(item.monto || 0);
+    const tipo = String(item.ivaTipo || "").toUpperCase().trim();
+
+    if (tipo === "5" || tipo === "IVA 5%" || tipo === "5%") {
+      total5 += monto;
+    } else if (tipo === "10" || tipo === "IVA 10%" || tipo === "10%") {
+      total10 += monto;
+    } else {
+      totalExenta += monto;
     }
+  });
 
-    return null;
-  }
+  const base5 = (total5 / 21) * 20;
+  const liq5 = total5 / 21;
 
-  const issues: ValidationIssue[] = [];
+  const base10 = (total10 / 11) * 10;
+  const liq10 = total10 / 11;
 
-  if (!data.proveedor || !String(data.proveedor).trim()) {
-    issues.push({
-      type: "error",
-      field: "proveedor",
-      message: "El proveedor está vacío.",
-    });
-  }
+  return {
+    exenta: Math.round(totalExenta),
+    iva5: Math.round(base5),
+    liq5: Math.round(liq5),
+    iva10: Math.round(base10),
+    liq10: Math.round(liq10),
+  };
+}
 
-  if (!data.fecha || !String(data.fecha).trim()) {
+function validateInvoice(data: any) {
+  const issues: {
+    type: "error" | "warning";
+    field: string;
+    message: string;
+  }[] = [];
+
+  // =========================
+  // FECHA FACTURA
+  // =========================
+  if (!isValidInvoiceDate(data.fecha)) {
     issues.push({
       type: "error",
       field: "fecha",
-      message: "La fecha está vacía.",
+      message:
+        "La fecha debe tener formato DD/MM/AAAA y estar entre 2025 y 2100.",
     });
   }
 
-  if (!["PYG", "USD"].includes(String(data.moneda || "").trim().toUpperCase())) {
+  // =========================
+  // VENCIMIENTO TIMBRADO
+  // =========================
+  if (
+    data.vencimientoTimbrado &&
+    !isValidInvoiceDate(data.vencimientoTimbrado)
+  ) {
     issues.push({
       type: "error",
-      field: "moneda",
-      message: 'La moneda debe ser "PYG" o "USD".',
+      field: "vencimientoTimbrado",
+      message:
+        "El vencimiento del timbrado debe tener formato DD/MM/AAAA y estar entre 2025 y 2100.",
     });
   }
 
-  const total = parseLocalizedNumber(data.total);
-  const itemsTotal = (data.items || []).reduce(
-    (sum, item) => sum + parseLocalizedNumber(item.monto),
-    0
-  );
+  // =========================
+  // COHERENCIA ENTRE FECHAS
+  // =========================
+  if (
+    isValidInvoiceDate(data.fecha) &&
+    isValidInvoiceDate(data.vencimientoTimbrado)
+  ) {
+    const [d1, m1, y1] = data.fecha.split("/").map(Number);
+    const [d2, m2, y2] = data.vencimientoTimbrado.split("/").map(Number);
 
-  const difference = Math.abs(total - itemsTotal);
+    const fechaFactura = new Date(y1, m1 - 1, d1);
+    const fechaVencimiento = new Date(y2, m2 - 1, d2);
 
-  if (difference > 0.01) {
-    issues.push({
-      type: "warning",
-      field: "total",
-      message: `El total (${formatNumber(total, data.moneda)}) no coincide con la suma de items (${formatNumber(itemsTotal, data.moneda)}).`,
-    });
-  }
-
-  const iva5 = parseLocalizedNumber(data.iva5);
-  const iva10 = parseLocalizedNumber(data.iva10);
-  const ivaExento = parseLocalizedNumber(data.ivaExento);
-  const ivaTotal = parseLocalizedNumber(data.ivaTotal);
-
-  if (iva5 < 0) {
-    issues.push({
-      type: "error",
-      field: "iva5",
-      message: "La liquidación de IVA 5% no puede ser negativa.",
-    });
-  }
-
-  if (iva10 < 0) {
-    issues.push({
-      type: "error",
-      field: "iva10",
-      message: "La liquidación de IVA 10% no puede ser negativa.",
-    });
-  }
-
-  if (ivaExento < 0) {
-    issues.push({
-      type: "error",
-      field: "ivaExento",
-      message: "El monto exento no puede ser negativo.",
-    });
-  }
-
-  if (ivaTotal < 0) {
-    issues.push({
-      type: "error",
-      field: "ivaTotal",
-      message: "La liquidación total del IVA no puede ser negativa.",
-    });
-  }
-
-  const ivaDifference = Math.abs(ivaTotal - (iva5 + iva10));
-
-  if (ivaDifference > 0.01) {
-    issues.push({
-      type: "warning",
-      field: "ivaTotal",
-      message: `El IVA total (${formatNumber(
-        ivaTotal,
-        data.moneda
-      )}) no coincide con la suma de IVA 5% + IVA 10% (${formatNumber(
-        iva5 + iva10,
-        data.moneda
-      )}).`,
-    });
-  }
-
-  const invalidIvaItems = (data.items || []).filter(
-    (item) => !["EXENTO", "5", "10"].includes(String(item.ivaTipo ?? "").trim().toUpperCase())
-  );
-
-  if (invalidIvaItems.length > 0) {
-    issues.push({
-      type: "error",
-      field: "items.ivaTipo",
-      message: "Uno o más items tienen un tipo de IVA inválido. Solo se admite EXENTO, 5 o 10.",
-    });
-  }
-
-  const hasOnlyIva10Items =
-    (data.items || []).length > 0 &&
-    (data.items || []).every(
-      (item) => String(item.ivaTipo ?? "").trim() === "10"
-    );
-
-  const hasOnlyIva5Items =
-    (data.items || []).length > 0 &&
-    (data.items || []).every(
-      (item) => String(item.ivaTipo ?? "").trim() === "5"
-    );
-  const hasOnlyExemptItems =
-    (data.items || []).length > 0 &&
-    (data.items || []).every(
-      (item) => String(item.ivaTipo ?? "").trim().toUpperCase() === "EXENTO"
-    );
-
-  if (hasOnlyIva10Items && iva5 > 0.01) {
-    issues.push({
-      type: "warning",
-      field: "iva5",
-      message: "Todos los items están marcados como IVA 10%, pero la liquidación IVA 5% es mayor a cero.",
-    });
-  }
-
-  if (hasOnlyIva5Items && iva10 > 0.01) {
-    issues.push({
-      type: "warning",
-      field: "iva10",
-      message: "Todos los items están marcados como IVA 5%, pero la liquidación IVA 10% es mayor a cero.",
-    });
-  }
-
-  if (hasOnlyExemptItems && (iva5 > 0.01 || iva10 > 0.01 || ivaTotal > 0.01)) {
-    issues.push({
-      type: "warning",
-      field: "ivaExento",
-      message: "Todos los items están marcados como EXENTO, pero existen importes de IVA 5%, IVA 10% o IVA Total mayores a cero.",
-    });
-  }
-
-  const fechaFactura = parseDateSafe(data.fecha);
-  const fechaVencimiento = parseDateSafe(data.vencimientoTimbrado);
-
-  if (fechaFactura && fechaVencimiento) {
     if (fechaFactura > fechaVencimiento) {
       issues.push({
-        type: "error",
+        type: "warning",
         field: "vencimientoTimbrado",
-        message: "La fecha de la factura es posterior al vencimiento del timbrado.",
+        message:
+          "La fecha de la factura es posterior al vencimiento del timbrado.",
       });
     }
-  } else {
+  }
+
+  // =========================
+  // PROVEEDOR
+  // =========================
+  if (!data.proveedor || String(data.proveedor).trim() === "") {
     issues.push({
-      type: "warning",
-      field: "vencimientoTimbrado",
-      message: "No se pudo validar correctamente la fecha o el vencimiento del timbrado.",
+      type: "error",
+      field: "proveedor",
+      message: "El proveedor es obligatorio.",
     });
   }
 
+  // =========================
+  // TOTAL
+  // =========================
+  if (!data.total || Number(data.total) <= 0) {
+    issues.push({
+      type: "error",
+      field: "total",
+      message: "El total debe ser mayor a 0.",
+    });
+  }
+
+  // =========================
+  // ITEMS
+  // =========================
+  if (!data.items || data.items.length === 0) {
+    issues.push({
+      type: "warning",
+      field: "items",
+      message: "La factura no tiene items.",
+    });
+  }
+
+  const itemsTotal = getItemsTotal(data.items || []);
+  const invoiceTotal = Number(data.total || 0);
+
+  if (invoiceTotal > 0 && itemsTotal > 0) {
+    const difference = Math.abs(invoiceTotal - itemsTotal);
+
+    if (difference > 100) {
+      issues.push({
+        type: "error",
+        field: "items",
+        message: `La suma de items (${itemsTotal}) no coincide con el total de la factura (${invoiceTotal}). Diferencia: ${difference}.`,
+      });
+    }
+  }
+  // =========================
+  // RETORNO
+  // =========================
   return {
-    isValid: issues.filter((issue) => issue.type === "error").length === 0,
+    isValid: !issues.some((i) => i.type === "error"),
     issues,
   };
 }
 
+
 export default function AgentDetailPage({ params }: AgentPageProps) {
+  const [processOnlyAllowed, setProcessOnlyAllowed] = useState(false);
+  const [limitReachedMessage, setLimitReachedMessage] = useState<string | null>(null);
   const { area, agentId } = use(params);
   const agent = agentsData[area]?.[agentId];
 
@@ -399,6 +424,13 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   };
 
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [usageUserId, setUsageUserId] = useState<string | null>(null);
+  const [usageInfo, setUsageInfo] = useState<{
+    used: number;
+    monthlyLimit: number;
+    remaining: number;
+    limitReached: boolean;
+  } | null>(null);
   const [showAllValidatedToast, setShowAllValidatedToast] = useState(false);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -525,6 +557,39 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
     );
   }
 
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      setUsageUserId(user.id);
+    }
+
+    loadUser();
+  }, []);
+
+  async function refreshUsage(userId: string) {
+    const res = await fetch(`/api/usage/check?userId=${userId}`);
+    const data = await res.json();
+
+    if (!res.ok) return;
+
+    setUsageInfo({
+      used: data.used,
+      monthlyLimit: data.monthlyLimit,
+      remaining: data.remaining,
+      limitReached: data.limitReached,
+    });
+  }
+
+  useEffect(() => {
+    if (!usageUserId) return;
+    refreshUsage(usageUserId);
+  }, [usageUserId]);
+
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files || []).map((file) => ({
       localId: crypto.randomUUID(),
@@ -632,6 +697,14 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   function handleValidateCurrentInvoice() {
     if (reviewIndex === null) return;
 
+    const currentItem = files[reviewIndex];
+
+    if (!usageUserId || !currentItem) return;
+
+    const facturaId = currentItem.facturaId;
+
+    if (!facturaId) return;
+
     let nextIndexToOpen: number | null = null;
 
     setFiles((prev) => {
@@ -642,10 +715,11 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
         return {
           ...item,
           isValidated: true,
-          facturaId: item.facturaId ?? `fac_${crypto.randomUUID()}`, // NUEVO
+          facturaId: item.facturaId,
           ordenValidacion: Date.now(),
           parsed: {
             ...item.parsed,
+            fecha: formatInvoiceDate(item.parsed.fecha),
             numeroFactura: {
               establecimiento:
                 item.parsed.numeroFactura?.establecimiento?.trim() ?? "",
@@ -670,6 +744,25 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
 
       return updated;
     });
+
+    fetch("/api/usage/track", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: usageUserId,
+        facturaId,
+      }),
+    }).then(() => {
+      refreshUsage(usageUserId);
+    });
+
+    setCompletionMessage("Factura validada correctamente");
+
+    if (usageInfo?.remaining === 1) {
+      setCompletionMessage("Última factura disponible en tu plan");
+    }
 
     setTimeout(() => {
       if (nextIndexToOpen !== null) {
@@ -792,15 +885,57 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   }
 
 
-async function handleProcess() {
+async function handleProcess(processPartial = false) {
+
   if (files.length === 0) return;
+
+  const selectedToProcessCount = files.filter(
+    (item) =>
+      item.isSelected &&
+      (item.status === "pending" || item.status === "error")
+  ).length;
+
+  const remaining = usageInfo?.remaining ?? 0;
+
+  if (!processPartial && usageInfo && selectedToProcessCount > remaining) {
+    setProcessOnlyAllowed(true);
+    setLimitReachedMessage(
+      `Te quedan ${remaining} facturas disponibles. Seleccionaste ${selectedToProcessCount}.`
+    );
+    return;
+  }
+
+  if (usageInfo?.limitReached) {
+    alert("Alcanzaste tu límite mensual de facturas. Contactanos para ampliar tu plan.");
+    return;
+  }
+
+  const pendingToProcessCount = files.filter(
+    (item) => item.status === "pending" || item.status === "error"
+  ).length;
+
+  if (usageInfo && pendingToProcessCount > usageInfo.remaining) {
+    alert(`Te quedan ${usageInfo.remaining} facturas disponibles este mes. Reduce el lote o solicita más capacidad.`);
+    return;
+  }
 
   setLoading(true);
 
-  const indexesToProcess = files
+  const indexesToProcessBase = files
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => item.status === "pending" || item.status === "error")
+    .filter(
+      ({ item }) =>
+        item.isSelected &&
+        (item.status === "pending" || item.status === "error")
+    )
     .map(({ index }) => index);
+
+  let indexesToProcess = indexesToProcessBase;
+
+  if (processPartial) {
+    const remaining = usageInfo?.remaining ?? 0;
+    indexesToProcess = indexesToProcessBase.slice(0, remaining);
+  }
 
   const processOneFile = async (fileIndex: number, attempt = 1): Promise<void> => {
     setFiles((prev) =>
@@ -816,16 +951,34 @@ async function handleProcess() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
 
+      if (!usageUserId) {
+        console.error("User not ready yet");
+        return;
+      }
+
       const res = await fetch("/api/agents/accounting/process", {
         method: "POST",
         body: formData,
         signal: controller.signal,
-      });
+        headers: {
+          "x-user-id": usageUserId,
+        },
+      }); 
 
       clearTimeout(timeout);
 
       if (!res.ok) {
         throw new Error(`Process failed with status ${res.status}`);
+      }
+
+      if (res.status === 403) {
+        const errorData = await res.json();
+
+        setLimitReachedMessage(
+          errorData.error || "Has alcanzado tu límite mensual"
+        );
+
+        return;
       }
 
       const data = await res.json();
@@ -838,10 +991,14 @@ async function handleProcess() {
               (parsed as any).proveedor ||
               (parsed as any).razonSocialEmisor ||
               "",
-            fecha:
+              fecha: formatInvoiceDate(
               (parsed as any).fecha ||
               (parsed as any).fechaEmision ||
-              "",
+              ""
+            ),
+            vencimientoTimbrado: formatInvoiceDate(
+              (parsed as any).vencimientoTimbrado || ""
+            ),
             items: ((parsed as any).items || []).map((item: any) => ({
               ...item,
               monto: item.monto ?? item.montoTotal ?? 0,
@@ -1059,39 +1216,45 @@ async function handleExportBatch() {
 
   if (!saveResponse.ok) return;
 
-  const rows = selected.flatMap((item, fileIndex) => {
-    const data = item.parsed!;
-
-    return (data.items || []).map((row) => [
-      fileIndex + 1,
-      item.file.name,
-      data.proveedor,
-      data.fecha,
-      data.moneda,
-      data.total,
-      row.descripcion,
-      row.monto,
-      item.isDeducible ? "SI" : "NO",
-    ]);
-  });
-
   const header = [
-    "factura",
-    "archivo",
-    "proveedor",
-    "fecha",
-    "moneda",
-    "total",
-    "descripcion",
-    "monto",
-    "deducible",
+    "ESTABLECIMIENTO",
+    "SUCURSAL",
+    "NUMERO DE FACTURA",
+    "TIMBRADO",
+    "PROVEEDOR",
+    "FECHA",
+    "MONEDA",
+    "EXENTA",
+    "IVA 5%",
+    "LIQUIDACION IVA 5%",
+    "IVA 10%",
+    "LIQUIDACION IVA 10%",
+    "DEDUCIBLE / NO DEDUCIBLE",
   ];
 
-  const csv = [header, ...rows]
-    .map((r) => r.join(","))
-    .join("\n");
+  const rows = selected.map((item) => {
+    const data = item.parsed!;
+    const resumenIVA = calcularResumenIVA(data.items || []);
 
-  download("lote_facturas.csv", csv, "text/csv");
+    return [
+      data.numeroFactura?.establecimiento ?? "",
+      data.numeroFactura?.puntoExpedicion ?? "",
+      data.numeroFactura?.numero ?? "",
+      data.timbrado ?? "",
+      data.proveedor ?? "",
+      data.fecha ?? "",
+      data.moneda ?? "",
+      resumenIVA.exenta,
+      resumenIVA.iva5,
+      resumenIVA.liq5,
+      resumenIVA.iva10,
+      resumenIVA.liq10,
+      item.isDeducible ? "DEDUCIBLE" : "NO DEDUCIBLE",
+    ];
+  });
+
+  downloadExcel("lote_facturas.xlsx", header, rows);
+
   setFiles((prev) => prev.filter((f) => !f.isSelected));
   setPage(1);
   setReviewIndex(null);
@@ -1121,7 +1284,7 @@ function handleParsedFieldChange(
         ...item,
         parsed: {
           ...item.parsed,
-          [field]: value,
+          [field]: typeof value === "string" ? value.toUpperCase() : value,
         },
       };
     })
@@ -1169,7 +1332,10 @@ function handleParsedItemChange(
         rowIndex === itemIndex
           ? {
               ...row,
-              [field]: field === "monto" ? Number(value) || 0 : value,
+              [field]:
+                field === "monto"
+                  ? Number(value) || 0
+                  : String(value).toUpperCase(),
             }
           : row
       );
@@ -1298,29 +1464,81 @@ function handleParsedItemChange(
                   disabled={!canExportValidatedBatch}
                   className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Exportar lote CSV
+                  Exportar lote a Excel
                 </button>
               </div>
 
               <div className="flex items-center gap-3">
-                {reviewableCount > 0 && (
+                {files.some((f) => f.status === "done" && f.parsed) && (
                   <button
                     type="button"
                     onClick={() => openReviewFlow(files)}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
                   >
-                    Revisar lote
+                    Validar lote
                   </button>
                 )}
-
+                <div className="text-xs text-white/50">
+                  {usageInfo
+                    ? `Te quedan ${usageInfo.remaining} de ${usageInfo.monthlyLimit} facturas este mes`
+                    : "Cargando uso..."}
+                </div>
                 <button
                   type="button"
-                  onClick={handleProcess}
+                  onClick={() => {
+                    if (usageInfo?.limitReached) {
+                      setLimitReachedMessage("Límite alcanzado");
+                      return;
+                    }
+
+                    handleProcess();
+                  }}
                   disabled={files.length === 0 || loading}
-                  className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40"
+                  className={`rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40 ${
+                    usageInfo?.limitReached ? "opacity-50" : ""
+                  }`}
                 >
                   {loading ? "Procesando..." : "Procesar"}
                 </button>
+                {limitReachedMessage && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#0B1120] p-6 text-center">
+                      
+                      <p className="text-xs uppercase tracking-[0.28em] text-red-300">
+                        Límite alcanzado
+                      </p>
+
+                      <h2 className="mt-3 text-xl font-semibold text-white">
+                        Has llegado al límite de tu plan
+                      </h2>
+
+                      <p className="mt-3 text-sm text-white/60">
+                        Para continuar procesando facturas, necesitas ampliar tu capacidad.
+                      </p>
+
+                      <div className="mt-6 space-y-3">
+                        {processOnlyAllowed && (
+                          <button
+                            onClick={() => {
+                              setLimitReachedMessage(null);
+                              handleProcess(true); // 👈 modo parcial
+                            }}
+                            className="w-full rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300"
+                          >
+                            Procesar solo lo permitido
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setLimitReachedMessage(null)}
+                          className="w-full text-xs text-white/40"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1404,6 +1622,35 @@ function handleParsedItemChange(
                 </div>
               </div>
             </div>
+            {usageInfo && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/70">
+                <p>
+                  Facturas usadas: <span className="text-white">{usageInfo.used}</span> /{" "}
+                  <span className="text-white">{usageInfo.monthlyLimit}</span>
+                </p>
+                <p>
+                  Disponibles:{" "}
+                  <span className="text-emerald-300">{usageInfo.remaining}</span>
+                </p>
+              </div>
+            )}
+
+            {usageInfo?.limitReached && (
+              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                Alcanzaste tu límite mensual. Contactanos para ampliar tu plan.
+              </div>
+            )}
+            {usageInfo?.limitReached && (
+              <a
+                href="https://wa.me/595972224294?text=Hola%2C%20necesito%20ampliar%20mi%20plan%20de%20facturas%20en%20Nexa%20Core"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mb-4 inline-flex rounded-xl border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] hover:bg-[#C9A24D]/15"
+              >
+                Solicitar más capacidad
+              </a>
+            )}
+
             <div className="mt-4 space-y-3">
               {files.length > 0 ? (
                 paginatedFiles.map((item, pageIndex) => {
@@ -1672,9 +1919,12 @@ function handleParsedItemChange(
                         </span>
                         <input
                           value={String(currentReviewItem.parsed.fecha ?? "")}
-                          onChange={(e) =>
-                            handleParsedFieldChange(reviewIndex!, "fecha", e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d/]/g, "").slice(0, 10);
+                            handleParsedFieldChange(reviewIndex!, "fecha", value);
+                          }}
+                          placeholder="DD/MM/AAAA"
+                          maxLength={10}
                           className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
@@ -1779,9 +2029,12 @@ function handleParsedItemChange(
                         </span>
                         <input
                           value={String(currentReviewItem.parsed.timbrado ?? "")}
-                          onChange={(e) =>
-                            handleParsedFieldChange(reviewIndex!, "timbrado", e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d]/g, "").slice(0, 15);
+                            handleParsedFieldChange(reviewIndex!, "timbrado", value);
+                          }}
+                          placeholder="NÚMERO DE TIMBRADO"
+                          maxLength={15}
                           className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
@@ -1883,8 +2136,65 @@ function handleParsedItemChange(
                             <option value="5">IVA 5%</option>
                             <option value="EXENTO">Exenta</option>
                           </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFiles((prev) =>
+                                prev.map((item, idx) => {
+                                  if (idx !== reviewIndex || !item.parsed) return item;
+
+                                  const updatedItems = item.parsed.items.filter(
+                                    (_, idx) => idx !== itemIndex
+                                  );
+
+                                  return {
+                                    ...item,
+                                    parsed: {
+                                      ...item.parsed,
+                                      items: updatedItems,
+                                      ivaCalculado: calcularIVACompleto(updatedItems),
+                                    },
+                                  };
+                                })
+                              );
+                            }}
+                            className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 hover:bg-red-500/20"
+                          >
+                            Eliminar
+                          </button>
                         </div>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFiles((prev) =>
+                            prev.map((item, idx) => {
+                              if (idx !== reviewIndex || !item.parsed) return item;
+
+                              const updatedItems = [
+                                ...(item.parsed.items || []),
+                                {
+                                  descripcion: "",
+                                  monto: 0,
+                                  ivaTipo: "EXENTO",
+                                },
+                              ];
+
+                              return {
+                                ...item,
+                                parsed: {
+                                  ...item.parsed,
+                                  items: updatedItems,
+                                  ivaCalculado: calcularIVACompleto(updatedItems),
+                                },
+                              };
+                            })
+                          );
+                        }}
+                        className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/20"
+                      >
+                        Añadir item
+                      </button>
                       {currentReviewItem.parsed?.ivaCalculado && (
                         <div className="mt-4 rounded-2xl border border-white/10 bg-[#0B1120] p-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-white/45">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,47 @@ function sanitizeFileName(fileName: string) {
 
 export async function POST(req: Request) {
   try {
+    const authClient = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Usuario no autenticado" },
+        { status: 401 }
+      );
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const userId = user.id;
+
+    const { data: limitRow } = await supabase
+      .from("usage_limits")
+      .select("monthly_limit, is_blocked")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from("usage_tracking")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", startOfMonth.toISOString());
+
+    const limit = limitRow?.monthly_limit ?? 20;
+
+    if (limitRow?.is_blocked || (count ?? 0) >= limit) {
+      return NextResponse.json(
+        { error: "Límite alcanzado. Contacta soporte." },
+        { status: 403 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
@@ -31,8 +73,6 @@ export async function POST(req: Request) {
     const facturaId = `fac_${crypto.randomUUID()}`;
     const safeFileName = sanitizeFileName(file.name || "invoice");
     const storagePath = `pending/${facturaId}/${safeFileName}`;
-
-    const supabase = createSupabaseAdminClient();
 
     const { error: uploadError } = await supabase.storage
       .from("invoice-files")

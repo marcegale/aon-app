@@ -4,27 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", short: "D" },
-  { name: "Inbox", href: "/inbox", short: "I" },
-  { name: "Agents", href: "/agents", short: "A" },
-  { name: "Knowledge", href: "/knowledge", short: "K" },
-  { name: "Assessment", href: "/assessment", short: "As" },
-  { name: "Tools", href: "/tools", short: "T" },
-  { name: "Channels", href: "/channels", short: "C" },
-  { name: "Analytics", href: "/analytics", short: "An" },
-  { name: "Settings", href: "/settings", short: "S" },
+  {
+    name: "Procesador de facturas",
+    href: "/agents/accounting/invoice-processor",
+    short: "F",
+  },
+  {
+    name: "Uso / Créditos",
+    href: "/admin/usage",
+    short: "U",
+  },
+  {
+    name: "Cerrar sesión",
+    href: "/logout",
+    short: "X",
+  },
 ];
 
-export default function Sidebar({
-  collapsed,
-}: {
-  collapsed: boolean;
-}) {
+export default function Sidebar({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
 
   return (
     <aside
-      className={`${collapsed ? "w-20" : "w-72"} shrink-0 overflow-hidden border-r border-white/10 bg-[#0E1118] px-5 py-6 transition-all duration-300`}
+      className={`${
+        collapsed ? "w-20" : "w-72"
+      } shrink-0 overflow-hidden border-r border-white/10 bg-[#0E1118] px-5 py-6 transition-all duration-300`}
     >
       <div className="mb-10">
         {collapsed ? (
@@ -36,7 +40,9 @@ export default function Sidebar({
             <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
               Nexa Core
             </p>
-            <h1 className="mt-1 text-2xl font-semibold">Control Center</h1>
+            <h1 className="mt-1 text-2xl font-semibold text-white">
+              Control Center
+            </h1>
           </>
         )}
       </div>
@@ -73,7 +79,9 @@ export default function Sidebar({
             <p className="text-xs uppercase tracking-[0.22em] text-[#C9A24D]">
               System Status
             </p>
-            <p className="mt-2 text-sm text-white/70">All agents operational</p>
+            <p className="mt-2 text-sm text-white/70">
+              Invoice agent operational
+            </p>
             <div className="mt-3 flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-[#C9A24D]" />
               <span className="text-sm text-white">Active</span>
