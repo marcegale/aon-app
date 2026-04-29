@@ -4,12 +4,33 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+type HistoryBatchItem = {
+  status?: string;
+  isValidated?: boolean;
+  parsed?: {
+    proveedor?: string;
+    razonSocialEmisor?: string;
+    ruc?: string;
+    rucEmisor?: string;
+    fecha?: string;
+    fechaEmision?: string;
+    total?: number | string;
+    montoTotal?: number | string;
+    numeroFactura?: {
+      establecimiento?: string;
+      puntoExpedicion?: string;
+      numero?: string;
+    };
+  } | null;
+};
+
 type HistoryBatch = {
   id: string;
   client: string;
   date: string;
   total: number;
   validated: number;
+  items?: HistoryBatchItem[];
 };
 
 function readHistory() {
@@ -25,6 +46,34 @@ function getStatus(item: HistoryBatch) {
   if (item.total > 0 && item.validated >= item.total) return "validado";
   if (item.validated > 0) return "parcial";
   return "pendiente";
+}
+
+function getItemStatus(item: HistoryBatchItem) {
+  if (item.status === "error") return "error";
+  if (item.isValidated) return "validado";
+  if (item.status === "done") return "procesado";
+  return item.status || "pendiente";
+}
+
+function formatInvoiceNumber(item: HistoryBatchItem) {
+  const number = item.parsed?.numeroFactura;
+  if (!number) return "—";
+
+  return [number.establecimiento, number.puntoExpedicion, number.numero]
+    .filter(Boolean)
+    .join("-") || "—";
+}
+
+function formatAmount(value: number | string | undefined) {
+  if (value === undefined || value === null || value === "") return "—";
+
+  const numberValue = typeof value === "number" ? value : Number(String(value).replace(/\./g, "").replace(",", "."));
+
+  if (Number.isNaN(numberValue)) return String(value);
+
+  return new Intl.NumberFormat("de-DE", {
+    maximumFractionDigits: 0,
+  }).format(numberValue);
 }
 
 export default function BatchDetailPage() {
@@ -53,6 +102,7 @@ export default function BatchDetailPage() {
   }
 
   const status = getStatus(batch);
+  const batchItems = batch.items || [];
 
   return (
     <div className="space-y-5">
@@ -89,12 +139,14 @@ export default function BatchDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-white/10 bg-[#111620] p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#111620]">
+        <div className="flex flex-col gap-3 border-b border-white/10 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Facturas del lote</h2>
             <p className="mt-1 text-sm text-white/50">
-              El detalle por factura se activará cuando el snapshot guarde items individuales.
+              {batchItems.length > 0
+                ? `${batchItems.length} facturas guardadas en este snapshot.`
+                : "Este lote no tiene detalle disponible todavía."}
             </p>
           </div>
           <button
@@ -104,6 +156,46 @@ export default function BatchDetailPage() {
             Reexportar lote
           </button>
         </div>
+
+        {batchItems.length > 0 ? (
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[920px] grid-cols-[1.7fr_120px_130px_140px_140px_120px] border-b border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/40">
+              <span>Proveedor</span>
+              <span>RUC</span>
+              <span>Fecha</span>
+              <span>Factura</span>
+              <span>Total</span>
+              <span>Estado</span>
+            </div>
+
+            {batchItems.map((item, index) => {
+              const parsed = item.parsed;
+              const provider = parsed?.proveedor || parsed?.razonSocialEmisor || "Proveedor no identificado";
+              const ruc = parsed?.ruc || parsed?.rucEmisor || "—";
+              const date = parsed?.fecha || parsed?.fechaEmision || "—";
+              const amount = parsed?.total ?? parsed?.montoTotal;
+              const itemStatus = getItemStatus(item);
+
+              return (
+                <div
+                  key={`${provider}-${index}`}
+                  className="grid min-w-[920px] grid-cols-[1.7fr_120px_130px_140px_140px_120px] border-b border-white/6 px-4 py-4 text-sm text-white/75 last:border-b-0"
+                >
+                  <span className="font-medium text-white">{provider}</span>
+                  <span>{ruc}</span>
+                  <span>{date}</span>
+                  <span>{formatInvoiceNumber(item)}</span>
+                  <span>{formatAmount(amount)}</span>
+                  <span className="capitalize">{itemStatus}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-8 text-sm leading-6 text-white/45">
+            Los lotes antiguos pueden no tener detalle por factura. Procesá y exportá un lote nuevo para ver la tabla completa.
+          </div>
+        )}
       </div>
     </div>
   );
