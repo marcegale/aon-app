@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 
 type HistoryBatchItem = {
   status?: string;
@@ -16,6 +17,10 @@ type HistoryBatchItem = {
     fechaEmision?: string;
     total?: number | string;
     montoTotal?: number | string;
+    moneda?: string;
+    timbrado?: string;
+    vencimientoTimbrado?: string;
+    condicion?: string;
     numeroFactura?: {
       establecimiento?: string;
       puntoExpedicion?: string;
@@ -76,6 +81,53 @@ function formatAmount(value: number | string | undefined) {
   }).format(numberValue);
 }
 
+function toNumber(value: number | string | undefined) {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value === "number") return value;
+
+  const normalized = String(value).replace(/\./g, "").replace(",", ".");
+  const parsed = Number(normalized);
+
+  return Number.isNaN(parsed) ? value : parsed;
+}
+
+function safeFilePart(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 48);
+}
+
+function exportBatchToExcel(batch: HistoryBatch) {
+  const rows = (batch.items || []).map((item) => {
+    const parsed = item.parsed;
+
+    return {
+      Cliente: batch.client,
+      Proveedor: parsed?.proveedor || parsed?.razonSocialEmisor || "",
+      RUC: parsed?.ruc || parsed?.rucEmisor || "",
+      Fecha: parsed?.fecha || parsed?.fechaEmision || "",
+      Factura: formatInvoiceNumber(item) === "—" ? "" : formatInvoiceNumber(item),
+      Timbrado: parsed?.timbrado || "",
+      Vencimiento: parsed?.vencimientoTimbrado || "",
+      Condicion: parsed?.condicion || "",
+      Moneda: parsed?.moneda || "PYG",
+      Total: toNumber(parsed?.total ?? parsed?.montoTotal),
+      Estado: getItemStatus(item),
+    };
+  });
+
+  if (rows.length === 0) return;
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+
+  const filename = `lote_${safeFilePart(batch.client)}_${safeFilePart(batch.id)}.xlsx`;
+  XLSX.writeFile(workbook, filename);
+}
+
 export default function BatchDetailPage() {
   const params = useParams<{ batchId: string }>();
   const [items, setItems] = useState<HistoryBatch[]>([]);
@@ -103,6 +155,7 @@ export default function BatchDetailPage() {
 
   const status = getStatus(batch);
   const batchItems = batch.items || [];
+  const canReexport = batchItems.length > 0;
 
   return (
     <div className="space-y-5">
@@ -151,7 +204,9 @@ export default function BatchDetailPage() {
           </div>
           <button
             type="button"
-            className="rounded-xl bg-[#C9A24D] px-5 py-3 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F] active:scale-[0.99]"
+            disabled={!canReexport}
+            onClick={() => exportBatchToExcel(batch)}
+            className="rounded-xl bg-[#C9A24D] px-5 py-3 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/30"
           >
             Reexportar lote
           </button>
