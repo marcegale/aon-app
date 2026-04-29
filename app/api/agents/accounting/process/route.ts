@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { toFile } from "openai/uploads";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 
@@ -16,27 +17,12 @@ function sanitizeFileName(fileName: string) {
     .replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-function getInputFileContent(file: File, base64: string) {
-  const fileType = file.type || "application/octet-stream";
-  const fileName = file.name || "invoice";
+function isPdf(file: File) {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
 
-  if (fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
-    return {
-      type: "input_file" as const,
-      filename: fileName,
-      file_data: base64,
-    };
-  }
-
-  if (fileType.startsWith("image/")) {
-    return {
-      type: "input_image" as const,
-      image_url: `data:${fileType};base64,${base64}`,
-      detail: "auto" as const,
-    };
-  }
-
-  return null;
+function isImage(file: File) {
+  return (file.type || "").startsWith("image/");
 }
 
 function getProcessingErrorMessage(error: unknown) {
@@ -198,18 +184,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString("base64");
-    const inputFileContent = getInputFileContent(file, base64);
-
-    if (!inputFileContent) {
+    if (!isPdf(file) && !isImage(file)) {
       return NextResponse.json(
         { error: "Unsupported file type. Use JPG, PNG or PDF." },
         { status: 400 }
       );
     }
 
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString("base64");
     const facturaId = `fac_${crypto.randomUUID()}`;
     const safeFileName = sanitizeFileName(file.name || "invoice");
     const storagePath = `pending/${facturaId}/${safeFileName}`;
@@ -229,6 +213,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const fileContent = isPdf(file)
+      ? {
+          type: "input_file" as const,
+          file_id: (
+            await openai.files.create({
+              file: await toFile(buffer, safeFileName),
+              purpose: "user_data",
+            })
+          ).id,
+        }
+      : {
+          type: "input_image" as const,
+          image_url: `data:${file.type};base64,${base64}`,
+          detail: "auto" as const,
+        };
+
     const response = await openai.responses.create({
       model: "gpt-4o-mini",
       input: [
@@ -239,7 +239,7 @@ export async function POST(req: Request) {
               type: "input_text",
               text: extractionPrompt,
             },
-            inputFileContent,
+            fileContent,
           ],
         },
       ],
