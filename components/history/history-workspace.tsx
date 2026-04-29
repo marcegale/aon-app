@@ -11,15 +11,6 @@ type HistoryBatch = {
   validated: number;
 };
 
-function readHistory() {
-  try {
-    const raw = window.localStorage.getItem("invoice_files_history");
-    return raw ? (JSON.parse(raw) as HistoryBatch[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 function getStatus(item: HistoryBatch) {
   if (item.total > 0 && item.validated >= item.total) return "validado";
   if (item.validated > 0) return "parcial";
@@ -28,6 +19,7 @@ function getStatus(item: HistoryBatch) {
 
 export default function HistoryWorkspace() {
   const [items, setItems] = useState<HistoryBatch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [clientQuery, setClientQuery] = useState("");
   const [dateQuery, setDateQuery] = useState("");
@@ -36,7 +28,13 @@ export default function HistoryWorkspace() {
   const router = useRouter();
 
   useEffect(() => {
-    setItems(readHistory());
+    fetch("/api/history/batches")
+      .then((r) => r.json())
+      .then((data) => {
+        setItems(data.batches ?? []);
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -46,8 +44,10 @@ export default function HistoryWorkspace() {
 
     return items.filter((item) => {
       const status = getStatus(item);
-      const matchesClient = !normalizedClient || item.client.toLowerCase().includes(normalizedClient);
-      const matchesDate = !normalizedDate || item.date.toLowerCase().includes(normalizedDate);
+      const matchesClient =
+        !normalizedClient || item.client.toLowerCase().includes(normalizedClient);
+      const matchesDate =
+        !normalizedDate || item.date.toLowerCase().includes(normalizedDate);
       const matchesStatus = statusQuery === "todos" || status === statusQuery;
       const matchesTotal = !minTotal || item.total >= minTotalNumber;
 
@@ -56,10 +56,19 @@ export default function HistoryWorkspace() {
   }, [items, clientQuery, dateQuery, statusQuery, minTotal]);
 
   const selectedBatch = useMemo(() => {
-    return items.find((item) => item.id === selectedBatchId) ?? filteredItems[0] ?? null;
+    return (
+      items.find((item) => item.id === selectedBatchId) ??
+      filteredItems[0] ??
+      null
+    );
   }, [items, selectedBatchId, filteredItems]);
 
-  const activeFilterCount = [clientQuery, dateQuery, statusQuery !== "todos" ? statusQuery : "", minTotal].filter(Boolean).length;
+  const activeFilterCount = [
+    clientQuery,
+    dateQuery,
+    statusQuery !== "todos" ? statusQuery : "",
+    minTotal,
+  ].filter(Boolean).length;
 
   function clearFilters() {
     setClientQuery("");
@@ -124,7 +133,7 @@ export default function HistoryWorkspace() {
 
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/45">
           <span className="rounded-full border border-white/10 px-3 py-1">
-            {filteredItems.length} resultados
+            {loading ? "Cargando..." : `${filteredItems.length} resultados`}
           </span>
           <span className="rounded-full border border-white/10 px-3 py-1">
             {activeFilterCount} filtros activos
@@ -141,7 +150,9 @@ export default function HistoryWorkspace() {
             <span>Estado</span>
           </div>
 
-          {filteredItems.length === 0 ? (
+          {loading ? (
+            <div className="p-8 text-sm text-white/45">Cargando historial...</div>
+          ) : filteredItems.length === 0 ? (
             <div className="p-8 text-sm leading-6 text-white/45">
               No hay lotes que coincidan con los filtros actuales.
             </div>
@@ -149,7 +160,7 @@ export default function HistoryWorkspace() {
             filteredItems.map((item) => {
               const status = getStatus(item);
               const isSelected = selectedBatch?.id === item.id;
-            
+
               return (
                 <button
                   key={item.id}
@@ -161,7 +172,9 @@ export default function HistoryWorkspace() {
                       : "text-white/75 hover:bg-white/[0.04]"
                   }`}
                 >
-                  <span className="col-span-2 font-medium text-white">{item.client}</span>
+                  <span className="col-span-2 font-medium text-white">
+                    {item.client}
+                  </span>
                   <span>{item.date}</span>
                   <span>{item.total}</span>
                   <span className="capitalize">{status}</span>
@@ -186,17 +199,27 @@ export default function HistoryWorkspace() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Facturas</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{selectedBatch.total}</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                    Facturas
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {selectedBatch.total}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Validadas</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{selectedBatch.validated}</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                    Validadas
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {selectedBatch.validated}
+                  </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/40">Estado</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+                  Estado
+                </p>
                 <p className="mt-2 text-sm font-medium capitalize text-white">
                   {getStatus(selectedBatch)}
                 </p>
@@ -204,18 +227,17 @@ export default function HistoryWorkspace() {
 
               <button
                 type="button"
+                onClick={() => router.push(`/historico/${selectedBatch.id}`)}
                 className="w-full rounded-xl bg-[#C9A24D] px-4 py-3 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F] active:scale-[0.99]"
               >
-                Reexportar lote
+                Ver detalle y reexportar
               </button>
-
-              <p className="text-xs leading-5 text-white/42">
-                El detalle por factura se conectará cuando el lote guarde items individuales.
-              </p>
             </div>
           ) : (
             <p className="text-sm leading-6 text-white/45">
-              Seleccioná un lote para ver el detalle.
+              {loading
+                ? "Cargando..."
+                : "Seleccioná un lote para ver el detalle."}
             </p>
           )}
         </aside>

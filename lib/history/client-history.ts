@@ -19,7 +19,6 @@ type StoredInvoiceFile = {
   parsed?: unknown;
 };
 
-const HISTORY_KEY = "invoice_files_history";
 const CLIENT_KEY = "nexa_active_client";
 const FILES_KEY = "invoice_files";
 
@@ -32,19 +31,17 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-export function readInvoiceHistory(): InvoiceHistoryBatch[] {
-  return readJson<InvoiceHistoryBatch[]>(HISTORY_KEY, []);
-}
-
-export function saveCurrentInvoiceBatchToHistory(filesSnapshot?: StoredInvoiceFile[]) {
+export async function saveCurrentInvoiceBatchToHistory(
+  filesSnapshot?: StoredInvoiceFile[]
+): Promise<InvoiceHistoryBatch | null> {
   const files = filesSnapshot ?? readJson<StoredInvoiceFile[]>(FILES_KEY, []);
 
   if (files.length === 0) {
     return null;
   }
 
-  const client = window.localStorage.getItem(CLIENT_KEY) || "Cliente sin identificar";
-  const history = readInvoiceHistory();
+  const client =
+    window.localStorage.getItem(CLIENT_KEY) || "Cliente sin identificar";
   const now = new Date();
 
   const items: InvoiceHistoryItem[] = files.map((file) => ({
@@ -62,7 +59,15 @@ export function saveCurrentInvoiceBatchToHistory(filesSnapshot?: StoredInvoiceFi
     items,
   };
 
-  window.localStorage.setItem(HISTORY_KEY, JSON.stringify([batch, ...history]));
+  try {
+    await fetch("/api/history/batches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(batch),
+    });
+  } catch {
+    // silently fail — batch is already exported, history is secondary
+  }
 
   return batch;
 }

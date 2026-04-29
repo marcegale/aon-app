@@ -150,8 +150,9 @@ export async function POST(request: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const fileBuffer = Buffer.from(arrayBuffer);
 
-      const { supabaseServer } = await import("@/app/lib/supabase-server");
-      const { error: uploadError } = await supabaseServer.storage
+      const { createSupabaseAdminClient } = await import("@/lib/supabase/server");
+      const supabaseAdmin = createSupabaseAdminClient();
+      const { error: uploadError } = await supabaseAdmin.storage
         .from("tenant-documents")
         .upload(storagePath, fileBuffer, {
           contentType: file.type || "application/octet-stream",
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const { data: publicUrlData } = supabaseServer.storage
+      const { data: publicUrlData } = supabaseAdmin.storage
         .from("tenant-documents")
         .getPublicUrl(storagePath);
 

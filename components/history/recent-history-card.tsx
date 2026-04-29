@@ -10,26 +10,14 @@ type HistoryBatch = {
   validated: number;
 };
 
-function readHistory() {
-  try {
-    const raw = window.localStorage.getItem("invoice_files_history");
-    return raw ? (JSON.parse(raw) as HistoryBatch[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function RecentHistoryCard() {
   const [items, setItems] = useState<HistoryBatch[]>([]);
 
   useEffect(() => {
-    function syncHistory() {
-      setItems(readHistory().slice(0, 3));
-    }
-
-    syncHistory();
-    const interval = window.setInterval(syncHistory, 1500);
-    return () => window.clearInterval(interval);
+    fetch("/api/history/batches")
+      .then((r) => r.json())
+      .then((data) => setItems((data.batches ?? []).slice(0, 3)))
+      .catch(() => setItems([]));
   }, []);
 
   return (
@@ -39,9 +27,7 @@ export default function RecentHistoryCard() {
           <p className="text-xs uppercase tracking-[0.18em] text-white/40">
             Histórico reciente
           </p>
-          <p className="mt-1 text-sm font-medium text-white">
-            Últimos lotes
-          </p>
+          <p className="mt-1 text-sm font-medium text-white">Últimos lotes</p>
         </div>
         <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-white/45">
           {items.length}
