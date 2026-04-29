@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type HistoryBatch = {
   id: string;
@@ -32,6 +33,7 @@ export default function HistoryWorkspace() {
   const [dateQuery, setDateQuery] = useState("");
   const [statusQuery, setStatusQuery] = useState("todos");
   const [minTotal, setMinTotal] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     setItems(readHistory());
@@ -147,12 +149,12 @@ export default function HistoryWorkspace() {
             filteredItems.map((item) => {
               const status = getStatus(item);
               const isSelected = selectedBatch?.id === item.id;
-
+            
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSelectedBatchId(item.id)}
+                  onClick={() => router.push(`/historico/${item.id}`)}
                   className={`grid w-full grid-cols-5 border-b border-white/6 px-4 py-4 text-left text-sm transition last:border-b-0 ${
                     isSelected
                       ? "bg-[#C9A24D]/10 text-white"
