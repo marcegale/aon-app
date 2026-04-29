@@ -19,6 +19,8 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
   }, []);
 
   function handleContinue() {
+    if (!canContinue) return;
+
     const label = `${draftName.trim()} · ${draftDocument.trim()}`;
     window.localStorage.setItem(STORAGE_KEY, label);
     setClientName(label);
@@ -29,7 +31,7 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
     setClientName(null);
   }
 
-  const canContinue = draftName.trim().length > 1 && draftDocument.trim().length > 3;
+  const canContinue = draftName.trim().length > 1 && draftDocument.trim().length > 0;
 
   return (
     <>
