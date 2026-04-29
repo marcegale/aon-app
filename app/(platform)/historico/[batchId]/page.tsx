@@ -131,14 +131,9 @@ export default function BatchDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/history/batches")
+    fetch(`/api/history/batches/${params.batchId}`)
       .then((r) => r.json())
-      .then((data) => {
-        const found = (data.batches ?? []).find(
-          (b: HistoryBatch) => b.id === params.batchId
-        );
-        setBatch(found ?? null);
-      })
+      .then((data) => setBatch(data.batch ?? null))
       .catch(() => setBatch(null))
       .finally(() => setLoading(false));
   }, [params.batchId]);
