@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import RecentHistoryCard from "@/components/history/recent-history-card";
 
 type StoredInvoiceFile = {
   status?: "pending" | "processing" | "done" | "error";
@@ -117,6 +118,7 @@ export default function AgentRightPanel() {
           {nextAction}
         </p>
       </div>
+    <RecentHistoryCard />
     </div>
   );
 }
