@@ -3,6 +3,7 @@
 import { use, useRef, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase/client";
+import { saveCurrentInvoiceBatchToHistory } from "@/lib/history/client-history";
 
 type ParsedInvoiceItem = {
   descripcion: string;
@@ -1259,6 +1260,8 @@ async function handleExportBatch() {
   setPage(1);
   setReviewIndex(null);
   setIsReviewOpen(false);
+
+  saveCurrentInvoiceBatchToHistory();
 }
 
 function handleToggleSelected(index: number) {
