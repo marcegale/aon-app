@@ -12,6 +12,9 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
   const [clientName, setClientName] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDocument, setDraftDocument] = useState("");
+  const [draftType, setDraftType] = useState("juridica");
+  const [draftEmail, setDraftEmail] = useState("");
+  const [draftPhone, setDraftPhone] = useState("");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -23,11 +26,22 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
 
     const label = `${draftName.trim()} · ${draftDocument.trim()}`;
     window.localStorage.setItem(STORAGE_KEY, label);
+    window.localStorage.setItem(
+      "nexa_active_client_meta",
+      JSON.stringify({
+        type: draftType,
+        name: draftName.trim(),
+        document: draftDocument.trim(),
+        email: draftEmail.trim(),
+        phone: draftPhone.trim(),
+      })
+    );
     setClientName(label);
   }
 
   function handleChangeClient() {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem("nexa_active_client_meta");
     setClientName(null);
   }
 
@@ -55,12 +69,20 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
 
       {!clientName ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070B]/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[28px] border border-white/10 bg-[#111620] p-6 shadow-2xl shadow-black/40">
+          <div className="w-full max-w-2xl rounded-[28px] border border-white/10 bg-[#111620] p-6 shadow-2xl shadow-black/40">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#C9A24D]">Contexto obligatorio</p>
             <h2 className="mt-3 text-2xl font-semibold text-white">¿Para qué cliente estás trabajando?</h2>
             <p className="mt-2 text-sm leading-6 text-white/60">Cargá un cliente antes de procesar facturas.</p>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <select
+                value={draftType}
+                onChange={(event) => setDraftType(event.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition focus:border-[#C9A24D]/50"
+              >
+                <option value="juridica">Persona jurídica</option>
+                <option value="fisica">Persona física</option>
+              </select>
               <input
                 value={draftDocument}
                 onChange={(event) => setDraftDocument(event.target.value)}
@@ -71,6 +93,18 @@ export default function ClientSelectionGate({ children }: ClientSelectionGatePro
                 value={draftName}
                 onChange={(event) => setDraftName(event.target.value)}
                 placeholder="Razón social o nombre"
+                className="sm:col-span-2 w-full rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
+              />
+              <input
+                value={draftEmail}
+                onChange={(event) => setDraftEmail(event.target.value)}
+                placeholder="Email"
+                className="w-full rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
+              />
+              <input
+                value={draftPhone}
+                onChange={(event) => setDraftPhone(event.target.value)}
+                placeholder="Teléfono"
                 className="w-full rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
               />
             </div>
