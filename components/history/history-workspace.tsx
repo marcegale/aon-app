@@ -27,6 +27,7 @@ function getStatus(item: HistoryBatch) {
 
 export default function HistoryWorkspace() {
   const [items, setItems] = useState<HistoryBatch[]>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [clientQuery, setClientQuery] = useState("");
   const [dateQuery, setDateQuery] = useState("");
   const [statusQuery, setStatusQuery] = useState("todos");
@@ -51,6 +52,10 @@ export default function HistoryWorkspace() {
       return matchesClient && matchesDate && matchesStatus && matchesTotal;
     });
   }, [items, clientQuery, dateQuery, statusQuery, minTotal]);
+
+  const selectedBatch = useMemo(() => {
+    return items.find((item) => item.id === selectedBatchId) ?? filteredItems[0] ?? null;
+  }, [items, selectedBatchId, filteredItems]);
 
   const activeFilterCount = [clientQuery, dateQuery, statusQuery !== "todos" ? statusQuery : "", minTotal].filter(Boolean).length;
 
@@ -125,35 +130,93 @@ export default function HistoryWorkspace() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#111620]">
-        <div className="grid grid-cols-5 border-b border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/40">
-          <span className="col-span-2">Cliente</span>
-          <span>Fecha</span>
-          <span>Total</span>
-          <span>Estado</span>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#111620]">
+          <div className="grid grid-cols-5 border-b border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/40">
+            <span className="col-span-2">Cliente</span>
+            <span>Fecha</span>
+            <span>Total</span>
+            <span>Estado</span>
+          </div>
+
+          {filteredItems.length === 0 ? (
+            <div className="p-8 text-sm leading-6 text-white/45">
+              No hay lotes que coincidan con los filtros actuales.
+            </div>
+          ) : (
+            filteredItems.map((item) => {
+              const status = getStatus(item);
+              const isSelected = selectedBatch?.id === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedBatchId(item.id)}
+                  className={`grid w-full grid-cols-5 border-b border-white/6 px-4 py-4 text-left text-sm transition last:border-b-0 ${
+                    isSelected
+                      ? "bg-[#C9A24D]/10 text-white"
+                      : "text-white/75 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="col-span-2 font-medium text-white">{item.client}</span>
+                  <span>{item.date}</span>
+                  <span>{item.total}</span>
+                  <span className="capitalize">{status}</span>
+                </button>
+              );
+            })
+          )}
         </div>
 
-        {filteredItems.length === 0 ? (
-          <div className="p-8 text-sm leading-6 text-white/45">
-            No hay lotes que coincidan con los filtros actuales.
-          </div>
-        ) : (
-          filteredItems.map((item) => {
-            const status = getStatus(item);
-
-            return (
-              <div
-                key={item.id}
-                className="grid grid-cols-5 border-b border-white/6 px-4 py-4 text-sm text-white/75 last:border-b-0"
-              >
-                <span className="col-span-2 font-medium text-white">{item.client}</span>
-                <span>{item.date}</span>
-                <span>{item.total}</span>
-                <span className="capitalize">{status}</span>
+        <aside className="rounded-[24px] border border-[#C9A24D]/20 bg-[#111620] p-5 shadow-xl shadow-black/20">
+          {selectedBatch ? (
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C9A24D]">
+                  Detalle del lote
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-white">
+                  {selectedBatch.client}
+                </h2>
+                <p className="mt-1 text-sm text-white/45">{selectedBatch.date}</p>
               </div>
-            );
-          })
-        )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Facturas</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{selectedBatch.total}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Validadas</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{selectedBatch.validated}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40">Estado</p>
+                <p className="mt-2 text-sm font-medium capitalize text-white">
+                  {getStatus(selectedBatch)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#C9A24D] px-4 py-3 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F] active:scale-[0.99]"
+              >
+                Reexportar lote
+              </button>
+
+              <p className="text-xs leading-5 text-white/42">
+                El detalle por factura se conectará cuando el lote guarde items individuales.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm leading-6 text-white/45">
+              Seleccioná un lote para ver el detalle.
+            </p>
+          )}
+        </aside>
       </div>
     </div>
   );
