@@ -39,6 +39,11 @@ function getInputFileContent(file: File, base64: string) {
   return null;
 }
 
+function getProcessingErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return "Unknown processing error";
+}
+
 const extractionPrompt = `
 Extrae los siguientes campos de esta factura paraguaya y devuelve SOLO JSON válido.
 
@@ -225,7 +230,7 @@ export async function POST(req: Request) {
     }
 
     const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       input: [
         {
           role: "user",
@@ -250,7 +255,11 @@ export async function POST(req: Request) {
       fileSize: file.size,
     });
   } catch (error) {
+    const message = getProcessingErrorMessage(error);
     console.error("PROCESSING ERROR:", error);
-    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Processing failed", details: message },
+      { status: 500 }
+    );
   }
 }
