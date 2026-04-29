@@ -1,14 +1,22 @@
+export type InvoiceHistoryItem = {
+  status?: string;
+  isValidated?: boolean;
+  parsed?: unknown;
+};
+
 export type InvoiceHistoryBatch = {
   id: string;
   client: string;
   date: string;
   total: number;
   validated: number;
+  items: InvoiceHistoryItem[];
 };
 
 type StoredInvoiceFile = {
   status?: string;
   isValidated?: boolean;
+  parsed?: unknown;
 };
 
 const HISTORY_KEY = "invoice_files_history";
@@ -28,8 +36,8 @@ export function readInvoiceHistory(): InvoiceHistoryBatch[] {
   return readJson<InvoiceHistoryBatch[]>(HISTORY_KEY, []);
 }
 
-export function saveCurrentInvoiceBatchToHistory() {
-  const files = readJson<StoredInvoiceFile[]>(FILES_KEY, []);
+export function saveCurrentInvoiceBatchToHistory(filesSnapshot?: StoredInvoiceFile[]) {
+  const files = filesSnapshot ?? readJson<StoredInvoiceFile[]>(FILES_KEY, []);
 
   if (files.length === 0) {
     return null;
@@ -39,12 +47,19 @@ export function saveCurrentInvoiceBatchToHistory() {
   const history = readInvoiceHistory();
   const now = new Date();
 
+  const items: InvoiceHistoryItem[] = files.map((file) => ({
+    status: file.status,
+    isValidated: file.isValidated,
+    parsed: file.parsed ?? null,
+  }));
+
   const batch: InvoiceHistoryBatch = {
     id: crypto.randomUUID(),
     client,
     date: now.toLocaleString("es-PY"),
     total: files.length,
     validated: files.filter((file) => file.isValidated).length,
+    items,
   };
 
   window.localStorage.setItem(HISTORY_KEY, JSON.stringify([batch, ...history]));
