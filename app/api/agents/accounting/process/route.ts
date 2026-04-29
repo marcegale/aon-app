@@ -16,88 +16,30 @@ function sanitizeFileName(fileName: string) {
     .replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-export async function POST(req: Request) {
-  try {
-    const authClient = await createServerSupabaseClient();
+function getInputFileContent(file: File, base64: string) {
+  const fileType = file.type || "application/octet-stream";
+  const fileName = file.name || "invoice";
 
-    const {
-      data: { user },
-    } = await authClient.auth.getUser();
+  if (fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
+    return {
+      type: "input_file" as const,
+      filename: fileName,
+      file_data: base64,
+    };
+  }
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Usuario no autenticado" },
-        { status: 401 }
-      );
-    }
+  if (fileType.startsWith("image/")) {
+    return {
+      type: "input_image" as const,
+      image_url: `data:${fileType};base64,${base64}`,
+      detail: "auto" as const,
+    };
+  }
 
-    const supabase = createSupabaseAdminClient();
-    const userId = user.id;
+  return null;
+}
 
-    const { data: limitRow } = await supabase
-      .from("usage_limits")
-      .select("monthly_limit, is_blocked")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const { count } = await supabase
-      .from("usage_tracking")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .gte("created_at", startOfMonth.toISOString());
-
-    const limit = limitRow?.monthly_limit ?? 20;
-
-    if (limitRow?.is_blocked || (count ?? 0) >= limit) {
-      return NextResponse.json(
-        { error: "Límite alcanzado. Contacta soporte." },
-        { status: 403 }
-      );
-    }
-
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString("base64");
-
-    const facturaId = `fac_${crypto.randomUUID()}`;
-    const safeFileName = sanitizeFileName(file.name || "invoice");
-    const storagePath = `pending/${facturaId}/${safeFileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("invoice-files")
-      .upload(storagePath, buffer, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("SUPABASE STORAGE UPLOAD ERROR:", uploadError);
-      return NextResponse.json(
-        { error: "File upload failed", details: uploadError.message },
-        { status: 500 }
-      );
-    }
-
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `
+const extractionPrompt = `
 Extrae los siguientes campos de esta factura paraguaya y devuelve SOLO JSON válido.
 
 IMPORTANTE:
@@ -199,13 +141,100 @@ FORMATO FINAL:
     }
   ]
 }
-`,
-            },
+`;
+
+export async function POST(req: Request) {
+  try {
+    const authClient = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Usuario no autenticado" },
+        { status: 401 }
+      );
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const userId = user.id;
+
+    const { data: limitRow } = await supabase
+      .from("usage_limits")
+      .select("monthly_limit, is_blocked")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from("usage_tracking")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", startOfMonth.toISOString());
+
+    const limit = limitRow?.monthly_limit ?? 20;
+
+    if (limitRow?.is_blocked || (count ?? 0) >= limit) {
+      return NextResponse.json(
+        { error: "Límite alcanzado. Contacta soporte." },
+        { status: 403 }
+      );
+    }
+
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString("base64");
+    const inputFileContent = getInputFileContent(file, base64);
+
+    if (!inputFileContent) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Use JPG, PNG or PDF." },
+        { status: 400 }
+      );
+    }
+
+    const facturaId = `fac_${crypto.randomUUID()}`;
+    const safeFileName = sanitizeFileName(file.name || "invoice");
+    const storagePath = `pending/${facturaId}/${safeFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("invoice-files")
+      .upload(storagePath, buffer, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("SUPABASE STORAGE UPLOAD ERROR:", uploadError);
+      return NextResponse.json(
+        { error: "File upload failed", details: uploadError.message },
+        { status: 500 }
+      );
+    }
+
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: [
+        {
+          role: "user",
+          content: [
             {
-              type: "input_image",
-              image_url: `data:${file.type};base64,${base64}`,
-              detail: "auto",
+              type: "input_text",
+              text: extractionPrompt,
             },
+            inputFileContent,
           ],
         },
       ],
