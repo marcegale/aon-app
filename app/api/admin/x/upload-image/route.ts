@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
+  const formData = await req.formData() as unknown as { get(key: string): File | null };
+  const file = formData.get("file");
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
   const buffer = Buffer.from(await file.arrayBuffer());

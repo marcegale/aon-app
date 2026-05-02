@@ -176,13 +176,17 @@ export async function POST() {
         .eq("id", item.id);
 
       if (agentSettings.emails_enabled) {
-        console.log("WORKER → calling sendApprovalEmail", post.id);
-        try {
-          await sendApprovalEmail({ id: post.id, content: selected.content }, options);
-        } catch (emailErr: unknown) {
-          result.errors.push(
-            `Email failed for post ${post.id}: ${emailErr instanceof Error ? emailErr.message : String(emailErr)}`
-          );
+        if (shouldSendApprovalEmail(ev, sportsCtx, adjustedImportance)) {
+          console.log("WORKER → calling sendApprovalEmail", post.id);
+          try {
+            await sendApprovalEmail({ id: post.id, content: selected.content }, options);
+          } catch (emailErr: unknown) {
+            result.errors.push(
+              `Email failed for post ${post.id}: ${emailErr instanceof Error ? emailErr.message : String(emailErr)}`
+            );
+          }
+        } else {
+          console.log("WORKER → email skipped (not editorially relevant) for post", post.id);
         }
       } else {
         console.log("WORKER → email skipped (disabled in settings) for post", post.id);
@@ -203,6 +207,41 @@ export async function POST() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const PRIORITY_TERMS = [
+  "boca", "river", "cerro porteño", "olimpia", "selección paraguaya", "paraguay",
+  "lakers", "celtics", "heat", "knicks", "mavericks", "spurs",
+  "messi", "cristiano", "ronaldo", "lebron", "curry", "doncic", "wembanyama",
+  "alcaraz", "sinner", "verstappen", "colapinto", "durksen",
+];
+
+const STRONG_MAGNITUDE_KEYWORDS = ["histórico", "paliza", "dominio total", "goleada"];
+
+function shouldSendApprovalEmail(
+  event: SportsEvent,
+  sportsCtx: SportsContext,
+  adjustedImportance: number
+): boolean {
+  if (adjustedImportance >= 7) return true;
+
+  const cs = sportsCtx.context_signals;
+
+  const titleLower = (event.title ?? "").toLowerCase();
+  if (PRIORITY_TERMS.some((t) => titleLower.includes(t)) && adjustedImportance >= 5) return true;
+
+  if (cs.rivalry_hint && adjustedImportance >= 5) return true;
+
+  const mag = cs.score_magnitude ?? "";
+  if (STRONG_MAGNITUDE_KEYWORDS.some((kw) => mag.includes(kw))) return true;
+
+  const payload = event.normalized_payload as Record<string, unknown> | null;
+  if (payload?.is_penalties === true) return true;
+  if (payload?.is_extra_time === true) return true;
+
+  if (cs.competition_weight >= 7 && adjustedImportance >= 6) return true;
+
+  return false;
+}
 
 function shouldSkipEvent(event: SportsEvent): boolean {
   if (!event.title?.trim()) return true;

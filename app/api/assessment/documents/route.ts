@@ -62,7 +62,7 @@ const tenantSlug = tenantSlugParam.trim();
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    const formData = await request.formData() as unknown as { get(key: string): FormDataEntryValue | null };
 
     const tenantSlugValue = formData.get("tenantSlug");
     const tenantSlug =

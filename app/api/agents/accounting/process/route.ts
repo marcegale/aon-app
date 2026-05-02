@@ -177,7 +177,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const formData = await req.formData();
+    const formData = await req.formData() as unknown as { get(key: string): File | null };
     const file = formData.get("file") as File;
 
     if (!file) {

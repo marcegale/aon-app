@@ -320,7 +320,7 @@ INPUT: debate abierto
 DIRECTO:
 Se abre el debate por el próximo Balón de Oro.
 EMOCIONAL:
-¿QUIÉN SE LLEVA EL BALÓN DE ORO?
+BALÓN DE ORO: EL DEBATE YA ESTÁ ABIERTO
 ANALÍTICO:
 La conversación gira en torno a los candidatos actuales.
 
@@ -453,7 +453,7 @@ DIRECTO:
 Se abre el debate sobre [tema]
 
 EMOCIONAL:
-¿[pregunta corta]?
+DEBATE ABIERTO: [tema]
 
 ANALÍTICO:
 El foco está en [criterio o discusión]

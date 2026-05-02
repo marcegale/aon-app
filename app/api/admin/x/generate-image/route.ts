@@ -47,7 +47,8 @@ Hard restrictions: no text of any kind, no scoreboards, no logos, no team crests
     quality: "standard",
   });
 
-  const tmpUrl = response.data[0]?.url;
+  const image = response.data?.[0];
+  const tmpUrl = image?.url;
   if (!tmpUrl) {
     return NextResponse.json({ error: "No image returned" }, { status: 500 });
   }
