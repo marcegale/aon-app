@@ -2,27 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 
-const navItems = [
+const userNavItems = [
   {
     name: "Procesador de facturas",
     href: "/agents/accounting/invoice-processor",
     short: "F",
   },
-  // {
-  //   name: "Uso / Créditos",
-  //   href: "/admin/usage",
-  //   short: "U",
-  // },
+];
+
+const adminNavItems = [
+  {
+    name: "X Agent",
+    href: "/admin/x-agent",
+    short: "X",
+  },
+];
+
+const bottomItems = [
   {
     name: "Cerrar sesión",
     href: "/logout",
-    short: "X",
+    short: "→",
   },
 ];
 
 export default function Sidebar({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAdmin(user?.app_metadata?.role === "admin");
+    });
+  }, []);
 
   return (
     <aside
@@ -48,14 +63,13 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
       </div>
 
       <nav className="space-y-2 text-sm">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
+        {[...userNavItems, ...(isAdmin ? adminNavItems : [])].map((item) => {
+          const isActive = pathname.startsWith(item.href);
 
           return (
             <Link
               key={item.name}
               href={item.href}
-              prefetch={item.href === "/logout" ? false : undefined}
               className={`block rounded-xl px-4 py-3 transition ${
                 collapsed ? "text-center" : ""
               } ${
@@ -68,6 +82,29 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
             </Link>
           );
         })}
+
+        {isAdmin && !collapsed && (
+          <p className="mt-4 px-4 text-[10px] uppercase tracking-[0.22em] text-white/25">
+            Admin
+          </p>
+        )}
+
+        <div className="mt-2">
+          {bottomItems.map((item) => {
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                prefetch={false}
+                className={`block rounded-xl px-4 py-3 text-white/50 transition hover:bg-white/5 hover:text-white ${
+                  collapsed ? "text-center" : ""
+                }`}
+              >
+                {collapsed ? item.short : item.name}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       <div className="mt-10 rounded-2xl border border-[#C9A24D]/20 bg-[#1C2230] p-4">

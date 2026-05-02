@@ -442,6 +442,7 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
   const reviewImageRef = useRef<HTMLImageElement | null>(null);
 
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [reviewZoom, setReviewZoom] = useState(1);
   const [reviewRotation, setReviewRotation] = useState(0);
@@ -502,6 +503,7 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
     : null;
 
   const validatedCount = files.filter((item) => item.isValidated).length;
+  const errorCount = files.filter((item) => item.status === "error").length;
   const reviewableCount = files.filter(
     (item) => item.status === "done" && item.parsed
   ).length;
@@ -604,6 +606,36 @@ export default function AgentDetailPage({ params }: AgentPageProps) {
 
     setFiles((prev) => [...prev, ...selectedFiles]);
     setPage(1);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = Array.from(e.dataTransfer.files)
+      .filter((f) => /\.(jpe?g|png|pdf)$/i.test(f.name))
+      .map((file) => ({
+        localId: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        status: "pending" as const,
+        isSelected: true,
+        isValidated: false,
+        isDeducible: true,
+      }));
+    if (dropped.length > 0) {
+      setFiles((prev) => [...prev, ...dropped]);
+      setPage(1);
+    }
   }
 
   function handleRemoveFile(fileIndex: number) {
@@ -1374,65 +1406,43 @@ function handleParsedItemChange(
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
-          Nexa Core
-        </p>
-        <h1 className="mt-2 text-4xl font-semibold text-white">
-          {agent.name}
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
-          {agent.description}
-        </p>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-            Formatos aceptados
-          </p>
-          <p className="mt-3 text-sm text-white/80">
-            {agent.acceptedFormats}
-          </p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-white/40">Cargadas</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{files.length}</p>
         </div>
-
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-            Output esperado
-          </p>
-          <p className="mt-3 text-sm text-white/80">{agent.output}</p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-white/40">Procesadas</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{processedCount}</p>
         </div>
-
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-            Estado
-          </p>
-          <p className="mt-3 text-sm text-white/80">
-            Preparado para carga manual
-          </p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-white/40">Validadas</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{validatedCount}</p>
+        </div>
+        <div className={`rounded-2xl border p-4 ${errorCount > 0 ? "border-red-500/20 bg-red-500/10" : "border-white/10 bg-white/[0.04]"}`}>
+          <p className="text-xs uppercase tracking-[0.16em] text-white/40">Errores</p>
+          <p className={`mt-2 text-2xl font-semibold ${errorCount > 0 ? "text-red-400" : "text-white"}`}>{errorCount}</p>
         </div>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-6">
-        <div className="flex flex-col gap-6">
-          <div>
-            <h2 className="text-xl font-semibold text-white">
-              Carga de facturas
-            </h2>
-            <p className="mt-2 text-sm text-white/65">
-              Sube una o más facturas para preparar el procesamiento del agente.
-            </p>
-          </div>
-
-          <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-[#0B1120]/60 px-6 py-10 text-center transition hover:border-[#C9A24D]/35 hover:bg-[#111827]">
-            <span className="text-sm font-medium text-white">
-              Haz click para seleccionar archivos
+        <div className="flex flex-col gap-4">
+          <label
+            className={`flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-8 text-center transition ${
+              isDragging
+                ? "border-[#C9A24D]/60 bg-[#C9A24D]/[0.07]"
+                : "border-white/15 bg-[#0B1120]/60 hover:border-[#C9A24D]/35 hover:bg-[#111827]"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <span className="text-xl text-white/35">{isDragging ? "↓" : "↑"}</span>
+            <span className="mt-2 text-sm font-medium text-white">
+              {isDragging ? "Suelta para cargar" : "Arrastrá archivos acá o hacé click para seleccionar"}
             </span>
-            <span className="mt-2 text-sm text-white/55">
-              Admite imágenes o PDF
-            </span>
-
+            <span className="mt-1 text-xs text-white/45">JPG · PNG · PDF</span>
             <input
               type="file"
               accept=".jpg,.jpeg,.png,.pdf"
@@ -1443,70 +1453,56 @@ function handleParsedItemChange(
           </label>
 
           <div className="rounded-2xl border border-white/10 bg-[#0B1120]/60 p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-semibold text-white">
-                  Archivos seleccionados
-                </h3>
-                <p className="mt-1 text-sm text-white/55">{totalFilesLabel}</p>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-sm text-white/55">
-                  Exporta múltiples facturas en un solo archivo.
-                </p>
-                <p className="text-sm text-white/55">
-                  {validationSummary.errors > 0
-                  ? "No puedes exportar mientras existan facturas con errores."
-                  : canExportBatch
-                  ? "Puedes exportar múltiples facturas seleccionadas en un solo archivo."
-                  : "El lote se habilita solo cuando todas las facturas fueron procesadas."}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleExportBatch}
-                  disabled={!canExportValidatedBatch}
-                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Exportar lote a Excel
-                </button>
-              </div>
-
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                {files.some((f) => f.status === "done" && f.parsed) && (
+                <span className="text-sm text-white/55">{totalFilesLabel}</span>
+                {files.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearFiles}
+                    className="text-xs text-white/35 transition hover:text-white/60"
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {files.some((f) => f.status === "done" && f.parsed && !f.isValidated) && (
                   <button
                     type="button"
                     onClick={() => openReviewFlow(files)}
                     className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
                   >
-                    Validar lote
+                    Revisar
                   </button>
                 )}
-                <div className="text-xs text-white/50">
-                  {usageInfo
-                    ? `Te quedan ${usageInfo.remaining} de ${usageInfo.monthlyLimit} facturas este mes`
-                    : "Cargando uso..."}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (usageInfo?.limitReached) {
-                      setLimitReachedMessage("Límite alcanzado");
-                      return;
-                    }
-
-                    handleProcess();
-                  }}
-                  disabled={files.length === 0 || loading}
-                  className={`rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40 ${
-                    usageInfo?.limitReached ? "opacity-50" : ""
-                  }`}
-                >
-                  {loading ? "Procesando..." : "Procesar"}
-                </button>
+                {canExportValidatedBatch ? (
+                  <button
+                    type="button"
+                    onClick={handleExportBatch}
+                    className="rounded-lg bg-[#C9A24D] px-4 py-2 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F]"
+                  >
+                    Exportar lote
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (usageInfo?.limitReached) {
+                        setLimitReachedMessage("Límite alcanzado");
+                        return;
+                      }
+                      handleProcess();
+                    }}
+                    disabled={files.length === 0 || loading}
+                    className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {loading ? "Procesando..." : "Procesar"}
+                  </button>
+                )}
                 {limitReachedMessage && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#0B1120] p-6 text-center">
-                      
                       <p className="text-xs uppercase tracking-[0.28em] text-red-300">
                         Límite alcanzado
                       </p>
@@ -1524,14 +1520,13 @@ function handleParsedItemChange(
                           <button
                             onClick={() => {
                               setLimitReachedMessage(null);
-                              handleProcess(true); // 👈 modo parcial
+                              handleProcess(true);
                             }}
                             className="w-full rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300"
                           >
                             Procesar solo lo permitido
                           </button>
                         )}
-
                         <button
                           onClick={() => setLimitReachedMessage(null)}
                           className="w-full text-xs text-white/40"
@@ -1545,113 +1540,26 @@ function handleParsedItemChange(
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/55">
-              <span>
-                Procesadas: {reviewableCount}
-              </span>
-              <span>
-                Validadas: {validatedCount}
-              </span>
-              {!canExportValidatedBatch && reviewableCount > 0 && (
-                <span className="text-[#E7C980]">
-                  Debes validar todas las facturas antes de exportar el lote.
-                </span>
-              )}
-            </div>
-
-            <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-sm font-medium text-white">
-                  Progreso del lote
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-white/55">
-                  <span>
-                    {processedCount}/{totalCount} facturas procesadas
-                  </span>
-
-                  {validationSummary.errors > 0 && (
-                    <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-300">
-                      {validationSummary.errors} con errores
-                    </span>
-                  )}
-
-                  {validationSummary.warnings > 0 && (
-                    <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
-                      {validationSummary.warnings} con warnings
-                    </span>
-                  )}
-                </div>
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ←
+                </button>
+                <span className="text-xs text-white/55">{page} / {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  →
+                </button>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-white/55">Por página</label>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    className="rounded-lg border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
-                  >
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                    disabled={page === 1}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Anterior
-                  </button>
-
-                  <span className="text-sm text-white/65">
-                    Página {page} de {totalPages}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={page === totalPages}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
-            </div>
-            {usageInfo && (
-              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/70">
-                <p>
-                  Facturas usadas: <span className="text-white">{usageInfo.used}</span> /{" "}
-                  <span className="text-white">{usageInfo.monthlyLimit}</span>
-                </p>
-                <p>
-                  Disponibles:{" "}
-                  <span className="text-emerald-300">{usageInfo.remaining}</span>
-                </p>
-              </div>
-            )}
-
-            {usageInfo?.limitReached && (
-              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
-                Alcanzaste tu límite mensual. Contactanos para ampliar tu plan.
-              </div>
-            )}
-            {usageInfo?.limitReached && (
-              <a
-                href="https://wa.me/595972224294?text=Hola%2C%20necesito%20ampliar%20mi%20plan%20de%20facturas%20en%20Nexa%20Core"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mb-4 inline-flex rounded-xl border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] hover:bg-[#C9A24D]/15"
-              >
-                Solicitar más capacidad
-              </a>
             )}
 
             <div className="mt-4 space-y-3">

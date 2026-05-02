@@ -44,6 +44,15 @@ export async function proxy(req: NextRequest) {
     );
   }
 
+  if (pathname.startsWith("/admin")) {
+    const role = user?.app_metadata?.role;
+    if (role !== "admin") {
+      return NextResponse.redirect(
+        new URL("/agents/accounting/invoice-processor", req.url)
+      );
+    }
+  }
+
   return res;
 }
 

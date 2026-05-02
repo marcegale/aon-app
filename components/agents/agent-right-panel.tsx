@@ -2,11 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import RecentHistoryCard from "@/components/history/recent-history-card";
+import { supabase } from "@/lib/supabase/client";
 
 type StoredInvoiceFile = {
   status?: "pending" | "processing" | "done" | "error";
   isValidated?: boolean;
 };
+
+type UsageInfo = {
+  used: number;
+  monthlyLimit: number;
+  remaining: number;
+  limitReached: boolean;
+} | null;
 
 function readStoredFiles() {
   try {
@@ -24,6 +32,7 @@ function readStoredClient() {
 export default function AgentRightPanel() {
   const [clientName, setClientName] = useState("Sin cliente seleccionado");
   const [files, setFiles] = useState<StoredInvoiceFile[]>([]);
+  const [usageInfo, setUsageInfo] = useState<UsageInfo>(null);
 
   useEffect(() => {
     function syncPanelState() {
@@ -34,6 +43,23 @@ export default function AgentRightPanel() {
     syncPanelState();
     const interval = window.setInterval(syncPanelState, 1000);
 
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    async function fetchUsage() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const res = await fetch(`/api/usage/check?userId=${user.id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setUsageInfo(data);
+    }
+
+    fetchUsage();
+    const interval = window.setInterval(fetchUsage, 30000);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -101,12 +127,52 @@ export default function AgentRightPanel() {
           <p className="mt-1 text-xs text-white/45">{processedLabel}</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className={`rounded-2xl border p-4 ${
+          usageInfo?.limitReached
+            ? "border-red-500/20 bg-red-500/10"
+            : "border-white/10 bg-white/[0.04]"
+        }`}>
           <p className="text-xs uppercase tracking-[0.18em] text-white/40">
             Capacidad
           </p>
-          <p className="mt-2 text-sm font-medium text-white">Mover uso aquí</p>
-          <p className="mt-1 text-xs text-white/45">Pendiente de conectar al contador real.</p>
+          {usageInfo ? (
+            <>
+              <p className="mt-2 text-2xl font-semibold text-white">
+                {usageInfo.remaining}
+                <span className="ml-1 text-sm font-normal text-white/40">
+                  / {usageInfo.monthlyLimit}
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-white/45">
+                facturas disponibles este mes
+              </p>
+              <div className="mt-3 h-1.5 rounded-full bg-white/10">
+                <div
+                  className={`h-1.5 rounded-full transition-all ${
+                    usageInfo.limitReached ? "bg-red-400" : "bg-[#C9A24D]"
+                  }`}
+                  style={{
+                    width: `${Math.min(
+                      (usageInfo.used / usageInfo.monthlyLimit) * 100,
+                      100
+                    )}%`,
+                  }}
+                />
+              </div>
+              {usageInfo.limitReached && (
+                <a
+                  href="https://wa.me/595972224294?text=Hola%2C%20necesito%20ampliar%20mi%20plan%20de%20facturas%20en%20Nexa%20Core"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-3 py-1.5 text-xs font-medium text-[#E7C980]"
+                >
+                  Solicitar más capacidad
+                </a>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-white/40">Cargando...</p>
+          )}
         </div>
       </div>
 
