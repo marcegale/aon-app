@@ -117,7 +117,7 @@ export function DocumentView({
 }: DocumentViewProps) {
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur">
+      <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#C96F3B]">

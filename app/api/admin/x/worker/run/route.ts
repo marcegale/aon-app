@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { requireAdminOrCron } from "@/lib/x-agent/auth";
 import { generateOptions, selectBestOption } from "@/lib/x-agent/generate";
 import { sendApprovalEmail } from "@/lib/x-agent/email";
 import { computeSportsContext } from "@/lib/x-agent/context";
@@ -9,13 +9,6 @@ import { getXAgentSettings } from "@/lib/x-agent/settings";
 
 const MAX_EVENTS_PER_RUN = 5;
 const MIN_IMPORTANCE = 4;
-
-async function requireAdmin() {
-  const authClient = await createServerSupabaseClient();
-  const { data: { user } } = await authClient.auth.getUser();
-  if (!user || user.app_metadata?.role !== "admin") return null;
-  return user;
-}
 
 type WorkerResult = {
   queued: number;
@@ -35,8 +28,8 @@ type SportsEvent = {
   raw_payload: unknown;
 };
 
-export async function POST() {
-  const user = await requireAdmin();
+export async function POST(req: Request) {
+  const user = await requireAdminOrCron(req);
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const supabase = createSupabaseAdminClient();

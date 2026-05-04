@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { requireAdminOrCron } from "@/lib/x-agent/auth";
 
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 const ESPN_HEADERS = { Accept: "application/json", "User-Agent": "Mozilla/5.0" };
-
-async function requireAdmin() {
-  const authClient = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await authClient.auth.getUser();
-  if (!user || user.app_metadata?.role !== "admin") return null;
-  return user;
-}
 
 // ── ESPN shared types ─────────────────────────────────────────────────────────
 
@@ -114,8 +105,8 @@ function hasPriorityTeam(home: string, away: string): boolean {
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-export async function POST() {
-  const user = await requireAdmin();
+export async function POST(req: Request) {
+  const user = await requireAdminOrCron(req);
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const supabase = createSupabaseAdminClient();

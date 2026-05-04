@@ -1426,7 +1426,7 @@ function handleParsedItemChange(
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-6">
+      <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-6">
         <div className="flex flex-col gap-4">
           <label
             className={`flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-8 text-center transition ${
@@ -1641,8 +1641,8 @@ function handleParsedItemChange(
           </div>
         </div>
         {isReviewOpen && currentReviewItem && currentReviewItem.parsed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/80 p-2 sm:p-6 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-8xl overflow-y-auto md:overflow-hidden rounded-2xl md:rounded-3xl border border-white/10 bg-[#08101F] shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#061614]/80 p-2 sm:p-6 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-8xl overflow-y-auto md:overflow-hidden rounded-2xl md:rounded-3xl border border-white/10 bg-[#0B1F1D] shadow-2xl">
             <div className="flex flex-col gap-4 border-b border-white/10 px-4 sm:px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-[#C96F3B]">
@@ -1686,7 +1686,7 @@ function handleParsedItemChange(
             </div>
 
             <div className="grid md:h-[calc(92vh-88px)] gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="min-h-[240px] md:min-h-[420px] border-b border-white/10 bg-[#030712] lg:border-b-0 lg:border-r">
+              <div className="min-h-[240px] md:min-h-[420px] border-b border-white/10 bg-[#081A18] lg:border-b-0 lg:border-r">
                 <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/45">
                     Vista previa
@@ -1776,7 +1776,7 @@ function handleParsedItemChange(
                             height: 400,
                             left: lensState.containerX - 85,
                             top: lensState.containerY - 85,
-                            backgroundColor: "#020617",
+                            backgroundColor: "#061614",
                           }}
                         >
                           <img
@@ -1866,7 +1866,7 @@ function handleParsedItemChange(
                                     e.target.value
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                                className="w-full rounded-xl border border-white/10 bg-[#061614 px-3 py-2 text-sm text-white outline-none"
                               />
                             </label>
 
@@ -1885,7 +1885,7 @@ function handleParsedItemChange(
                                     e.target.value
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                                className="w-full rounded-xl border border-white/10 bg-[#061614] px-3 py-2 text-sm text-white outline-none"
                               />
                             </label>
 
@@ -1902,7 +1902,7 @@ function handleParsedItemChange(
                                     e.target.value
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                                className="w-full rounded-xl border border-white/10 bg-[#061614] px-3 py-2 text-sm text-white outline-none"
                               />
                             </label>
                           </div>
@@ -2015,7 +2015,7 @@ function handleParsedItemChange(
                                 e.target.value
                               )
                             }
-                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                            className="rounded-lg border border-white/10 bg-[#061614] px-3 py-2 text-sm text-white outline-none"
                           />
 
                           <input
@@ -2028,7 +2028,7 @@ function handleParsedItemChange(
                                 e.target.value
                               )
                             }
-                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                            className="rounded-lg border border-white/10 bg-[#061614] px-3 py-2 text-sm text-white outline-none"
                           />
 
                           <select
@@ -2041,7 +2041,7 @@ function handleParsedItemChange(
                                 e.target.value
                               )
                             }
-                            className="rounded-lg border border-white/10 bg-[#020617] px-3 py-2 text-sm text-white outline-none"
+                            className="rounded-lg border border-white/10 bg-[#061614] px-3 py-2 text-sm text-white outline-none"
                           >
                             <option value="10">IVA 10%</option>
                             <option value="5">IVA 5%</option>
@@ -2131,7 +2131,7 @@ function handleParsedItemChange(
                   </div>
                 </div>
               </div>
-              <div className="border-t border-white/10 bg-[#08101F] px-4 sm:px-6 pt-3 pb-4">
+              <div className="border-t border-white/10 bg-[#0B1F1D] px-4 sm:px-6 pt-3 pb-4">
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
