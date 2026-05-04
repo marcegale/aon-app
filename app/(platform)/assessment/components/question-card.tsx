@@ -33,7 +33,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <span className="rounded-full bg-[#C9A24D]/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#C9A24D]">
+              <span className="rounded-full bg-[#C96F3B]/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#C96F3B]">
                 {question.weight} pts
               </span>
             </div>
@@ -48,7 +48,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
           <button
             type="button"
             onClick={() => onFocusClick?.(question)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#C9A24D]/40 hover:bg-[#C9A24D]/10 hover:text-[#C9A24D]"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#C96F3B]/40 hover:bg-[#C96F3B]/10 hover:text-[#C96F3B]"
             aria-label="Explicación contextual"
           >
             <HelpCircle className="h-4 w-4" />
@@ -63,7 +63,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
               type="checkbox"
               checked={!applicable}
               onChange={(e) => update({ applicable: !e.target.checked })}
-              className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C9A24D] focus:ring-[#C9A24D]"
+              className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C96F3B] focus:ring-[#C96F3B]"
             />
             No aplica
           </label>
@@ -88,7 +88,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
                       className={clsx(
                         "h-12 rounded-xl border text-sm font-medium transition",
                         selected
-                          ? "border-[#C9A24D] bg-[#C9A24D]/15 text-[#F4E7C1]"
+                          ? "border-[#C96F3B] bg-[#C96F3B]/15 text-[#F4EBD0]"
                           : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/20 hover:bg-white/[0.06]",
                       )}
                     >
@@ -112,7 +112,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
                     className={clsx(
                       "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition",
                       selected
-                        ? "border-[#C9A24D] bg-[#C9A24D]/15 text-[#F4E7C1]"
+                        ? "border-[#C96F3B] bg-[#C96F3B]/15 text-[#F4EBD0]"
                         : "border-white/10 bg-white/[0.03] text-white/75 hover:border-white/20 hover:bg-white/[0.06]",
                     )}
                   >
@@ -147,7 +147,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
                           else current.delete(item.id);
                           update({ evidenceIds: Array.from(current) });
                         }}
-                        className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C9A24D] focus:ring-[#C9A24D]"
+                        className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C96F3B] focus:ring-[#C96F3B]"
                       />
                       <span>{item.label}</span>
                     </label>
@@ -167,7 +167,7 @@ export function QuestionCard({ question, answer, onChange, onFocusClick }: Props
                 onChange={(e) => update({ notes: e.target.value })}
                 rows={4}
                 placeholder="Añade contexto breve si hace falta..."
-                className="w-full rounded-xl border border-white/10 bg-[#0F1420] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#C9A24D]/50"
+                className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#C96F3B]/50"
               />
             </div>
           ) : null}

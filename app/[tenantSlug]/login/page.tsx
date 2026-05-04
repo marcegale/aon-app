@@ -46,10 +46,10 @@ export default function TenantLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0B0D12] text-white flex items-center justify-center px-6">
+    <main className="min-h-screen bg-[#183A37] text-white flex items-center justify-center px-6">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl">
         <div className="mb-6">
-          <p className="text-xs uppercase tracking-[0.24em] text-[#C9A24D]">
+          <p className="text-xs uppercase tracking-[0.24em] text-[#C96F3B]">
             Always On
           </p>
           <h1 className="mt-2 text-2xl font-semibold">
@@ -67,7 +67,7 @@ export default function TenantLoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-[#C9A24D]/60"
+              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-[#C96F3B]/60"
               placeholder="Ingresa tu usuario"
             />
           </div>
@@ -78,7 +78,7 @@ export default function TenantLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-[#C9A24D]/60"
+              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-[#C96F3B]/60"
               placeholder="Ingresa tu contraseña"
             />
           </div>
@@ -92,7 +92,7 @@ export default function TenantLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-[#C9A24D] px-4 py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-[#C96F3B] px-4 py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Ingresando..." : "Ingresar"}
           </button>

@@ -81,7 +81,7 @@ const [hasLoadedInitialAssessment, setHasLoadedInitialAssessment] = useState(fal
 
 if (!tenantSlugValue) {
   return (
-    <div className="min-h-screen bg-[#0B0D12] text-white">
+    <div className="min-h-screen bg-[#183A37] text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center px-6 py-8">
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-sm text-red-200">
           Tenant inválido o ausente en la URL.
@@ -724,7 +724,7 @@ const handleDownloadPdf = () => {
 
     return (
     <>
-      <div className="min-h-screen bg-[#0B0D12] text-white">
+      <div className="min-h-screen bg-[#183A37] text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
         <BlockProgress
           current={currentIndex + 1}
@@ -759,7 +759,7 @@ const handleDownloadPdf = () => {
                       type="checkbox"
                       checked={!currentAnswer.applicable}
                       onChange={(e) => toggleBlockApplicable(!e.target.checked)}
-                      className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C9A24D] focus:ring-[#C9A24D]"
+                      className="h-4 w-4 rounded border-white/20 bg-transparent text-[#C96F3B] focus:ring-[#C96F3B]"
                     />
                     Este bloque no aplica para esta empresa
                   </label>
@@ -838,7 +838,7 @@ const handleDownloadPdf = () => {
                     setIsDocumentView(false);
                     setCurrentIndex((prev) => Math.min(prev + 1, diagnosticBlocks.length - 1));
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#C9A24D] px-4 py-3 text-sm font-medium text-[#0B0D12] transition hover:brightness-110"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#C96F3B] px-4 py-3 text-sm font-medium text-white transition hover:brightness-110"
                 >
                   Siguiente
                   <ArrowRight className="h-4 w-4" />
@@ -988,7 +988,7 @@ const handleDownloadPdf = () => {
               />
 
               {selectedDocumentId && documentActionLabel ? (
-                <div className="rounded-2xl border border-[#C9A24D]/20 bg-[#C9A24D]/10 p-4 text-sm text-[#E9D7A5]">
+                <div className="rounded-2xl border border-[#C96F3B]/20 bg-[#C96F3B]/10 p-4 text-sm text-[#F4EBD0]">
                   Acción mock: <span className="font-medium">{documentActionLabel}</span> ·
                   Documento: <span className="font-medium">{selectedDocumentId}</span>
                 </div>
@@ -1002,12 +1002,12 @@ const handleDownloadPdf = () => {
                 Vista rápida
               </p>
 
-<div className="mt-4 rounded-xl border border-[#C9A24D]/20 bg-[#C9A24D]/10 p-4">
-  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#E9D7A5]/70">
+<div className="mt-4 rounded-xl border border-[#C96F3B]/20 bg-[#C96F3B]/10 p-4">
+  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#F4EBD0]/70">
     Score global
   </div>
 
-  <div className="mt-2 text-2xl font-semibold text-[#E9D7A5]">
+  <div className="mt-2 text-2xl font-semibold text-[#F4EBD0]">
     {globalScore.percentage}%
   </div>
 
@@ -1080,7 +1080,7 @@ const handleDownloadPdf = () => {
         setIsPremiumLoading(false);
       }
     }}
-    className="mt-3 w-full rounded-xl border border-[#C9A24D]/30 bg-[#C9A24D]/15 px-4 py-3 text-sm font-medium text-[#E9D7A5] transition hover:bg-[#C9A24D]/25"
+    className="mt-3 w-full rounded-xl border border-[#C96F3B]/30 bg-[#C96F3B]/15 px-4 py-3 text-sm font-medium text-[#F4EBD0] transition hover:bg-[#C96F3B]/25"
   >
     {isPremiumLoading ? "Generando reporte..." : "Generar reporte premium"}
   </button>
@@ -1102,7 +1102,7 @@ const handleDownloadPdf = () => {
                     <div
                       className={`text-[10px] px-2 py-1 rounded-full border ${
                         analysisMode === "premium"
-                          ? "border-[#C9A24D]/40 bg-[#C9A24D]/10 text-[#E9D7A5]"
+                          ? "border-[#C96F3B]/40 bg-[#C96F3B]/10 text-[#F4EBD0]"
                           : "border-white/10 bg-white/[0.05] text-white/50"
                       }`}
                     >
@@ -1124,7 +1124,7 @@ const handleDownloadPdf = () => {
                     <div className="mt-3 space-y-3 text-sm">
                       <div className="flex items-start justify-between gap-3">
                         <span className="text-white/55">Prioridad principal</span>
-                        <span className="text-right text-[#C9A24D]">
+                        <span className="text-right text-[#C96F3B]">
                           {aiAnalysis.priority || "Sin definir"}
                         </span>
                       </div>
@@ -1178,13 +1178,13 @@ const handleDownloadPdf = () => {
                       {weakestBlocks.map((block) => (
                         <div key={block.blockId} className="flex items-center justify-between gap-3 text-sm">
                           <span className="truncate text-white/75">{block.title}</span>
-                          <span className="text-[#C9A24D]">{block.percentage}%</span>
+                          <span className="text-[#C96F3B]">{block.percentage}%</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : null}
-              <div className="mt-4 rounded-xl border border-[#C9A24D]/20 bg-[#1C2230] p-4">
+              <div className="mt-4 rounded-xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/40">
                     Global Score
@@ -1208,7 +1208,7 @@ const handleDownloadPdf = () => {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#C9A24D]/20 bg-[#1C2230] p-4">
+              <div className="mt-4 rounded-xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
                 <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/40">
                   Estado del negocio
                 </div>
@@ -1235,8 +1235,8 @@ const handleDownloadPdf = () => {
               </div>
 
               {analysisMode === "premium" && aiAnalysis ? (
-                <div className="mt-4 rounded-xl border border-[#C9A24D]/20 bg-[#1C2230] p-4">
-                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#E9D7A5]">
+                <div className="mt-4 rounded-xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#F4EBD0]">
                     Análisis estratégico
                   </div>
 
@@ -1286,7 +1286,7 @@ const handleDownloadPdf = () => {
               {analysisMode === "premium" && aiAnalysis ? (
                 <>
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-sm font-semibold text-[#E9D7A5]">
+                    <div className="text-sm font-semibold text-[#F4EBD0]">
                       Diagnóstico ejecutivo
                     </div>
                     <div className="mt-1 text-xs text-white/60">
@@ -1298,7 +1298,7 @@ const handleDownloadPdf = () => {
                   </div>
 
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-sm font-semibold text-[#E9D7A5]">
+                    <div className="text-sm font-semibold text-[#F4EBD0]">
                       Implicancia estratégica
                     </div>
                     <div className="mt-1 text-xs text-white/60">
@@ -1310,7 +1310,7 @@ const handleDownloadPdf = () => {
                   </div>
 
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-sm font-semibold text-[#E9D7A5]">
+                    <div className="text-sm font-semibold text-[#F4EBD0]">
                       Acciones recomendadas
                     </div>
                     <div className="mt-1 text-xs text-white/60">
@@ -1332,8 +1332,8 @@ const handleDownloadPdf = () => {
               ) : null}
 
               {analysisMode === "premium" && aiAnalysis?.priority ? (
-                <div className="mt-4 rounded-xl border border-[#C9A24D]/30 bg-[#C9A24D]/10 p-4">
-                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#E9D7A5]">
+                <div className="mt-4 rounded-xl border border-[#C96F3B]/30 bg-[#C96F3B]/10 p-4">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#F4EBD0]">
                     Plan de acción prioritario
                   </div>
 
@@ -1350,7 +1350,7 @@ const handleDownloadPdf = () => {
                           element?.scrollIntoView({ behavior: "smooth", block: "center" });
                         }
                       }}
-                      className="mt-3 text-xs text-[#C9A24D] hover:underline"
+                      className="mt-3 text-xs text-[#C96F3B] hover:underline"
                     >
                       Ir al área a mejorar
                     </button>
@@ -1358,7 +1358,7 @@ const handleDownloadPdf = () => {
                 </div>
               ) : null}
 
-              <div className="mt-4 rounded-xl border border-red-500/20 bg-[#1C2230] p-4">
+              <div className="mt-4 rounded-xl border border-red-500/20 bg-[#0F2422] p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-red-400">
                     Riesgo prioritario
@@ -1373,7 +1373,7 @@ const handleDownloadPdf = () => {
                           element?.scrollIntoView({ behavior: "smooth", block: "center" });
                         }
                       }}
-                      className="text-[11px] text-[#C9A24D] hover:underline"
+                      className="text-[11px] text-[#C96F3B] hover:underline"
                     >
                       Ver bloque
                     </button>
@@ -1391,8 +1391,8 @@ const handleDownloadPdf = () => {
                 </div>
 
                 {analysisMode === "premium" && aiAnalysis?.priority ? (
-                  <div className="mt-3 rounded-lg border border-[#C9A24D]/20 bg-[#C9A24D]/10 p-3">
-                    <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#E9D7A5]">
+                  <div className="mt-3 rounded-lg border border-[#C96F3B]/20 bg-[#C96F3B]/10 p-3">
+                    <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#F4EBD0]">
                       Acción sugerida por IA
                     </div>
                     <div className="mt-1 text-sm text-white/85">
@@ -1433,7 +1433,7 @@ const handleDownloadPdf = () => {
                       }}
                       className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
                         isActive
-                          ? "border-[#C9A24D]/50 bg-[#C9A24D]/10"
+                          ? "border-[#C96F3B]/50 bg-[#C96F3B]/10"
                           : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
                       }`}
                     >
@@ -1444,7 +1444,7 @@ const handleDownloadPdf = () => {
                         {!block.isDocumentBlock ? (
                           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                             <div
-                              className="h-full rounded-full bg-[#C9A24D]"
+                              className="h-full rounded-full bg-[#C96F3B]"
                               style={{
                                 width: `${
                                   blockScores.find((item) => item.blockId === block.id)?.percentage ?? 0
@@ -1455,7 +1455,7 @@ const handleDownloadPdf = () => {
                         ) : null}
                       </div>
 
-                      <div className="text-xs text-[#C9A24D]">
+                      <div className="text-xs text-[#C96F3B]">
                         {block.isDocumentBlock
                           ? "Ver"
                           : answer?.applicable === false
@@ -1474,7 +1474,7 @@ const handleDownloadPdf = () => {
               </p>
               <ul className="mt-3 space-y-2 text-sm text-white/60">
                 <li>UI sobria, premium, sin ruido visual.</li>
-                <li>Cards oscuras, bordes suaves, acento dorado sutil.</li>
+                <li>Cards forest, bordes suaves, acento terracotta.</li>
                 <li>Preparado para multi-step real y dashboard posterior.</li>
               </ul>
             </div>
@@ -1484,10 +1484,10 @@ const handleDownloadPdf = () => {
     </div>
     {focusHelpOpen ? (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
-        <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#11131A] p-6 shadow-2xl">
+        <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0F2422] p-6 shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#C9A24D]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#C96F3B]">
                 Foco IA
               </p>
               <h3 className="mt-2 text-lg font-semibold text-white">

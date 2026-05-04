@@ -12,7 +12,7 @@ export function BlockProgress({ current, total, title, subtitle }: Props) {
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#C9A24D]">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#C96F3B]">
             Diagnóstico empresarial
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-white">{title}</h1>
@@ -29,7 +29,7 @@ export function BlockProgress({ current, total, title, subtitle }: Props) {
 
       <div className="h-2 rounded-full bg-white/10">
         <div
-          className="h-2 rounded-full bg-[#C9A24D] transition-all"
+          className="h-2 rounded-full bg-[#C96F3B] transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>

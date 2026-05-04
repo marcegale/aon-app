@@ -422,7 +422,7 @@ export default function XAgentPage() {
       </div>
 
       {/* Compose */}
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-[#111620] p-6">
+      <div className="space-y-4 rounded-2xl border border-white/10 bg-[#0F2422] p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
           <input
             type="text"
@@ -858,7 +858,7 @@ export default function XAgentPage() {
             type="button"
             onClick={handleSave}
             disabled={saving || !content.trim() || overLimit}
-            className="rounded-xl bg-[#C96F3B] px-5 py-2.5 text-sm font-semibold text-[#0B0D12] hover:bg-[#D8B45F] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl bg-[#C96F3B] px-5 py-2.5 text-sm font-semibold text-[#0B0D12] hover:bg-[#B85E30] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving ? "Guardando..." : isAiGenerated ? "Guardar para aprobación" : "Guardar como borrador"}
           </button>
@@ -866,7 +866,7 @@ export default function XAgentPage() {
       </div>
 
       {/* Email toggle */}
-      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#111620] px-6 py-4">
+      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#0F2422] px-6 py-4">
         <div>
           <p className="text-sm font-medium text-white/80">Emails de aprobación</p>
           <p className="mt-0.5 text-xs text-white/35">
@@ -896,7 +896,7 @@ export default function XAgentPage() {
       </div>
 
       {/* Image prompt settings */}
-      <div className="rounded-2xl border border-white/10 bg-[#111620]">
+      <div className="rounded-2xl border border-white/10 bg-[#0F2422]">
         <button
           type="button"
           onClick={() => setImagePromptOpen((v) => !v)}
@@ -977,11 +977,11 @@ export default function XAgentPage() {
         </div>
 
         {paginatedPosts.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-[#111620] p-8 text-center text-sm text-white/40">
+          <div className="rounded-2xl border border-white/10 bg-[#0F2422] p-8 text-center text-sm text-white/40">
             {posts.length === 0 ? "No hay posts aún." : "No hay posts con este filtro."}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#111620]">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F2422]">
             {paginatedPosts.map((post, idx) => {
               const badge = STATUS_LABELS[post.status] ?? STATUS_LABELS.draft;
               const isExpanded = expandedId === post.id;
@@ -1069,7 +1069,7 @@ export default function XAgentPage() {
                               type="button"
                               onClick={() => handleSaveEdit(post.id)}
                               disabled={actioning === post.id || !editContent.trim() || editContent.length > 280}
-                              className="rounded-lg bg-[#C96F3B] px-3 py-1.5 text-xs font-semibold text-[#0B0D12] hover:bg-[#D8B45F] disabled:opacity-40"
+                              className="rounded-lg bg-[#C96F3B] px-3 py-1.5 text-xs font-semibold text-[#0B0D12] hover:bg-[#B85E30] disabled:opacity-40"
                             >
                               {actioning === post.id ? "Guardando..." : "Guardar"}
                             </button>
@@ -1111,7 +1111,7 @@ export default function XAgentPage() {
                                 type="button"
                                 onClick={() => handlePublish(post.id)}
                                 disabled={actioning === post.id}
-                                className="rounded-lg bg-[#C96F3B] px-3 py-1.5 text-xs font-semibold text-[#0B0D12] hover:bg-[#D8B45F] disabled:opacity-50"
+                                className="rounded-lg bg-[#C96F3B] px-3 py-1.5 text-xs font-semibold text-[#0B0D12] hover:bg-[#B85E30] disabled:opacity-50"
                               >
                                 {actioning === post.id ? "..." : post.status === "pending_approval" ? "Aprobar y publicar" : "Publicar ahora"}
                               </button>

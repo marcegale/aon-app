@@ -89,7 +89,7 @@ export default function AgentRightPanel() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C9A24D]">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C96F3B]">
           Panel operativo
         </p>
         <h2 className="mt-2 text-lg font-semibold text-white">
@@ -149,7 +149,7 @@ export default function AgentRightPanel() {
               <div className="mt-3 h-1.5 rounded-full bg-white/10">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
-                    usageInfo.limitReached ? "bg-red-400" : "bg-[#C9A24D]"
+                    usageInfo.limitReached ? "bg-red-400" : "bg-[#C96F3B]"
                   }`}
                   style={{
                     width: `${Math.min(
@@ -164,7 +164,7 @@ export default function AgentRightPanel() {
                   href="https://wa.me/595972224294?text=Hola%2C%20necesito%20ampliar%20mi%20plan%20de%20facturas%20en%20Nexa%20Core"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 inline-block rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-3 py-1.5 text-xs font-medium text-[#E7C980]"
+                  className="mt-3 inline-block rounded-lg border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-3 py-1.5 text-xs font-medium text-[#F4EBD0]"
                 >
                   Solicitar más capacidad
                 </a>
@@ -176,8 +176,8 @@ export default function AgentRightPanel() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#C9A24D]/20 bg-[#C9A24D]/10 p-4">
-        <p className="text-sm font-medium text-[#F4D58A]">
+      <div className="rounded-2xl border border-[#C96F3B]/20 bg-[#C96F3B]/10 p-4">
+        <p className="text-sm font-medium text-[#F4EBD0]">
           Siguiente acción sugerida
         </p>
         <p className="mt-2 text-sm leading-6 text-white/62">

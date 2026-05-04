@@ -18,7 +18,7 @@ export function ScoreChip({ score, max }: Props) {
         </div>
       </div>
       <div className="h-8 w-px bg-white/10" />
-      <div className="text-sm text-[#C9A24D]">{label}</div>
+      <div className="text-sm text-[#C96F3B]">{label}</div>
     </div>
   );
 }

@@ -1431,8 +1431,8 @@ function handleParsedItemChange(
           <label
             className={`flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-8 text-center transition ${
               isDragging
-                ? "border-[#C9A24D]/60 bg-[#C9A24D]/[0.07]"
-                : "border-white/15 bg-[#0B1120]/60 hover:border-[#C9A24D]/35 hover:bg-[#111827]"
+                ? "border-[#C96F3B]/60 bg-[#C96F3B]/[0.07]"
+                : "border-white/15 bg-[#0F2422]/60 hover:border-[#C96F3B]/35 hover:bg-[#183A37]"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -1452,7 +1452,7 @@ function handleParsedItemChange(
             />
           </label>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0B1120]/60 p-5">
+          <div className="rounded-2xl border border-white/10 bg-[#0F2422]/60 p-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-white/55">{totalFilesLabel}</span>
@@ -1480,7 +1480,7 @@ function handleParsedItemChange(
                   <button
                     type="button"
                     onClick={handleExportBatch}
-                    className="rounded-lg bg-[#C9A24D] px-4 py-2 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F]"
+                    className="rounded-lg bg-[#C96F3B] px-4 py-2 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#B85E30]"
                   >
                     Exportar lote
                   </button>
@@ -1495,14 +1495,14 @@ function handleParsedItemChange(
                       handleProcess();
                     }}
                     disabled={files.length === 0 || loading}
-                    className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-4 py-2 text-sm font-medium text-[#F4EBD0] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {loading ? "Procesando..." : "Procesar"}
                   </button>
                 )}
                 {limitReachedMessage && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#0B1120] p-6 text-center">
+                    <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#0F2422] p-6 text-center">
                       <p className="text-xs uppercase tracking-[0.28em] text-red-300">
                         Límite alcanzado
                       </p>
@@ -1578,7 +1578,7 @@ function handleParsedItemChange(
                           type="checkbox"
                           checked={item.isSelected ?? true}
                           onChange={() => handleToggleSelected(index)}
-                          className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-[#C9A24D] focus:ring-[#C9A24D]"
+                          className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-[#C96F3B] focus:ring-[#C96F3B]"
                         />
 
                         <div className="min-w-0">
@@ -1590,7 +1590,7 @@ function handleParsedItemChange(
                           </p>
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-3 text-sm">
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm">
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(index)}
@@ -1641,11 +1641,11 @@ function handleParsedItemChange(
           </div>
         </div>
         {isReviewOpen && currentReviewItem && currentReviewItem.parsed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/80 p-6 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-8xl overflow-hidden rounded-3xl border border-white/10 bg-[#08101F] shadow-2xl">
-            <div className="flex flex-col gap-4 border-b border-white/10 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/80 p-2 sm:p-6 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-8xl overflow-y-auto md:overflow-hidden rounded-2xl md:rounded-3xl border border-white/10 bg-[#08101F] shadow-2xl">
+            <div className="flex flex-col gap-4 border-b border-white/10 px-4 sm:px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-[#C9A24D]">
+                <p className="text-xs uppercase tracking-[0.24em] text-[#C96F3B]">
                   Validación de factura
                 </p>
                 <h3 className="mt-1 text-lg font-semibold text-white">
@@ -1685,14 +1685,14 @@ function handleParsedItemChange(
               </div>
             </div>
 
-            <div className="grid h-[calc(92vh-88px)] gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="min-h-[420px] border-b border-white/10 bg-[#030712] lg:border-b-0 lg:border-r">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div className="grid md:h-[calc(92vh-88px)] gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="min-h-[240px] md:min-h-[420px] border-b border-white/10 bg-[#030712] lg:border-b-0 lg:border-r">
+                <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/45">
                     Vista previa
                   </p>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                     <button
                       type="button"
                       onClick={() => setReviewZoom((prev) => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
@@ -1742,7 +1742,7 @@ function handleParsedItemChange(
                   </div>
                 </div>
 
-                <div className="flex h-[72vh] items-center justify-center overflow-auto p-4">
+                <div className="flex h-[45vh] md:h-[72vh] items-center justify-center overflow-auto p-4">
                   {currentReviewItem.file.type === "application/pdf" ? (
                     <iframe
                       src={currentReviewItem.previewUrl}
@@ -1800,9 +1800,9 @@ function handleParsedItemChange(
                 </div>
               </div>
 
-              <div className="flex min-h-0 h-full flex-col overflow-hidden">
+              <div className="flex flex-col md:min-h-0 md:h-full md:overflow-hidden">
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+                <div className="md:flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
                   <div className="space-y-6">
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -1820,7 +1820,7 @@ function handleParsedItemChange(
                           onChange={(e) =>
                             handleParsedFieldChange(reviewIndex!, "proveedor", e.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
 
@@ -1836,7 +1836,7 @@ function handleParsedItemChange(
                           }}
                           placeholder="DD/MM/AAAA"
                           maxLength={10}
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
                       <label className="space-y-2">
@@ -1845,7 +1845,7 @@ function handleParsedItemChange(
                         </span>
                       </label>
                       <div className="md:col-span-2">
-                        <div className="rounded-2xl border border-white/10 bg-[#0B1120] p-4">
+                        <div className="rounded-2xl border border-white/10 bg-[#0F2422] p-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-white/45">
                             Número de factura
                           </p>
@@ -1917,7 +1917,7 @@ function handleParsedItemChange(
                           onChange={(e) =>
                             handleParsedFieldChange(reviewIndex!, "total", e.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
 
@@ -1930,7 +1930,7 @@ function handleParsedItemChange(
                           onChange={(e) =>
                             handleParsedFieldChange(reviewIndex!, "moneda", e.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
 
@@ -1946,7 +1946,7 @@ function handleParsedItemChange(
                           }}
                           placeholder="NÚMERO DE TIMBRADO"
                           maxLength={15}
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
 
@@ -1963,7 +1963,7 @@ function handleParsedItemChange(
                               e.target.value
                             )
                           }
-                          className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-3 py-2 text-sm text-white outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-[#0F2422] px-3 py-2 text-sm text-white outline-none"
                         />
                       </label>
                     </div>
@@ -2003,7 +2003,7 @@ function handleParsedItemChange(
                       {currentReviewItem.parsed.items.map((row, itemIndex) => (
                         <div
                           key={itemIndex}
-                          className="grid gap-3 rounded-xl border border-white/10 bg-[#0B1120] p-3 md:grid-cols-[1.5fr_0.7fr_0.5fr]"
+                          className="grid gap-3 rounded-xl border border-white/10 bg-[#0F2422] p-3 md:grid-cols-[1.5fr_0.7fr_0.5fr]"
                         >
                           <input
                             value={String(row.descripcion ?? "")}
@@ -2107,7 +2107,7 @@ function handleParsedItemChange(
                         Añadir item
                       </button>
                       {currentReviewItem.parsed?.ivaCalculado && (
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-[#0B1120] p-4">
+                        <div className="mt-4 rounded-2xl border border-white/10 bg-[#0F2422] p-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-white/45">
                             Resumen IVA
                           </p>
@@ -2131,7 +2131,7 @@ function handleParsedItemChange(
                   </div>
                 </div>
               </div>
-              <div className="shrink-0 border-t border-white/10 bg-[#08101F] px-6 pt-3 pb-5">
+              <div className="border-t border-white/10 bg-[#08101F] px-4 sm:px-6 pt-3 pb-4">
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
@@ -2172,7 +2172,7 @@ function handleParsedItemChange(
                   <button
                     type="button"
                     onClick={handleValidateCurrentInvoice}
-                    className="inline-flex h-10 items-center rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-3 text-sm font-medium text-[#E7C980] hover:bg-[#C9A24D]/15"
+                    className="inline-flex h-10 items-center rounded-lg border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-3 text-sm font-medium text-[#F4EBD0] hover:bg-[#C96F3B]/15"
                   >
                     Validar y continuar
                   </button>
