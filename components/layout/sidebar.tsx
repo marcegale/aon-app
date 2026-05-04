@@ -5,27 +5,50 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-const userNavItems = [
-  {
-    name: "Procesador de facturas",
-    href: "/agents/accounting/invoice-processor",
-    short: "F",
-  },
-];
+type NavItem = {
+  label: string;
+  href?: string;
+  short?: string;
+  adminOnly?: boolean;
+  requiredFeature?: string;
+  disabled?: boolean;
+};
 
-const adminNavItems = [
-  {
-    name: "X Agent",
-    href: "/admin/x-agent",
-    short: "X",
-  },
-];
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+  adminOnly?: boolean;
+};
 
-const bottomItems = [
+const NAV_GROUPS: NavGroup[] = [
   {
-    name: "Cerrar sesión",
-    href: "/logout",
-    short: "→",
+    title: "Workspace",
+    items: [
+      { label: "Dashboard", href: "/dashboard", short: "D" },
+      { label: "Diagnóstico empresarial", href: "/assessment", short: "A" },
+    ],
+  },
+  {
+    title: "Agentes",
+    items: [
+      {
+        label: "Procesador de facturas",
+        href: "/agents/accounting/invoice-processor",
+        short: "F",
+      },
+      {
+        label: "X Agent",
+        href: "/admin/x-agent",
+        short: "X",
+        adminOnly: true,
+      },
+    ],
+  },
+  {
+    title: "Cuenta",
+    items: [
+      { label: "Cerrar sesión", href: "/logout", short: "→" },
+    ],
   },
 ];
 
@@ -53,56 +76,56 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
         ) : (
           <>
             <img src="/brand/logo-white.png" alt="ai.gency" className="h-7 w-auto" />
-            <h1 className="mt-2 text-sm font-medium text-white/50">
-              Operations Center
-            </h1>
+            <p className="mt-2 text-sm font-medium text-white/50">Operations Center</p>
           </>
         )}
       </div>
 
-      <nav className="space-y-2 text-sm">
-        {[...userNavItems, ...(isAdmin ? adminNavItems : [])].map((item) => {
-          const isActive = pathname.startsWith(item.href);
+      <nav className="flex flex-col gap-5 text-sm">
+        {NAV_GROUPS.map((group) => {
+          const visibleItems = group.items.filter(
+            (item) => !item.adminOnly || isAdmin
+          );
+
+          if (visibleItems.length === 0) return null;
 
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`block rounded-xl px-4 py-3 transition ${
-                collapsed ? "text-center" : ""
-              } ${
-                isActive
-                  ? "border border-white/10 bg-[#0F2422] text-white shadow-md shadow-black/20"
-                  : "text-white/70 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              {collapsed ? item.short : item.name}
-            </Link>
+            <div key={group.title}>
+              {!collapsed && (
+                <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/25">
+                  {group.title}
+                </p>
+              )}
+              <div className="space-y-1">
+                {visibleItems.map((item) => {
+                  if (!item.href) return null;
+                  const isActive = pathname.startsWith(item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      prefetch={false}
+                      className={`flex items-center rounded-xl px-4 py-2.5 transition ${
+                        collapsed ? "justify-center" : "gap-3"
+                      } ${
+                        isActive
+                          ? "border border-white/10 bg-[#0F2422] text-white shadow-md shadow-black/20"
+                          : "text-white/65 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      {collapsed ? (
+                        <span className="text-xs font-semibold">{item.short}</span>
+                      ) : (
+                        <span>{item.label}</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
-
-        {isAdmin && !collapsed && (
-          <p className="mt-4 px-4 text-[10px] uppercase tracking-[0.22em] text-white/25">
-            Admin
-          </p>
-        )}
-
-        <div className="mt-2">
-          {bottomItems.map((item) => {
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                prefetch={false}
-                className={`block rounded-xl px-4 py-3 text-white/50 transition hover:bg-white/5 hover:text-white ${
-                  collapsed ? "text-center" : ""
-                }`}
-              >
-                {collapsed ? item.short : item.name}
-              </Link>
-            );
-          })}
-        </div>
       </nav>
 
       <div className="mt-10 rounded-2xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
@@ -115,9 +138,7 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
             <p className="text-xs uppercase tracking-[0.22em] text-[#C96F3B]">
               System Status
             </p>
-            <p className="mt-2 text-sm text-white/70">
-              Invoice agent operational
-            </p>
+            <p className="mt-2 text-sm text-white/70">Invoice agent operational</p>
             <div className="mt-3 flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-[#C96F3B]" />
               <span className="text-sm text-white">Active</span>

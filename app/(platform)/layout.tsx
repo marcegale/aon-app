@@ -13,7 +13,7 @@ export default function PlatformLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0B0D12] text-white flex">
+    <div className="min-h-screen bg-[#183A37] text-white flex">
       <Sidebar collapsed={collapsed} />
 
       <main className={`flex-1 transition-all ${collapsed ? "ml-20" : "ml-0"}`}>
