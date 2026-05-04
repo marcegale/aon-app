@@ -93,8 +93,8 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
   if (!area) {
     return (
       <div className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
-          Nexa Core
+        <p className="text-xs uppercase tracking-[0.28em] text-[#C96F3B]">
+          ai.gency
         </p>
         <h1 className="text-3xl font-semibold text-white">Área no encontrada</h1>
         <p className="text-sm text-white/65">
@@ -107,8 +107,8 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
-          Nexa Core
+        <p className="text-xs uppercase tracking-[0.28em] text-[#C96F3B]">
+          ai.gency
         </p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight text-white">
           {area.name}
@@ -119,7 +119,7 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
+        <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">
             Estado
           </p>
@@ -134,7 +134,7 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
+        <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">
             Agentes
           </p>
@@ -143,7 +143,7 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0F172A]/70 p-5">
+        <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">
             Próximo paso
           </p>
@@ -168,7 +168,7 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
             <Link
                 key={agent.id}
                 href={`/agents/${resolvedParams.area}/${agent.id}`}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F172A]/70 transition hover:border-[#C9A24D]/30 hover:bg-[#111827]"
+                className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F2422]/70 transition hover:border-[#C96F3B]/30 hover:bg-[#183A37]"
             >   
                 <div className="h-44 w-full overflow-hidden border-b border-white/10">
                   <img
@@ -190,7 +190,7 @@ export default async function AgentAreaPage({ params }: AreaPageProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-[#0B1120]/60 p-6">
+          <div className="rounded-2xl border border-dashed border-white/10 bg-[#0F2422]/60 p-6">
             <p className="text-sm text-white/65">
               Esta área aún no tiene agentes configurados.
             </p>

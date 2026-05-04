@@ -81,7 +81,7 @@ async function getDashboardData() {
 
 function StatusBadge({ n }: { n: number }) {
   return (
-    <span className="rounded-full bg-[#C9A24D]/10 px-3 py-1 text-xs text-[#E6C676]">
+    <span className="rounded-full bg-[#C96F3B]/10 px-3 py-1 text-xs text-[#F4EBD0]">
       {n} este mes
     </span>
   );
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="Nexa Core"
+        eyebrow="ai.gency"
         title="Dashboard"
         description="Controlá el procesamiento de facturas, capacidad del plan y actividad reciente."
       />
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
         {kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className="rounded-[20px] border border-white/10 bg-[#1C2230] p-5"
+            className="rounded-[20px] border border-white/10 bg-[#0F2422] p-5"
           >
             <p className="text-xs uppercase tracking-[0.2em] text-white/40">
               {kpi.label}
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
-          <div className="rounded-[28px] border border-white/10 bg-[#1C2230] p-6 shadow-xl shadow-black/20">
+          <div className="rounded-[28px] border border-white/10 bg-[#0F2422] p-6 shadow-xl shadow-black/20">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-white/35">
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
               <StatusBadge n={usedThisMonth} />
             </div>
 
-            <div className="flex h-72 items-end gap-3 rounded-3xl bg-[#121722] p-5">
+            <div className="flex h-72 items-end gap-3 rounded-3xl bg-[#0A1E1C] p-5">
               {chartData.map((d) => {
                 const heightPx = Math.max(
                   Math.round((d.count / maxCount) * 220),
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
                     title={`${d.label}: ${d.count}`}
                   >
                     <div
-                      className="w-full rounded-t-2xl bg-gradient-to-t from-[#C9A24D]/70 to-[#E6C676] shadow-lg"
+                      className="w-full rounded-t-2xl bg-gradient-to-t from-[#C96F3B]/70 to-[#C96F3B] shadow-lg"
                       style={{ height: `${heightPx}px` }}
                     />
                     <span className="text-xs text-white/35">{d.label}</span>
@@ -190,7 +190,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#1C2230] p-6">
+          <div className="rounded-[28px] border border-white/10 bg-[#0F2422] p-6">
             <p className="text-sm uppercase tracking-[0.22em] text-white/35">
               Plan
             </p>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
                 <div className="h-3 rounded-full bg-white/10">
                   <div
                     className={`h-3 rounded-full transition-all ${
-                      tasaValidacion >= 90 ? "bg-red-400" : "bg-[#C9A24D]"
+                      tasaValidacion >= 90 ? "bg-red-400" : "bg-[#C96F3B]"
                     }`}
                     style={{ width: `${Math.min(tasaValidacion, 100)}%` }}
                   />
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-          <div className="rounded-[28px] border border-white/10 bg-[#1C2230] p-6 shadow-xl shadow-black/20">
+          <div className="rounded-[28px] border border-white/10 bg-[#0F2422] p-6 shadow-xl shadow-black/20">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-white/35">
@@ -243,7 +243,7 @@ export default async function DashboardPage() {
                   Lotes recientes
                 </h3>
               </div>
-              <div className="rounded-full bg-[#C9A24D]/10 px-3 py-1 text-xs text-[#E6C676]">
+              <div className="rounded-full bg-[#C96F3B]/10 px-3 py-1 text-xs text-[#F4EBD0]">
                 Últimos 4
               </div>
             </div>
@@ -298,7 +298,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#1C2230] p-6">
+          <div className="rounded-[28px] border border-white/10 bg-[#0F2422] p-6">
             <p className="text-sm uppercase tracking-[0.22em] text-white/35">
               Acciones
             </p>

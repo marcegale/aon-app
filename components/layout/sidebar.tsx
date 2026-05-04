@@ -43,20 +43,18 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
     <aside
       className={`${
         collapsed ? "w-20" : "w-72"
-      } shrink-0 overflow-hidden border-r border-white/10 bg-[#0E1118] px-5 py-6 transition-all duration-300`}
+      } hidden md:block shrink-0 overflow-hidden border-r border-white/10 bg-[#183A37] px-5 py-6 transition-all duration-300`}
     >
       <div className="mb-10">
         {collapsed ? (
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C9A24D]/20 bg-[#1C2230] text-sm font-semibold text-[#C9A24D]">
-            N
+          <div className="flex h-10 w-10 items-center justify-center">
+            <img src="/brand/logo-icon.png" alt="ai.gency" className="h-8 w-8 object-contain" />
           </div>
         ) : (
           <>
-            <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
-              Nexa Core
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold text-white">
-              Control Center
+            <img src="/brand/logo-white.png" alt="ai.gency" className="h-7 w-auto" />
+            <h1 className="mt-2 text-sm font-medium text-white/50">
+              Operations Center
             </h1>
           </>
         )}
@@ -74,7 +72,7 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
                 collapsed ? "text-center" : ""
               } ${
                 isActive
-                  ? "border border-white/10 bg-[#1C2230] text-white shadow-md shadow-black/20"
+                  ? "border border-white/10 bg-[#0F2422] text-white shadow-md shadow-black/20"
                   : "text-white/70 hover:bg-white/5 hover:text-white"
               }`}
             >
@@ -107,21 +105,21 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
         </div>
       </nav>
 
-      <div className="mt-10 rounded-2xl border border-[#C9A24D]/20 bg-[#1C2230] p-4">
+      <div className="mt-10 rounded-2xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
         {collapsed ? (
           <div className="flex justify-center">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#C9A24D]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#C96F3B]" />
           </div>
         ) : (
           <>
-            <p className="text-xs uppercase tracking-[0.22em] text-[#C9A24D]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[#C96F3B]">
               System Status
             </p>
             <p className="mt-2 text-sm text-white/70">
               Invoice agent operational
             </p>
             <div className="mt-3 flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-[#C9A24D]" />
+              <div className="h-2 w-2 rounded-full bg-[#C96F3B]" />
               <span className="text-sm text-white">Active</span>
             </div>
           </>

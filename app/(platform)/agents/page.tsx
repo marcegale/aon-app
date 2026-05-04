@@ -72,8 +72,8 @@ export default function AgentsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
-          Nexa Core
+        <p className="text-xs uppercase tracking-[0.28em] text-[#C96F3B]">
+          ai.gency
         </p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight text-white">
           Áreas de Agentes
@@ -89,7 +89,7 @@ export default function AgentsPage() {
           <Link
             key={area.id}
             href={`/agents/${area.id}`}
-            className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-sm transition hover:border-[#C9A24D]/30 hover:bg-[#111827]"
+            className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F2422]/70 backdrop-blur-sm transition hover:border-[#C96F3B]/30 hover:bg-[#183A37]"
           >
             <div className="h-44 w-full overflow-hidden border-b border-white/10">
               <img
@@ -129,7 +129,7 @@ export default function AgentsPage() {
                   </p>
                 </div>
 
-                <span className="rounded-lg border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] transition hover:bg-[#C9A24D]/15">
+                <span className="rounded-lg border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-4 py-2 text-sm font-medium text-[#F4EBD0] transition hover:bg-[#C96F3B]/15">
                   Explorar
                 </span>
               </div>

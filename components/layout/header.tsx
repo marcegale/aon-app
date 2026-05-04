@@ -16,7 +16,7 @@ export default function Header({
         </button>
 
         <p className="text-sm text-white/50">
-            Nexa Core / Platform
+            ai.gency
         </p>
         </div>
 
@@ -26,7 +26,7 @@ export default function Header({
           Tenant: Demo
         </div>
 
-        <div className="w-8 h-8 rounded-full bg-[#1C2230] flex items-center justify-center text-xs text-white/70">
+        <div className="w-8 h-8 rounded-full bg-[#0F2422] flex items-center justify-center text-xs text-white/70">
           DG
         </div>
       </div>

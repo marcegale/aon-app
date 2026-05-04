@@ -136,7 +136,7 @@ export default function ReviewClient({
       <div className="mx-auto max-w-xl space-y-6">
         {/* Header */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A24D]">X Agent · Revisión</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C96F3B]">X Agent · Revisión</p>
           <h1 className="mt-1 text-2xl font-bold text-white">Revisar y publicar</h1>
           <p className="mt-1 text-sm text-white/45">
             Opción seleccionada: <span className="text-white/70">{optionLabel}</span>
@@ -153,7 +153,7 @@ export default function ReviewClient({
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={5}
-              className="w-full resize-none rounded-xl border border-white/10 bg-[#111620] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#C9A24D]/40"
+              className="w-full resize-none rounded-xl border border-white/10 bg-[#111620] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#C96F3B]/40"
             />
             <span className={`absolute bottom-3 right-4 text-xs ${overLimit ? "text-red-400" : "text-white/30"}`}>
               {charCount}/280
@@ -180,7 +180,7 @@ export default function ReviewClient({
                 type="button"
                 onClick={handleExport}
                 disabled={exporting}
-                className="rounded-xl border border-[#C9A24D]/25 bg-[#C9A24D]/10 px-4 py-2 text-sm font-medium text-[#E7C980] hover:bg-[#C9A24D]/15 disabled:opacity-40"
+                className="rounded-xl border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-4 py-2 text-sm font-medium text-[#F4EBD0] hover:bg-[#C96F3B]/15 disabled:opacity-40"
               >
                 {exporting ? "Aplicando..." : "Aplicar créditos a imagen"}
               </button>
@@ -214,7 +214,7 @@ export default function ReviewClient({
               placeholder="Crédito fotográfico (ej: Reuters / Getty Images)"
               value={credits}
               onChange={(e) => { setCredits(e.target.value); setOverlayApplied(false); }}
-              className="w-full rounded-xl border border-white/10 bg-[#111620] px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-[#C9A24D]/40"
+              className="w-full rounded-xl border border-white/10 bg-[#111620] px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-[#C96F3B]/40"
             />
           )}
         </div>
@@ -253,7 +253,7 @@ export default function ReviewClient({
             type="button"
             onClick={handlePublish}
             disabled={publishing || !text.trim() || overLimit}
-            className="rounded-xl bg-[#C9A24D] px-6 py-2.5 text-sm font-semibold text-[#0B0D12] hover:bg-[#D8B45F] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl bg-[#C96F3B] px-6 py-2.5 text-sm font-semibold text-[#0B0D12] hover:bg-[#D8B45F] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {publishing ? "Publicando..." : "Publicar en X"}
           </button>

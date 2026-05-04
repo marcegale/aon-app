@@ -26,7 +26,7 @@ export function ScoreboardPreview({ imageUrl, overlay }: Props) {
   const hasContent = overlay.competition || overlay.status || visibleMatches.length > 0;
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       {/* Subtle edge vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)]" />
@@ -87,7 +87,7 @@ export function QuotePreview({ imageUrl, overlay }: Props) {
   const text = overlay.quote || overlay.headline;
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/20 to-transparent" />
       {overlay.credits && (
@@ -96,8 +96,8 @@ export function QuotePreview({ imageUrl, overlay }: Props) {
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
-        <div className="border-l-2 border-[#C9A24D]/70 pl-4">
-          <span className="block font-serif text-3xl leading-none text-[#C9A24D] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">"</span>
+        <div className="border-l-2 border-[#C96F3B]/70 pl-4">
+          <span className="block font-serif text-3xl leading-none text-[#C96F3B] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">"</span>
           <p className="mt-1 text-[1.05rem] font-bold leading-snug text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.95)]">
             {text}
           </p>
@@ -107,7 +107,7 @@ export function QuotePreview({ imageUrl, overlay }: Props) {
             </p>
           )}
           {overlay.competition && (
-            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#C9A24D]/80">
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#C96F3B]/80">
               {overlay.competition}
             </p>
           )}
@@ -122,7 +122,7 @@ export function QuotePreview({ imageUrl, overlay }: Props) {
 
 export function PlayerNewsPreview({ imageUrl, overlay }: Props) {
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       {overlay.credits && (
@@ -165,7 +165,7 @@ export function PlayerNewsPreview({ imageUrl, overlay }: Props) {
 
 export function StatCardPreview({ imageUrl, overlay }: Props) {
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
       {overlay.credits && (
@@ -175,13 +175,13 @@ export function StatCardPreview({ imageUrl, overlay }: Props) {
       )}
       {overlay.competition && (
         <div className="absolute left-5 top-5">
-          <span className="text-xs font-black uppercase tracking-[0.25em] text-[#C9A24D] [text-shadow:0_1px_8px_rgba(0,0,0,1)]">
+          <span className="text-xs font-black uppercase tracking-[0.25em] text-[#C96F3B] [text-shadow:0_1px_8px_rgba(0,0,0,1)]">
             {overlay.competition}
           </span>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
-        <div className="mb-3 h-0.5 w-8 bg-[#C9A24D]" />
+        <div className="mb-3 h-0.5 w-8 bg-[#C96F3B]" />
         <p className="text-3xl font-black leading-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
           {overlay.headline}
         </p>
@@ -205,7 +205,7 @@ export function StatCardPreview({ imageUrl, overlay }: Props) {
 
 export function BreakingNewsPreview({ imageUrl, overlay }: Props) {
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/80" />
       {overlay.credits && (
@@ -241,7 +241,7 @@ export function BreakingNewsPreview({ imageUrl, overlay }: Props) {
 
 export function BackgroundOnlyPreview({ imageUrl, overlay }: Props) {
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1120]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F2422]">
       <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       {overlay.credits && (
         <div className="absolute right-2 top-2">

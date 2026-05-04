@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nexa Core",
-  description: "Always On AI",
+  title: "ai.gency",
+  description: "AI systems for faster, leaner operations",
 };
 
 export default function RootLayout({
