@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 import { prisma } from "@/app/lib/prisma";
+import AssessmentClient from "@/components/assessment/assessment-client";
 
 export default async function PlatformAssessmentPage() {
   const supabaseClient = await createServerSupabaseClient();
@@ -34,5 +35,5 @@ export default async function PlatformAssessmentPage() {
     tenantSlug = user.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]+/g, "-");
   }
 
-  redirect(`/${tenantSlug}/assessment`);
+  return <AssessmentClient tenantSlug={tenantSlug} />;
 }
