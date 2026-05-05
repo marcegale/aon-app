@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { use, useRef, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase/client";
@@ -1407,6 +1408,15 @@ function handleParsedItemChange(
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <Link
+          href="/agents/accounting/invoice-processor/historico"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#C96F3B]/25 bg-[#C96F3B]/10 px-4 py-2 text-sm font-medium text-[#F4EBD0] transition hover:bg-[#C96F3B]/20"
+        >
+          Ver histórico →
+        </Link>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.16em] text-white/40">Cargadas</p>

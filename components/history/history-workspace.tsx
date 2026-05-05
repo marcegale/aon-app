@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const HISTORY_BASE = "/agents/accounting/invoice-processor/historico";
+
 type HistoryBatch = {
   id: string;
   client: string;
@@ -79,8 +81,8 @@ export default function HistoryWorkspace() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(201,162,77,0.16),transparent_34%),linear-gradient(135deg,rgba(28,34,48,0.98),rgba(13,16,24,0.98))] p-6 shadow-2xl shadow-black/25">
-        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#C9A24D]">
+      <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(201,111,59,0.15),transparent_34%),linear-gradient(135deg,rgba(24,58,55,0.98),rgba(15,36,34,0.98))] p-6 shadow-2xl shadow-black/25">
+        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#C96F3B]">
           Histórico
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
@@ -91,24 +93,24 @@ export default function HistoryWorkspace() {
         </p>
       </div>
 
-      <div className="rounded-[24px] border border-white/10 bg-[#111620] p-5">
+      <div className="rounded-[24px] border border-white/10 bg-[#0F2422] p-5">
         <div className="grid gap-3 lg:grid-cols-5">
           <input
             value={clientQuery}
             onChange={(event) => setClientQuery(event.target.value)}
             placeholder="Cliente, RUC o razón social"
-            className="rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
+            className="rounded-xl border border-white/10 bg-[#183A37] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C96F3B]/50"
           />
           <input
             value={dateQuery}
             onChange={(event) => setDateQuery(event.target.value)}
             placeholder="Fecha o periodo"
-            className="rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
+            className="rounded-xl border border-white/10 bg-[#183A37] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C96F3B]/50"
           />
           <select
             value={statusQuery}
             onChange={(event) => setStatusQuery(event.target.value)}
-            className="rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition focus:border-[#C9A24D]/50"
+            className="rounded-xl border border-white/10 bg-[#183A37] px-4 py-3 text-sm text-white outline-none transition focus:border-[#C96F3B]/50"
           >
             <option value="todos">Todos los estados</option>
             <option value="validado">Validado</option>
@@ -120,7 +122,7 @@ export default function HistoryWorkspace() {
             onChange={(event) => setMinTotal(event.target.value)}
             placeholder="Mín. facturas"
             inputMode="numeric"
-            className="rounded-xl border border-white/10 bg-[#0B0D12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C9A24D]/50"
+            className="rounded-xl border border-white/10 bg-[#183A37] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#C96F3B]/50"
           />
           <button
             type="button"
@@ -142,7 +144,7 @@ export default function HistoryWorkspace() {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#111620]">
+        <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#0F2422]">
           <div className="grid grid-cols-5 border-b border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/40">
             <span className="col-span-2">Cliente</span>
             <span>Fecha</span>
@@ -165,16 +167,14 @@ export default function HistoryWorkspace() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => router.push(`/historico/${item.id}`)}
+                  onClick={() => router.push(`${HISTORY_BASE}/${item.id}`)}
                   className={`grid w-full grid-cols-5 border-b border-white/6 px-4 py-4 text-left text-sm transition last:border-b-0 ${
                     isSelected
-                      ? "bg-[#C9A24D]/10 text-white"
+                      ? "bg-[#C96F3B]/10 text-white"
                       : "text-white/75 hover:bg-white/[0.04]"
                   }`}
                 >
-                  <span className="col-span-2 font-medium text-white">
-                    {item.client}
-                  </span>
+                  <span className="col-span-2 font-medium text-white">{item.client}</span>
                   <span>{item.date}</span>
                   <span>{item.total}</span>
                   <span className="capitalize">{status}</span>
@@ -184,11 +184,11 @@ export default function HistoryWorkspace() {
           )}
         </div>
 
-        <aside className="rounded-[24px] border border-[#C9A24D]/20 bg-[#111620] p-5 shadow-xl shadow-black/20">
+        <aside className="rounded-[24px] border border-[#C96F3B]/20 bg-[#0F2422] p-5 shadow-xl shadow-black/20">
           {selectedBatch ? (
             <div className="space-y-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C9A24D]">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C96F3B]">
                   Detalle del lote
                 </p>
                 <h2 className="mt-2 text-lg font-semibold text-white">
@@ -199,17 +199,13 @@ export default function HistoryWorkspace() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">
-                    Facturas
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Facturas</p>
                   <p className="mt-2 text-2xl font-semibold text-white">
                     {selectedBatch.total}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">
-                    Validadas
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/40">Validadas</p>
                   <p className="mt-2 text-2xl font-semibold text-white">
                     {selectedBatch.validated}
                   </p>
@@ -217,9 +213,7 @@ export default function HistoryWorkspace() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  Estado
-                </p>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40">Estado</p>
                 <p className="mt-2 text-sm font-medium capitalize text-white">
                   {getStatus(selectedBatch)}
                 </p>
@@ -227,17 +221,15 @@ export default function HistoryWorkspace() {
 
               <button
                 type="button"
-                onClick={() => router.push(`/historico/${selectedBatch.id}`)}
-                className="w-full rounded-xl bg-[#C9A24D] px-4 py-3 text-sm font-semibold text-[#0B0D12] transition hover:bg-[#D8B45F] active:scale-[0.99]"
+                onClick={() => router.push(`${HISTORY_BASE}/${selectedBatch.id}`)}
+                className="w-full rounded-xl bg-[#C96F3B] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#B85E30] active:scale-[0.99]"
               >
                 Ver detalle y reexportar
               </button>
             </div>
           ) : (
             <p className="text-sm leading-6 text-white/45">
-              {loading
-                ? "Cargando..."
-                : "Seleccioná un lote para ver el detalle."}
+              {loading ? "Cargando..." : "Seleccioná un lote para ver el detalle."}
             </p>
           )}
         </aside>

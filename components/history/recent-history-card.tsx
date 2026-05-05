@@ -43,7 +43,7 @@ export default function RecentHistoryCard() {
           {items.map((item) => (
             <div
               key={item.id}
-              className="rounded-xl border border-white/10 bg-[#0B0D12]/60 p-3"
+              className="rounded-xl border border-white/10 bg-[#0F2422]/60 p-3"
             >
               <p className="truncate text-sm font-medium text-white">
                 {item.client}

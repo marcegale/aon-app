@@ -1,5 +1,5 @@
-import HistoryWorkspace from "@/components/history/history-workspace";
+import { redirect } from "next/navigation";
 
-export default function HistoricoPage() {
-  return <HistoryWorkspace />;
+export default function LegacyHistoricoPage() {
+  redirect("/agents/accounting/invoice-processor/historico");
 }

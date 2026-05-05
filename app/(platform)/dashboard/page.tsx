@@ -308,7 +308,7 @@ export default async function DashboardPage() {
             <div className="mt-5 grid grid-cols-2 gap-3">
               {[
                 ["Procesar facturas", "/agents/accounting/invoice-processor"],
-                ["Ver histórico", "/historico"],
+                ["Ver histórico", "/agents/accounting/invoice-processor/historico"],
                 ["Ajustes", "/settings"],
                 ["Assessment", "/assessment"],
               ].map(([label, href]) => (
