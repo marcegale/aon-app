@@ -18,6 +18,56 @@ enum UserStatus {
   suspended
 }
 
+enum RecruitingSearchStatus {
+  draft
+  intake
+  generating
+  publishing
+  receiving_cvs
+  shortlist
+  interviewing
+  final_review
+  closed
+}
+
+enum RecruitingMonitoringStatus {
+  pending
+  active
+  paused
+  finished
+}
+
+enum RecruitingAttachmentType {
+  job_description
+  ideal_candidate_profile
+  org_chart
+  benefits
+  client_material
+  brand_manual
+  other
+}
+
+enum RecruitingCandidateStatus {
+  received
+  reviewed
+  shortlisted
+  invited_to_interview
+  interviewed
+  qualifies
+  does_not_qualify
+  rejected
+  hired
+}
+
+enum RecruitingInterviewStatus {
+  pending
+  scheduled
+  in_progress
+  completed
+  reviewed
+  cancelled
+}
+
 model Lead {
   id                 String    @id @default(cuid())
   nombre             String?
@@ -59,6 +109,7 @@ model User {
   updatedAt       DateTime           @updatedAt
 
   memberships     TenantMembership[]
+  recruitingSearches RecruitingSearch[]
 
   @@index([email])
 }
@@ -84,6 +135,9 @@ model Tenant {
   documents   TenantDocument[]
   analyses    TenantAnalysis[]
   memberships TenantMembership[]
+  recruitingCompanyProfiles RecruitingCompanyProfile[]
+  recruitingSearches RecruitingSearch[]
+
 }
 
 model TenantMembership {
@@ -138,4 +192,183 @@ model TenantAnalysis {
   @@index([tenantId, createdAt])
   @@map("tenant_analyses")
   rawData Json?
+}
+
+model RecruitingCompanyProfile {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  razonSocial       String
+  ruc               String?
+  rubroIndustria    String?
+  direccion         String?
+  telefono          String?
+  mailContacto      String?
+  brandPreference   String   @default("definir_por_busqueda")
+  internalComments  String?
+  metadata          Json?
+
+  searches  RecruitingSearch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, ruc])
+  @@map("recruiting_company_profiles")
+}
+
+model RecruitingSearch {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  companyProfileId String?
+  companyProfile   RecruitingCompanyProfile? @relation(fields: [companyProfileId], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  refCode          String
+  title            String
+  area             String?
+  seniority        String?
+  modality         String?
+  location         String?
+  salaryRange      String?
+  cutoffDate       DateTime?
+  requestText      String
+  emailInbox       String?
+
+  status           RecruitingSearchStatus @default(draft)
+  monitoringStatus RecruitingMonitoringStatus @default(pending)
+  monitoringStartedAt DateTime?
+  monitoringFinishedAt DateTime?
+
+  graphicPrompt    String?
+  interviewPrompt  String?
+
+  jobProfileOutput        Json?
+  idealCandidateOutput    Json?
+  scoringCriteriaOutput   Json?
+  publicationCopiesOutput Json?
+  graphicOutput           Json?
+  aiGenerationLog         Json?
+
+  attachments RecruitingSearchAttachment[]
+  candidates  RecruitingCandidate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, refCode])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, monitoringStatus])
+  @@index([companyProfileId])
+  @@map("recruiting_searches")
+}
+
+model RecruitingSearchAttachment {
+  id        String   @id @default(cuid())
+  searchId  String
+  search    RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  type      RecruitingAttachmentType
+  fileName  String
+  fileUrl   String
+  mimeType  String?
+  extractedText String?
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([searchId])
+  @@index([searchId, type])
+  @@map("recruiting_search_attachments")
+}
+
+model RecruitingCandidate {
+  id        String   @id @default(cuid())
+  searchId  String
+  search    RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  candidateCode String
+  fullName      String?
+  email         String?
+  phone         String?
+  sourceEmailId String?
+  cvFileName    String?
+  cvFileUrl     String?
+  cvText        String?
+
+  status        RecruitingCandidateStatus @default(received)
+  cvSummary     String?
+  cvScore       Int?
+  cvReport      Json?
+  shortlistNotes String?
+
+  interviews RecruitingInterview[]
+  notifications RecruitingCandidateNotification[]
+
+  receivedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([searchId, candidateCode])
+  @@index([searchId])
+  @@index([searchId, status])
+  @@index([email])
+  @@map("recruiting_candidates")
+}
+
+model RecruitingInterview {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   RecruitingCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  token       String   @unique
+  status      RecruitingInterviewStatus @default(pending)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  introText      String?
+  questions      Json?
+  answers        Json?
+  transcript     String?
+  score          Int?
+  scoreBreakdown Json?
+  summary        String?
+  recommendation String?
+  reviewerNotes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([status])
+  @@map("recruiting_interviews")
+}
+
+model RecruitingCandidateNotification {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   RecruitingCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  type        String
+  subject     String
+  body        String
+  status      String @default("draft")
+  sentAt      DateTime?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([type])
+  @@map("recruiting_candidate_notifications")
 }
