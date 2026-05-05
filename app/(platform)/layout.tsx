@@ -16,7 +16,7 @@ export default function PlatformLayout({
     <div className="min-h-screen bg-[#183A37] text-white flex">
       <Sidebar collapsed={collapsed} />
 
-      <main className={`flex-1 transition-all ${collapsed ? "ml-20" : "ml-0"}`}>
+      <main className="flex-1 min-w-0 transition-all">
         <Header onToggle={() => setCollapsed((prev) => !prev)} />
         <div className="p-6">{children}</div>
       </main>
