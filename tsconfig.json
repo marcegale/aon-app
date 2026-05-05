@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "mobile-uploader"]
+  "exclude": ["node_modules", "mobile-uploader", "aon-app"]
 }
