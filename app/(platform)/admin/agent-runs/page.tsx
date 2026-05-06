@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 import { prisma } from "@/app/lib/prisma";
+import { theme, status } from "@/app/styles/theme";
 
 function formatDate(date: Date) {
   return date.toLocaleString("es-PY", {
@@ -20,10 +21,10 @@ function formatCost(cost: number | null) {
   return `$${cost.toFixed(6)}`;
 }
 
-function statusColor(status: string) {
-  if (status === "success") return "text-emerald-300";
-  if (status === "error") return "text-red-300";
-  return "text-yellow-300";
+function statusClass(s: string) {
+  if (s === "success") return status.success.text;
+  if (s === "error")   return status.error.text;
+  return status.warning.text;
 }
 
 export default async function AgentRunsPage() {
@@ -51,20 +52,26 @@ export default async function AgentRunsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0B0D12] p-8 text-white">
+    <div className="min-h-screen p-8" style={{ background: theme.admin.bg, color: theme.admin.text }}>
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.28em] text-[#C9A24D]">
+        <p className="text-xs uppercase tracking-[0.28em]" style={{ color: theme.admin.accent }}>
           Nexa Core Admin
         </p>
         <h1 className="mt-2 text-3xl font-semibold">Agent Runs</h1>
-        <p className="mt-2 text-sm text-white/55">
+        <p className="mt-2 text-sm" style={{ color: theme.admin.textMuted }}>
           Últimas 100 ejecuciones de agentes IA.
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#111827]">
+      <div
+        className="overflow-x-auto rounded-2xl"
+        style={{ border: `1px solid ${theme.admin.border}`, background: theme.admin.surface }}
+      >
         <table className="w-full border-collapse text-sm">
-          <thead className="bg-white/[0.04] text-left text-white/60">
+          <thead
+            className="text-left"
+            style={{ background: theme.admin.surfaceMuted, color: theme.admin.textMuted }}
+          >
             <tr>
               <th className="px-4 py-3 whitespace-nowrap">Fecha</th>
               <th className="px-4 py-3 whitespace-nowrap">Agente</th>
@@ -78,32 +85,36 @@ export default async function AgentRunsPage() {
           <tbody>
             {runs.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-white/40">
+                <td colSpan={7} className="px-4 py-8 text-center" style={{ color: theme.admin.textMuted }}>
                   Sin ejecuciones registradas.
                 </td>
               </tr>
             )}
             {runs.map((run) => (
-              <tr key={run.id} className="border-t border-white/10 hover:bg-white/[0.02]">
-                <td className="px-4 py-3 whitespace-nowrap text-white/70">
+              <tr
+                key={run.id}
+                className="border-t hover:bg-[rgba(244,235,208,0.03)]"
+                style={{ borderColor: theme.admin.border }}
+              >
+                <td className="px-4 py-3 whitespace-nowrap" style={{ color: theme.admin.textMuted }}>
                   {formatDate(run.createdAt)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
+                <td className="px-4 py-3 whitespace-nowrap font-medium">
                   {run.agentId}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-white/50">
+                <td className="px-4 py-3 whitespace-nowrap font-mono text-xs" style={{ color: theme.admin.textMuted }}>
                   {run.userId ?? "—"}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-white/50">
+                <td className="px-4 py-3 whitespace-nowrap font-mono text-xs" style={{ color: theme.admin.textMuted }}>
                   {run.tenantId ?? "—"}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={statusColor(run.status)}>{run.status}</span>
+                  <span className={statusClass(run.status)}>{run.status}</span>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-right text-white/70">
+                <td className="px-4 py-3 whitespace-nowrap text-right" style={{ color: theme.admin.textMuted }}>
                   {run.tokens ?? "—"}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-right text-white/70">
+                <td className="px-4 py-3 whitespace-nowrap text-right" style={{ color: theme.admin.textMuted }}>
                   {formatCost(run.cost)}
                 </td>
               </tr>
