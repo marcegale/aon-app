@@ -1,5 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
-import type { TenantDocument } from "@/app/(platform)/assessment/types/documents";
+import type { TenantDocument } from "@/app/(platform)/(workspace)/assessment/types/documents";
 
 type PrismaTenantDocument = {
   id: string;

@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import SectionHeader from "../../../components/ui/section-header";
+import SectionHeader from "@/components/ui/section-header";
 
 const DEFAULT_MONTHLY_LIMIT = 20;
 

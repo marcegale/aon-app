@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import SectionHeader from "../../../components/ui/section-header";
+import SectionHeader from "@/components/ui/section-header";
 
 export default function InboxPage() {
   

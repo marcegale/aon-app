@@ -10,12 +10,12 @@ import {
   DiagnosticQuestion,
   QuestionAnswer,
 } from "@/app/lib/diagnostico/types";
-import { BlockProgress } from "@/app/(platform)/assessment/components/block-progress";
-import { QuestionCard } from "@/app/(platform)/assessment/components/question-card";
-import { ScoreChip } from "@/app/(platform)/assessment/components/score-chip";
-import { DocumentView } from "@/app/(platform)/assessment/components/document-view";
-import { mockDocuments } from "@/app/(platform)/assessment/components/document-view.mock";
-import type { TenantDocument } from "@/app/(platform)/assessment/types/documents";
+import { BlockProgress } from "@/app/(platform)/(workspace)/assessment/components/block-progress";
+import { QuestionCard } from "@/app/(platform)/(workspace)/assessment/components/question-card";
+import { ScoreChip } from "@/app/(platform)/(workspace)/assessment/components/score-chip";
+import { DocumentView } from "@/app/(platform)/(workspace)/assessment/components/document-view";
+import { mockDocuments } from "@/app/(platform)/(workspace)/assessment/components/document-view.mock";
+import type { TenantDocument } from "@/app/(platform)/(workspace)/assessment/types/documents";
 
 function createInitialBlockAnswer(blockId: string): BlockAnswer {
   return {
