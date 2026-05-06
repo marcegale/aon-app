@@ -278,12 +278,22 @@ export async function POST(req: Request) {
       try {
         let parsed: Record<string, unknown> = {};
         try { parsed = JSON.parse(response.output_text ?? "{}"); } catch { /* ignore */ }
+        const usage = response.usage;
+        const inputTokens = usage?.input_tokens ?? 0;
+        const outputTokens = usage?.output_tokens ?? 0;
+        const totalTokens = inputTokens + outputTokens;
+        // gpt-4o-mini: $0.150/1M input, $0.600/1M output
+        const cost = totalTokens > 0
+          ? (inputTokens * 0.150 + outputTokens * 0.600) / 1_000_000
+          : undefined;
         await completeAgentRun(runId, {
           output: {
             ...(typeof parsed.razonSocialEmisor === "string" && { proveedor: parsed.razonSocialEmisor }),
             ...(typeof parsed.total === "number" && { total: parsed.total }),
             ...(Array.isArray(parsed.items) && { itemsCount: parsed.items.length }),
           },
+          tokens: totalTokens > 0 ? totalTokens : undefined,
+          cost,
         });
       } catch {
         // ignore tracking errors
