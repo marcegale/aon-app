@@ -1181,7 +1181,7 @@ function buildSupabaseInvoiceRows(filesToExport: FileItem[]) {
 function handleFinishReviewFlow() {
   const supabaseRows = buildSupabaseInvoiceRows(files);
 
-  fetch("/api/invoice-items", {
+  fetch("/api/agents/accounting/save", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

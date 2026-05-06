@@ -1,23 +1,27 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import {
+  verifyTenantSessionToken,
+  tenantSessionCookieName,
+} from "@/app/lib/tenant-auth";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
+export default async function TenantEntryPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(tenantSessionCookieName(tenantSlug))?.value;
 
-export default function TenantEntryPage() {
-  const params = useParams<{ tenantSlug: string }>();
-  const tenantSlug = params.tenantSlug;
-
-  useEffect(() => {
-    const hasAuth = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(`tenant_auth_${tenantSlug}=`));
-
-    if (hasAuth) {
-      window.location.replace(`/${tenantSlug}/assessment`);
-    } else {
-      window.location.replace(`/${tenantSlug}/login`);
+  if (token) {
+    try {
+      const result = verifyTenantSessionToken(token, tenantSlug);
+      if (result.ok) redirect(`/${tenantSlug}/assessment`);
+    } catch {
+      // TENANT_SESSION_SECRET missing — fall through to login
     }
-  }, []);
+  }
 
-  return null;
+  redirect(`/${tenantSlug}/login`);
 }
