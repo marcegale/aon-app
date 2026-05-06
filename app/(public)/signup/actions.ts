@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseAdminClient } from "../../lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 type SignupState = {
   success: boolean;

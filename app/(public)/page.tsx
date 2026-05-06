@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PublicBackground } from "../components/public/public-background";
+import { PublicBackground } from "@/components/public/public-background";
 
 export default function HomePage() {
   const [isContactOpen, setIsContactOpen] = useState(false);

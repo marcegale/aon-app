@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PublicShell } from "../../components/public/public-shell";
+import { PublicShell } from "@/components/public/public-shell";
 
 function slugify(value: string) {
   return value
