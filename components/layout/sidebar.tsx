@@ -1,56 +1,106 @@
 "use client";
 
+import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { theme } from "@/app/styles/theme";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type NavItem = {
   label: string;
-  href?: string;
+  href: string;
   short?: string;
-  adminOnly?: boolean;
-  requiredFeature?: string;
-  disabled?: boolean;
+};
+
+type NavSubGroup = {
+  subtitle: string;
+  items: NavItem[];
 };
 
 type NavGroup = {
   title: string;
-  items: NavItem[];
   adminOnly?: boolean;
+  subGroups: NavSubGroup[];
 };
 
-const NAV_GROUPS: NavGroup[] = [
+// ─── Navigation tree ──────────────────────────────────────────────────────────
+
+const NAV: NavGroup[] = [
   {
     title: "Workspace",
-    items: [
-      { label: "Dashboard", href: "/dashboard", short: "D" },
-      { label: "Diagnóstico empresarial", href: "/assessment", short: "A" },
+    subGroups: [
+      {
+        subtitle: "",
+        items: [
+          { label: "Dashboard",               href: "/dashboard",  short: "D" },
+          { label: "Diagnóstico empresarial",  href: "/assessment", short: "A" },
+        ],
+      },
     ],
   },
   {
     title: "Agentes",
-    items: [
+    subGroups: [
       {
-        label: "Procesador de facturas",
-        href: "/agents/accounting/invoice-processor",
-        short: "F",
+        subtitle: "Accounting",
+        items: [
+          { label: "Procesador de facturas", href: "/agents/accounting/invoice-processor",           short: "F" },
+          { label: "Histórico",              href: "/agents/accounting/invoice-processor/historico", short: "H" },
+        ],
       },
       {
-        label: "X Agent",
-        href: "/admin/x-agent",
-        short: "X",
-        adminOnly: true,
+        subtitle: "HR",
+        items: [
+          { label: "Recruiting", href: "/agents/hr/recruiting",      short: "R" },
+        ],
+      },
+      {
+        subtitle: "Operations",
+        items: [
+          { label: "Charlie", href: "/agents/operations/charlie", short: "C" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "SuperAdmin",
+    adminOnly: true,
+    subGroups: [
+      {
+        subtitle: "",
+        items: [
+          { label: "Agent Runs",     href: "/admin/agent-runs", short: "AR" },
+          { label: "Usage / Costos", href: "/admin/usage",      short: "U"  },
+          { label: "Leads",          href: "/admin/leads",       short: "L"  },
+          { label: "X Agent",        href: "/admin/x-agent",    short: "X"  },
+        ],
       },
     ],
   },
   {
     title: "Cuenta",
-    items: [
-      { label: "Cerrar sesión", href: "/logout", short: "→" },
+    subGroups: [
+      {
+        subtitle: "",
+        items: [
+          { label: "Settings",      href: "/settings", short: "S"  },
+          { label: "Cerrar sesión", href: "/logout",   short: "→"  },
+        ],
+      },
     ],
   },
 ];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function isActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
@@ -62,13 +112,33 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
     });
   }, []);
 
+  // All color values come from theme — injected as CSS custom properties so
+  // Tailwind's hover:/active: variants can reference them via [var(--x)].
+  const cssVars = {
+    "--s-bg":           theme.bg,
+    "--s-surface":      theme.surface,
+    "--s-surface-m":    theme.surfaceMuted,
+    "--s-text":         theme.text,
+    "--s-text-m":       theme.textMuted,
+    "--s-accent":       theme.accent,
+    "--s-border":       theme.border,
+  } as React.CSSProperties;
+
   return (
     <aside
       className={`${
         collapsed ? "w-20" : "w-72"
-      } hidden md:block shrink-0 overflow-hidden border-r border-white/10 bg-[#183A37] px-5 py-6 transition-all duration-300`}
+      } hidden md:block shrink-0 overflow-y-auto overflow-x-hidden py-6 transition-all duration-300`}
+      style={{
+        background:  theme.bg,
+        borderRight: `1px solid ${theme.border}`,
+        paddingLeft:  collapsed ? undefined : "1.25rem",
+        paddingRight: collapsed ? undefined : "1.25rem",
+        ...cssVars,
+      }}
     >
-      <div className="mb-10">
+      {/* Logo */}
+      <div className={`mb-10 ${collapsed ? "px-5" : ""}`}>
         {collapsed ? (
           <div className="flex h-10 w-10 items-center justify-center">
             <img src="/brand/logo-icon.png" alt="ai.gency" className="h-8 w-8 object-contain" />
@@ -76,72 +146,97 @@ export default function Sidebar({ collapsed }: { collapsed: boolean }) {
         ) : (
           <>
             <img src="/brand/logo-white.png" alt="ai.gency" className="h-7 w-auto" />
-            <p className="mt-2 text-sm font-medium text-white/50">Operations Center</p>
+            <p className="mt-2 text-sm font-medium text-[var(--s-text-m)]">
+              Operations Center
+            </p>
           </>
         )}
       </div>
 
+      {/* ── Single rendering loop: NAV → subGroups → items ── */}
       <nav className="flex flex-col gap-5 text-sm">
-        {NAV_GROUPS.map((group) => {
-          const visibleItems = group.items.filter(
-            (item) => !item.adminOnly || isAdmin
-          );
-
-          if (visibleItems.length === 0) return null;
+        {NAV.map((group) => {
+          if (group.adminOnly && !isAdmin) return null;
 
           return (
             <div key={group.title}>
               {!collapsed && (
-                <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/25">
+                <p className="mb-2 px-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--s-text-m)]">
                   {group.title}
                 </p>
               )}
-              <div className="space-y-1">
-                {visibleItems.map((item) => {
-                  if (!item.href) return null;
-                  const isActive = pathname.startsWith(item.href);
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={false}
-                      className={`flex items-center rounded-xl px-4 py-2.5 transition ${
-                        collapsed ? "justify-center" : "gap-3"
-                      } ${
-                        isActive
-                          ? "border border-white/10 bg-[#0F2422] text-white shadow-md shadow-black/20"
-                          : "text-white/65 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {collapsed ? (
-                        <span className="text-xs font-semibold">{item.short}</span>
-                      ) : (
-                        <span>{item.label}</span>
-                      )}
-                    </Link>
-                  );
-                })}
+              <div className="flex flex-col gap-3">
+                {group.subGroups.map((sg) => (
+                  <div key={sg.subtitle || `${group.title}-items`}>
+                    {!collapsed && sg.subtitle && (
+                      <p className="mb-1 px-4 text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--s-text-m)] opacity-60">
+                        {sg.subtitle}
+                      </p>
+                    )}
+
+                    <div className="space-y-1">
+                      {sg.items.map((item) => {
+                        const active   = isActive(pathname, item.href);
+                        const indented = !collapsed && !!sg.subtitle;
+
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            prefetch={false}
+                            className={`flex items-center rounded-xl py-2.5 transition-colors ${
+                              collapsed
+                                ? "justify-center px-4"
+                                : indented
+                                  ? "gap-3 pl-6 pr-4"
+                                  : "gap-3 px-4"
+                            } ${
+                              active
+                                ? "border border-[var(--s-border)] bg-[var(--s-surface)] text-[var(--s-text)]"
+                                : "text-[var(--s-text-m)] hover:bg-[var(--s-surface-m)] hover:text-[var(--s-text)]"
+                            }`}
+                          >
+                            {collapsed ? (
+                              <span className="text-xs font-semibold">{item.short}</span>
+                            ) : (
+                              <span>{item.label}</span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           );
         })}
       </nav>
 
-      <div className="mt-10 rounded-2xl border border-[#C96F3B]/20 bg-[#0F2422] p-4">
+      {/* Status widget */}
+      <div
+        className="mt-10 rounded-2xl p-4"
+        style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+      >
         {collapsed ? (
           <div className="flex justify-center">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#C96F3B]" />
+            <div className="h-2.5 w-2.5 rounded-full" style={{ background: theme.accent }} />
           </div>
         ) : (
           <>
-            <p className="text-xs uppercase tracking-[0.22em] text-[#C96F3B]">
+            <p
+              className="text-xs uppercase tracking-[0.22em]"
+              style={{ color: theme.accent }}
+            >
               System Status
             </p>
-            <p className="mt-2 text-sm text-white/70">Invoice agent operational</p>
+            <p className="mt-2 text-sm text-[var(--s-text-m)]">
+              Invoice agent operational
+            </p>
             <div className="mt-3 flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-[#C96F3B]" />
-              <span className="text-sm text-white">Active</span>
+              <div className="h-2 w-2 rounded-full" style={{ background: theme.accent }} />
+              <span className="text-sm text-[var(--s-text)]">Active</span>
             </div>
           </>
         )}
