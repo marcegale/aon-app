@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
@@ -57,16 +57,16 @@ model Lead {
 }
 
 model User {
-  id              String             @id @default(cuid())
-  email           String             @unique
+  id              String     @id @default(cuid())
+  email           String     @unique
   fullName        String?
   passwordHash    String?
-  status          UserStatus         @default(active)
+  status          UserStatus @default(active)
   emailVerifiedAt DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  memberships     TenantMembership[]
+  memberships TenantMembership[]
 
   @@index([email])
   @@schema("public")
@@ -101,14 +101,14 @@ model Tenant {
 
 model TenantMembership {
   id        String         @id @default(cuid())
-  tenantId   String
-  userId     String
+  tenantId  String
+  userId    String
   role      MembershipRole @default(member)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
-  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId])
   @@index([tenantId])
@@ -157,29 +157,29 @@ model TenantAnalysis {
 }
 
 model RecruitingSearch {
-  id                     String                   @id @default(cuid())
-  tenantId               String
-  createdById            String
-  refCode                String                   @unique
-  title                  String
-  requestText            String
-  status                 String                   @default("generating")
-  monitoringStatus       String?
-  area                   String?
-  seniority              String?
-  modality               String?
-  location               String?
-  jobProfileOutput       Json?
-  idealCandidateOutput   Json?
-  scoringCriteriaOutput  Json?
+  id                      String   @id @default(cuid())
+  tenantId                String
+  createdById             String
+  refCode                 String   @unique
+  title                   String
+  requestText             String
+  status                  String   @default("generating")
+  monitoringStatus        String?
+  area                    String?
+  seniority               String?
+  modality                String?
+  location                String?
+  jobProfileOutput        Json?
+  idealCandidateOutput    Json?
+  scoringCriteriaOutput   Json?
   publicationCopiesOutput Json?
-  aiGenerationLog        Json?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
+  aiGenerationLog         Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
-  companyProfile         RecruitingCompanyProfile?
-  attachments            RecruitingAttachment[]
-  candidates             RecruitingCandidate[]
+  companyProfile RecruitingCompanyProfile?
+  attachments    RecruitingAttachment[]
+  candidates     RecruitingCandidate[]
 
   @@index([tenantId])
   @@map("recruiting_searches")
@@ -187,24 +187,24 @@ model RecruitingSearch {
 }
 
 model RecruitingCompanyProfile {
-  id           String           @id @default(cuid())
-  searchId     String           @unique
-  razonSocial  String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id          String   @id @default(cuid())
+  searchId    String   @unique
+  razonSocial String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  search       RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  search RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
   @@map("recruiting_company_profiles")
   @@schema("public")
 }
 
 model RecruitingAttachment {
-  id        String           @id @default(cuid())
+  id        String   @id @default(cuid())
   searchId  String
-  createdAt DateTime         @default(now())
+  createdAt DateTime @default(now())
 
-  search    RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  search RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
   @@index([searchId])
   @@map("recruiting_attachments")
@@ -212,14 +212,14 @@ model RecruitingAttachment {
 }
 
 model RecruitingCandidate {
-  id             String           @id @default(cuid())
-  searchId       String
-  candidateCode  String?
-  fullName       String?
-  email          String?
-  receivedAt     DateTime         @default(now())
+  id            String   @id @default(cuid())
+  searchId      String
+  candidateCode String?
+  fullName      String?
+  email         String?
+  receivedAt    DateTime @default(now())
 
-  search         RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  search RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
   @@index([searchId])
   @@map("recruiting_candidates")

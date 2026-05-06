@@ -26,5 +26,7 @@ Genera en JSON:
     input: prompt,
   });
 
-  return response.output[0]?.content?.[0]?.text || "{}";
+  const message = response.output.find((item) => item.type === "message");
+  const textBlock = message?.type === "message" ? message.content?.find((c) => c.type === "output_text") : null;
+  return (textBlock?.type === "output_text" ? textBlock.text : null) || "{}";
 }

@@ -52,3 +52,23 @@ export type TenantDocument = Prisma.TenantDocumentModel
  * 
  */
 export type TenantAnalysis = Prisma.TenantAnalysisModel
+/**
+ * Model RecruitingSearch
+ * 
+ */
+export type RecruitingSearch = Prisma.RecruitingSearchModel
+/**
+ * Model RecruitingCompanyProfile
+ * 
+ */
+export type RecruitingCompanyProfile = Prisma.RecruitingCompanyProfileModel
+/**
+ * Model RecruitingAttachment
+ * 
+ */
+export type RecruitingAttachment = Prisma.RecruitingAttachmentModel
+/**
+ * Model RecruitingCandidate
+ * 
+ */
+export type RecruitingCandidate = Prisma.RecruitingCandidateModel

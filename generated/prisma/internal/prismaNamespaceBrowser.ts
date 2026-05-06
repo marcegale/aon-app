@@ -57,7 +57,11 @@ export const ModelName = {
   Tenant: 'Tenant',
   TenantMembership: 'TenantMembership',
   TenantDocument: 'TenantDocument',
-  TenantAnalysis: 'TenantAnalysis'
+  TenantAnalysis: 'TenantAnalysis',
+  RecruitingSearch: 'RecruitingSearch',
+  RecruitingCompanyProfile: 'RecruitingCompanyProfile',
+  RecruitingAttachment: 'RecruitingAttachment',
+  RecruitingCandidate: 'RecruitingCandidate'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -192,6 +196,63 @@ export const TenantAnalysisScalarFieldEnum = {
 } as const
 
 export type TenantAnalysisScalarFieldEnum = (typeof TenantAnalysisScalarFieldEnum)[keyof typeof TenantAnalysisScalarFieldEnum]
+
+
+export const RecruitingSearchScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  createdById: 'createdById',
+  refCode: 'refCode',
+  title: 'title',
+  requestText: 'requestText',
+  status: 'status',
+  monitoringStatus: 'monitoringStatus',
+  area: 'area',
+  seniority: 'seniority',
+  modality: 'modality',
+  location: 'location',
+  jobProfileOutput: 'jobProfileOutput',
+  idealCandidateOutput: 'idealCandidateOutput',
+  scoringCriteriaOutput: 'scoringCriteriaOutput',
+  publicationCopiesOutput: 'publicationCopiesOutput',
+  aiGenerationLog: 'aiGenerationLog',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecruitingSearchScalarFieldEnum = (typeof RecruitingSearchScalarFieldEnum)[keyof typeof RecruitingSearchScalarFieldEnum]
+
+
+export const RecruitingCompanyProfileScalarFieldEnum = {
+  id: 'id',
+  searchId: 'searchId',
+  razonSocial: 'razonSocial',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecruitingCompanyProfileScalarFieldEnum = (typeof RecruitingCompanyProfileScalarFieldEnum)[keyof typeof RecruitingCompanyProfileScalarFieldEnum]
+
+
+export const RecruitingAttachmentScalarFieldEnum = {
+  id: 'id',
+  searchId: 'searchId',
+  createdAt: 'createdAt'
+} as const
+
+export type RecruitingAttachmentScalarFieldEnum = (typeof RecruitingAttachmentScalarFieldEnum)[keyof typeof RecruitingAttachmentScalarFieldEnum]
+
+
+export const RecruitingCandidateScalarFieldEnum = {
+  id: 'id',
+  searchId: 'searchId',
+  candidateCode: 'candidateCode',
+  fullName: 'fullName',
+  email: 'email',
+  receivedAt: 'receivedAt'
+} as const
+
+export type RecruitingCandidateScalarFieldEnum = (typeof RecruitingCandidateScalarFieldEnum)[keyof typeof RecruitingCandidateScalarFieldEnum]
 
 
 export const SortOrder = {
