@@ -3,6 +3,11 @@ import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server-auth";
+import {
+  startAgentRun,
+  completeAgentRun,
+  failAgentRun,
+} from "@/app/lib/agents/run";
 
 export const runtime = "nodejs";
 
@@ -213,37 +218,77 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileContent = isPdf(file)
-      ? {
-          type: "input_file" as const,
-          file_id: (
-            await openai.files.create({
-              file: await toFile(buffer, safeFileName),
-              purpose: "user_data",
-            })
-          ).id,
-        }
-      : {
-          type: "input_image" as const,
-          image_url: `data:${file.type};base64,${base64}`,
-          detail: "auto" as const,
-        };
+    let runId: string | null = null;
+    try {
+      runId = await startAgentRun({
+        agentId: "invoice-processor",
+        userId: userId,
+        tenantId: undefined,
+        input: { fileName: file.name, fileType: file.type, fileSize: file.size },
+      });
+    } catch {
+      // tracking failure must never block processing
+    }
 
-    const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: extractionPrompt,
-            },
-            fileContent,
-          ],
-        },
-      ],
-    });
+    let response: Awaited<ReturnType<typeof openai.responses.create>>;
+    try {
+      const fileContent = isPdf(file)
+        ? {
+            type: "input_file" as const,
+            file_id: (
+              await openai.files.create({
+                file: await toFile(buffer, safeFileName),
+                purpose: "user_data",
+              })
+            ).id,
+          }
+        : {
+            type: "input_image" as const,
+            image_url: `data:${file.type};base64,${base64}`,
+            detail: "auto" as const,
+          };
+
+      response = await openai.responses.create({
+        model: "gpt-4o-mini",
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: extractionPrompt,
+              },
+              fileContent,
+            ],
+          },
+        ],
+      });
+    } catch (openaiError) {
+      if (runId) {
+        try {
+          await failAgentRun(runId, { output: { error: getProcessingErrorMessage(openaiError) } });
+        } catch {
+          // ignore tracking errors
+        }
+      }
+      throw openaiError;
+    }
+
+    if (runId) {
+      try {
+        let parsed: Record<string, unknown> = {};
+        try { parsed = JSON.parse(response.output_text ?? "{}"); } catch { /* ignore */ }
+        await completeAgentRun(runId, {
+          output: {
+            ...(typeof parsed.razonSocialEmisor === "string" && { proveedor: parsed.razonSocialEmisor }),
+            ...(typeof parsed.total === "number" && { total: parsed.total }),
+            ...(Array.isArray(parsed.items) && { itemsCount: parsed.items.length }),
+          },
+        });
+      } catch {
+        // ignore tracking errors
+      }
+    }
 
     return NextResponse.json({
       success: true,

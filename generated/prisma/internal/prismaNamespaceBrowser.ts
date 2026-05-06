@@ -61,7 +61,8 @@ export const ModelName = {
   RecruitingSearch: 'RecruitingSearch',
   RecruitingCompanyProfile: 'RecruitingCompanyProfile',
   RecruitingAttachment: 'RecruitingAttachment',
-  RecruitingCandidate: 'RecruitingCandidate'
+  RecruitingCandidate: 'RecruitingCandidate',
+  AgentRun: 'AgentRun'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -253,6 +254,22 @@ export const RecruitingCandidateScalarFieldEnum = {
 } as const
 
 export type RecruitingCandidateScalarFieldEnum = (typeof RecruitingCandidateScalarFieldEnum)[keyof typeof RecruitingCandidateScalarFieldEnum]
+
+
+export const AgentRunScalarFieldEnum = {
+  id: 'id',
+  agentId: 'agentId',
+  userId: 'userId',
+  tenantId: 'tenantId',
+  status: 'status',
+  input: 'input',
+  output: 'output',
+  tokens: 'tokens',
+  cost: 'cost',
+  createdAt: 'createdAt'
+} as const
+
+export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
 
 
 export const SortOrder = {

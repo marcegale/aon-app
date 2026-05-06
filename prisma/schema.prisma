@@ -225,3 +225,21 @@ model RecruitingCandidate {
   @@map("recruiting_candidates")
   @@schema("public")
 }
+
+model AgentRun {
+  id        String   @id @default(cuid())
+  agentId   String
+  userId    String?
+  tenantId  String?
+  status    String
+  input     Json?
+  output    Json?
+  tokens    Int?
+  cost      Float?
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+  @@index([tenantId])
+  @@map("agent_runs")
+  @@schema("public")
+}

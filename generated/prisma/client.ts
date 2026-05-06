@@ -96,3 +96,8 @@ export type RecruitingAttachment = Prisma.RecruitingAttachmentModel
  * 
  */
 export type RecruitingCandidate = Prisma.RecruitingCandidateModel
+/**
+ * Model AgentRun
+ * 
+ */
+export type AgentRun = Prisma.AgentRunModel
