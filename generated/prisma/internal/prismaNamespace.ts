@@ -396,7 +396,8 @@ export const ModelName = {
   RecruitingAttachment: 'RecruitingAttachment',
   RecruitingCandidate: 'RecruitingCandidate',
   AgentRun: 'AgentRun',
-  CharlieSession: 'CharlieSession'
+  CharlieSession: 'CharlieSession',
+  CharlieDevice: 'CharlieDevice'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -412,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun" | "charlieSession"
+    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun" | "charlieSession" | "charlieDevice"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1378,6 +1379,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CharlieDevice: {
+      payload: Prisma.$CharlieDevicePayload<ExtArgs>
+      fields: Prisma.CharlieDeviceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharlieDeviceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharlieDeviceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        findFirst: {
+          args: Prisma.CharlieDeviceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharlieDeviceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        findMany: {
+          args: Prisma.CharlieDeviceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>[]
+        }
+        create: {
+          args: Prisma.CharlieDeviceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        createMany: {
+          args: Prisma.CharlieDeviceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharlieDeviceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>[]
+        }
+        delete: {
+          args: Prisma.CharlieDeviceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        update: {
+          args: Prisma.CharlieDeviceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharlieDeviceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharlieDeviceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharlieDeviceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharlieDeviceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieDevicePayload>
+        }
+        aggregate: {
+          args: Prisma.CharlieDeviceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharlieDevice>
+        }
+        groupBy: {
+          args: Prisma.CharlieDeviceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharlieDeviceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharlieDeviceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharlieDeviceCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1618,6 +1693,18 @@ export const CharlieSessionScalarFieldEnum = {
 } as const
 
 export type CharlieSessionScalarFieldEnum = (typeof CharlieSessionScalarFieldEnum)[keyof typeof CharlieSessionScalarFieldEnum]
+
+
+export const CharlieDeviceScalarFieldEnum = {
+  id: 'id',
+  deviceKey: 'deviceKey',
+  userName: 'userName',
+  status: 'status',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type CharlieDeviceScalarFieldEnum = (typeof CharlieDeviceScalarFieldEnum)[keyof typeof CharlieDeviceScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1886,6 +1973,7 @@ export type GlobalOmitConfig = {
   recruitingCandidate?: Prisma.RecruitingCandidateOmit
   agentRun?: Prisma.AgentRunOmit
   charlieSession?: Prisma.CharlieSessionOmit
+  charlieDevice?: Prisma.CharlieDeviceOmit
 }
 
 /* Types for Logging */

@@ -18,25 +18,38 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { device_key } = body as { device_key?: string };
 
-    const allowedKey = process.env.CHARLIE_DEVICE_KEY;
-    if (!allowedKey || !device_key || device_key !== allowedKey) {
-      // Log partial key for debugging without exposing full value
-      const partial = device_key ? `${device_key.slice(0, 6)}…` : "(missing)";
-      console.warn(`[charlie/session] auth failed — device_key: ${partial}`);
-      return NextResponse.json(
-        { error: "Invalid device key." },
-        { status: 401 }
-      );
+    if (!device_key) {
+      console.warn("[charlie/session] auth failed — device_key missing");
+      return NextResponse.json({ error: "Invalid device key." }, { status: 401 });
     }
+
+    // Check CharlieDevice table first; fall back to env var during transition
+    const device = await prisma.charlieDevice.findUnique({
+      where: { deviceKey: device_key },
+    });
+
+    if (device) {
+      if (device.status !== "active") {
+        console.warn(`[charlie/session] device ${device.id} is ${device.status}`);
+        return NextResponse.json({ error: "Invalid device key." }, { status: 401 });
+      }
+    } else {
+      // Env-var fallback (for local dev / pre-migration devices)
+      const allowedKey = process.env.CHARLIE_DEVICE_KEY;
+      if (!allowedKey || device_key !== allowedKey) {
+        const partial = `${device_key.slice(0, 6)}…`;
+        console.warn(`[charlie/session] auth failed — unknown device_key: ${partial}`);
+        return NextResponse.json({ error: "Invalid device key." }, { status: 401 });
+      }
+    }
+
+    const userName = device?.userName ?? "Usuario";
 
     // ── OpenAI Realtime session creation ─────────────────────────────────────
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) {
       console.error("[charlie/session] OPENAI_API_KEY not set on server");
-      return NextResponse.json(
-        { error: "Server misconfigured." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Server misconfigured." }, { status: 500 });
     }
 
     const openaiRes = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -76,7 +89,7 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`[charlie/session] created session ${record.id} (openai: ${session.id})`);
+    console.log(`[charlie/session] created ${record.id} for user="${userName}" (openai: ${session.id})`);
 
     // ── Return ephemeral credentials to client ───────────────────────────────
     // client_secret is short-lived (~60s). Never log it.
@@ -87,9 +100,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("[charlie/session] unhandled error:", error);
-    return NextResponse.json(
-      { error: "Internal server error." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }

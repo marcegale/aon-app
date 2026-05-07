@@ -7,7 +7,7 @@ import threading
 import time
 import math
 from pathlib import Path
-from charlie.orchestrator import process_user_command
+from orchestrator import process_user_command
 
 import numpy as np
 import sounddevice as sd
@@ -32,15 +32,44 @@ print("Existe .env.local?:", env_path.exists())
 
 load_dotenv(env_path)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+CHARLIE_DEVICE_KEY = os.getenv("CHARLIE_DEVICE_KEY")
+BACKEND_URL = os.getenv("BACKEND_URL", "").rstrip("/")
 
-if not OPENAI_API_KEY:
-    raise RuntimeError(f"Falta OPENAI_API_KEY en {env_path}")
+if not CHARLIE_DEVICE_KEY:
+    raise RuntimeError(f"Falta CHARLIE_DEVICE_KEY en {env_path}")
+if not BACKEND_URL:
+    raise RuntimeError(f"Falta BACKEND_URL en {env_path}")
+
+CHARLIE_USER_NAME = os.getenv("CHARLIE_USER_NAME", "tu usuario")
+
+def fetch_realtime_token() -> str:
+    import urllib.request
+    import urllib.error
+
+    url = f"{BACKEND_URL}/api/charlie/session"
+    body = json.dumps({"device_key": CHARLIE_DEVICE_KEY}).encode("utf-8")
+
+    request = urllib.request.Request(url, data=body, method="POST")
+    request.add_header("Content-Type", "application/json")
+
+    try:
+        with urllib.request.urlopen(request, timeout=15) as resp:
+            data = json.loads(resp.read())
+            token = data.get("client_secret")
+            if not token:
+                raise RuntimeError("Backend no devolvió client_secret.")
+            return token
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")
+        raise RuntimeError(f"Backend rechazó la sesión ({e.code}): {detail}")
+    except Exception as e:
+        raise RuntimeError(f"No se pudo obtener token de sesión: {e}")
+
 
 # -------------------------
 # CONFIG
 # -------------------------
-WS_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime"
+WS_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview"
 SAMPLE_RATE = 24000
 CHANNELS = 1
 BLOCKSIZE = 2400  # ~100 ms en 24kHz
@@ -186,7 +215,7 @@ def send_session_update(ws):
         "type": "session.update",
         "session": {
             "instructions": (
-                "Eres Charlie, el asistente personal de Marcelo. "
+                f"Eres Charlie, el asistente personal de {CHARLIE_USER_NAME}. "
                 "Responde en español, breve, claro y natural. "
                 "Solo contestas cuando el usuario te invoca por tu nombre: Charlie. "
                 "Si hablan contigo mientras respondes, detente y escucha. "
@@ -238,7 +267,7 @@ def on_message(ws, message):
             if not text:
                 return
 
-            print("Marcelo:", text)
+            print(f"{CHARLIE_USER_NAME}:", text)
 
             txt = text.lower().strip()
             ahora = time.time()
@@ -350,20 +379,35 @@ def on_close(ws, code, msg):
 def run_ws():
     global ws_app
 
-    headers = [
-        f"Authorization: Bearer {OPENAI_API_KEY}",
-        "OpenAI-Beta: realtime=v1",
-    ]
+    while True:
+        print("Solicitando sesión Realtime al backend...")
+        try:
+            token = fetch_realtime_token()
+        except Exception as e:
+            print(f"No se pudo obtener token: {e}. Reintentando en 10s...")
+            time.sleep(10)
+            continue
 
-    ws_app = websocket.WebSocketApp(
-        WS_URL,
-        header=headers,
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-    )
-    ws_app.run_forever()
+        print("Token obtenido. Conectando a Realtime...")
+
+        headers = [
+            f"Authorization: Bearer {token}",
+            "OpenAI-Beta: realtime=v1",
+        ]
+
+        ws_app = websocket.WebSocketApp(
+            WS_URL,
+            header=headers,
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+        )
+        ws_app.run_forever()
+
+        ws_app = None
+        print("WebSocket cerrado. Reconectando en 5s...")
+        time.sleep(5)
 
 # -------------------------
 # VISUAL (PYGAME OVERLAY)

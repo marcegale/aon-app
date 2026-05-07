@@ -63,7 +63,8 @@ export const ModelName = {
   RecruitingAttachment: 'RecruitingAttachment',
   RecruitingCandidate: 'RecruitingCandidate',
   AgentRun: 'AgentRun',
-  CharlieSession: 'CharlieSession'
+  CharlieSession: 'CharlieSession',
+  CharlieDevice: 'CharlieDevice'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -283,6 +284,18 @@ export const CharlieSessionScalarFieldEnum = {
 } as const
 
 export type CharlieSessionScalarFieldEnum = (typeof CharlieSessionScalarFieldEnum)[keyof typeof CharlieSessionScalarFieldEnum]
+
+
+export const CharlieDeviceScalarFieldEnum = {
+  id: 'id',
+  deviceKey: 'deviceKey',
+  userName: 'userName',
+  status: 'status',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type CharlieDeviceScalarFieldEnum = (typeof CharlieDeviceScalarFieldEnum)[keyof typeof CharlieDeviceScalarFieldEnum]
 
 
 export const SortOrder = {

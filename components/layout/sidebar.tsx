@@ -76,6 +76,7 @@ const NAV: NavGroup[] = [
           { label: "Usage / Costos", href: "/admin/usage",      short: "U"  },
           { label: "Leads",          href: "/admin/leads",       short: "L"  },
           { label: "X Agent",        href: "/admin/x-agent",    short: "X"  },
+          { label: "Charlie",        href: "/admin/charlie",    short: "Ch" },
         ],
       },
     ],

@@ -82,3 +82,8 @@ export type AgentRun = Prisma.AgentRunModel
  * 
  */
 export type CharlieSession = Prisma.CharlieSessionModel
+/**
+ * Model CharlieDevice
+ * 
+ */
+export type CharlieDevice = Prisma.CharlieDeviceModel

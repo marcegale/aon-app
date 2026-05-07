@@ -256,3 +256,16 @@ model CharlieSession {
   @@map("charlie_sessions")
   @@schema("public")
 }
+
+model CharlieDevice {
+  id        String    @id @default(cuid())
+  deviceKey String    @unique
+  userName  String
+  status    String    @default("active")
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([deviceKey])
+  @@map("charlie_devices")
+  @@schema("public")
+}
