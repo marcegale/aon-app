@@ -330,7 +330,8 @@ def on_message(ws, message):
             limpiar_audio_salida()
             with turno_lock:
                 turno_activo = True
-                ignorar_respuesta_actual = False
+                if conversacion_activa:
+                    ignorar_respuesta_actual = False
             set_estado("escuchando")
 
         elif event_type == "input_audio_buffer.speech_stopped":
@@ -433,7 +434,8 @@ def on_message(ws, message):
             set_estado("idle")
             with turno_lock:
                 turno_activo = True
-                ignorar_respuesta_actual = False
+                if conversacion_activa:
+                    ignorar_respuesta_actual = False
 
         elif event_type == "response.done":
             set_estado("idle")
