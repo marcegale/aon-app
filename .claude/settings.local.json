@@ -6,7 +6,17 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(npm run *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(pyinstaller --onefile charlie_v4_realtime.py)",
+      "Bash(timeout 12 python -u charlie_v4_realtime.exe)",
+      "Bash(timeout 12 ./charlie_v4_realtime.exe)",
+      "Bash(pyinstaller --onefile --paths=\"C:\\\\Users\\\\dagog\\\\Desktop\\\\aon-app\\\\charlie-agent\" --hidden-import=orchestrator --hidden-import=planner --hidden-import=resolvers --hidden-import=command_catalog --hidden-import=executors.apps --hidden-import=executors.notes --hidden-import=executors.whatsapp charlie_v4_realtime.py)",
+      "PowerShell(Stop-Process *)",
+      "Bash(timeout 12 cmd /c \"charlie_v4_realtime.exe\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(npx prisma *)",
+      "Bash(npm install *)"
     ]
   }
 }

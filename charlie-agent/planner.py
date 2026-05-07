@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
-from .resolvers import normalize
+from resolvers import normalize
 
 
 APP_HINTS = [

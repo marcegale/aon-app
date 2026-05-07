@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .command_catalog import build_catalog
-from .executors.apps import exec_open_app
-from .executors.notes import exec_save_note
-from .executors.whatsapp import exec_send_whatsapp_message
-from .planner import build_action_plan
+from command_catalog import build_catalog
+from executors.apps import exec_open_app
+from executors.notes import exec_save_note
+from executors.whatsapp import exec_send_whatsapp_message
+from planner import build_action_plan
 
 
 CATALOG = build_catalog(

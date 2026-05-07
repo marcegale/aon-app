@@ -7,7 +7,7 @@ import pyperclip
 from pywinauto import Desktop
 from pywinauto.keyboard import send_keys
 
-from ..resolvers import resolve_contact_name
+from resolvers import resolve_contact_name
 
 
 CONTACTS: List[Dict[str, Any]] = [
