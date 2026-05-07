@@ -8,6 +8,7 @@ import time
 import math
 import logging
 import io
+import queue
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from orchestrator import process_user_command
@@ -168,6 +169,9 @@ ultimo_turno_usuario = 0.0
 TIMEOUT_CONVERSACION = 15.0
 primer_uso = True   # flips False on first detected speech
 
+# Non-blocking outbound queue so the audio callback never touches the WebSocket lock
+_send_queue: queue.Queue = queue.Queue(maxsize=200)
+
 def set_estado(nuevo):
     global estado
     if estado != nuevo:
@@ -183,24 +187,32 @@ def pcm16_bytes(indata: np.ndarray) -> bytes:
     return audio.tobytes()
 
 def on_audio(indata, frames, time_info, status):
-    global ws_app
-
-    if status:
-        print("AUDIO INPUT STATUS:", status)
-
+    # Real-time callback — must never block. Put to queue; sender thread handles send.
     if ws_app is None:
         return
-
+    chunk = pcm16_bytes(indata[:, 0])
+    msg = json.dumps({
+        "type": "input_audio_buffer.append",
+        "audio": base64.b64encode(chunk).decode("utf-8"),
+    })
     try:
-        chunk = pcm16_bytes(indata[:, 0])
-        payload = {
-            "type": "input_audio_buffer.append",
-            "audio": base64.b64encode(chunk).decode("utf-8"),
-        }
-        ws_app.send(json.dumps(payload))
-    except Exception as e:
-        print("ERROR enviando audio:", e)
-        set_estado("error")
+        _send_queue.put_nowait(msg)
+    except queue.Full:
+        pass  # drop chunk if queue full; better than blocking
+
+
+def ws_sender():
+    """Drains _send_queue and sends over WebSocket. Runs on its own thread."""
+    while True:
+        try:
+            msg = _send_queue.get(timeout=0.5)
+        except queue.Empty:
+            continue
+        if ws_app is not None:
+            try:
+                ws_app.send(msg)
+            except Exception:
+                pass
 
 # -------------------------
 # AUDIO OUTPUT
@@ -271,7 +283,8 @@ def on_message(ws, message):
         data = json.loads(message)
         event_type = data.get("type", "")
 
-        if event_type:
+        # Skip logging for high-frequency audio delta (dozens/sec → disk I/O)
+        if event_type and event_type != "response.audio.delta":
             print("EVENT:", event_type)
 
         # Usuario empieza a hablar -> interrumpe a Charlie
@@ -405,6 +418,13 @@ def run_ws():
     global ws_app
 
     while True:
+        # Drain stale audio from previous session before reconnecting
+        while not _send_queue.empty():
+            try:
+                _send_queue.get_nowait()
+            except queue.Empty:
+                break
+
         print("Solicitando sesión Realtime al backend...")
         try:
             token = fetch_realtime_token()
@@ -439,101 +459,88 @@ def run_ws():
 # -------------------------
 pygame.init()
 
-W, H = 220, 220
+# Compact pill widget — no heavy SRCALPHA allocations
+W, H = 230, 72
 screen = pygame.display.set_mode((W, H), pygame.NOFRAME)
 pygame.display.set_caption("Charlie")
 
 hwnd = pygame.display.get_wm_info()["window"]
 
-# Ventana overlay topmost con transparencia
 ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
-ex_style |= win32con.WS_EX_LAYERED   # no WS_EX_TOOLWINDOW so it appears in taskbar
+ex_style |= win32con.WS_EX_LAYERED
 win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
 win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)
 _sw = win32api.GetSystemMetrics(0)
 _sh = win32api.GetSystemMetrics(1)
-win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, _sw - W - 24, _sh - H - 64, W, H, win32con.SWP_SHOWWINDOW)
+win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, _sw - W - 20, _sh - H - 56, W, H, win32con.SWP_SHOWWINDOW)
 
 _font_title  = pygame.font.SysFont("segoeui", 13, bold=True)
 _font_status = pygame.font.SysFont("segoeui", 11)
 
 clock = pygame.time.Clock()
-cx, cy = W // 2, H // 2
 tiempo = 0.0
 
-dragging = False
+dragging    = False
 drag_offset_x = 0
 drag_offset_y = 0
 
-ondas = []
-ultimo_pulso_habla = 0.0
+# Pill colors (none are pure black — black = transparent via color key)
+_PILL_BG     = (14, 34, 30)   # dark forest
+_PILL_BORDER = (38, 78, 66)   # muted forest rim
+_SAND        = (244, 235, 208)
+_SAND_MUTED  = (140, 160, 148)
 
 def color_estado():
-    if estado == "escuchando":
-        return (80, 255, 140)   # verde
-    if estado == "pensando":
-        return (120, 160, 255)  # azul
-    if estado == "hablando":
-        return (200, 240, 255)  # glow fuerte
-    if estado == "error":
-        return (255, 70, 70)    # rojo
-    return (90, 220, 255)       # idle
+    if estado == "escuchando": return (80,  220, 130)
+    if estado == "pensando":   return (110, 150, 255)
+    if estado == "hablando":   return (180, 230, 255)
+    if estado == "error":      return (240,  80,  80)
+    return (70, 200, 220)   # idle
 
-def lanzar_onda():
-    ondas.append([18.0, 120])
+def dibujar_pill(t):
+    """Modern card widget — zero SRCALPHA surface allocations."""
+    screen.fill((0, 0, 0))  # black = transparent via color key
 
-def dibujar_ondas(x, y, color):
-    nuevas = []
-    for r, a in ondas:
-        surf = pygame.Surface((W, H), pygame.SRCALPHA)
-        pygame.draw.circle(surf, (*color, int(a)), (int(x), int(y)), int(r), width=2)
-        screen.blit(surf, (0, 0))
-        r += 2.2
-        a -= 2.5
-        if a > 0:
-            nuevas.append([r, a])
-    ondas[:] = nuevas
+    # Card background
+    pygame.draw.rect(screen, _PILL_BG,     (2, 2, W - 4, H - 4), border_radius=14)
+    pygame.draw.rect(screen, _PILL_BORDER, (2, 2, W - 4, H - 4), width=1, border_radius=14)
 
-def dibujar_glow(x, y, radio, color, capas=10):
-    for i in range(capas, 0, -1):
-        r = int(radio * (i / capas))
-        alpha = int(18 * (i / capas))
-        surf = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(surf, (*color, alpha), (r, r), r)
-        screen.blit(surf, (x - r, y - r))
+    color = color_estado()
 
-def dibujar_nucleo(x, y, t, color):
-    # respiración suave en idle
-    if estado == "idle":
-        r = 10.0 + 0.8 * math.sin(t * 1.4)
-    elif estado == "escuchando":
-        r = 11.0 + 0.6 * math.sin(t * 2.0)
-    elif estado == "pensando":
-        r = 10.5 + 0.4 * math.sin(t * 3.2)
-    elif estado == "hablando":
-        r = 12.0 + 1.0 * math.sin(t * 5.0)
+    # Pulsing state dot (no surface allocation — direct circle on screen)
+    dot_r = int(6 + math.sin(t * 2.2) * 1.2)
+    pygame.draw.circle(screen, color, (22, 22), dot_r)
+
+    # Title
+    t_surf = _font_title.render("Charlie", True, _SAND)
+    screen.blit(t_surf, (36, 13))
+
+    # Status / onboarding hint
+    if primer_uso and estado == "idle":
+        _tips = [
+            'Di "Charlie" para activarme',
+            'Di "adios" para terminar',
+            'Clic derecho para salir',
+        ]
+        hint = _tips[int(t / 3) % len(_tips)]
+        h_surf = _font_status.render(hint, True, _SAND_MUTED)
     else:
-        r = 10.0
-
-    pygame.draw.circle(screen, color, (int(x), int(y)), int(r))
-
-    inner = pygame.Surface((40, 40), pygame.SRCALPHA)
-    pygame.draw.circle(inner, (255, 255, 255, 60), (20, 20), 4)
-    screen.blit(inner, (x - 20, y - 20))
-
-def dibujar_anillos(x, y, t, color):
-    for i in range(3):
-        r = 28 + i * 15 + math.sin(t * 1.3 + i) * 1.4
-        surf = pygame.Surface((W, H), pygame.SRCALPHA)
-        pygame.draw.circle(surf, (*color, 22), (int(x), int(y)), int(r), width=1)
-        screen.blit(surf, (0, 0))
+        _hints = {
+            "idle":       "Di: Charlie...",
+            "escuchando": "Escuchando...",
+            "pensando":   "Pensando...",
+            "hablando":   "Hablando...",
+            "error":      "Sin conexion",
+        }
+        h_surf = _font_status.render(_hints.get(estado, estado), True, color)
+    screen.blit(h_surf, (14, 44))
 
 # -------------------------
 # MAIN
 # -------------------------
 def main():
     global output_stream, tiempo, dragging, drag_offset_x, drag_offset_y
-    global ultimo_pulso_habla, conversacion_activa, turno_activo, ignorar_respuesta_actual
+    global conversacion_activa, turno_activo, ignorar_respuesta_actual
 
     print("Charlie V4 realtime iniciado.")
     print("Di 'Charlie ...' para que responda.")
@@ -541,6 +548,9 @@ def main():
 
     ws_thread = threading.Thread(target=run_ws, daemon=True)
     ws_thread.start()
+
+    sender_thread = threading.Thread(target=ws_sender, daemon=True)
+    sender_thread.start()
 
     time.sleep(2)
 
@@ -564,7 +574,7 @@ def main():
 
     try:
         while True:
-            dt = clock.tick(120) / 1000.0
+            dt = clock.tick(30) / 1000.0
             tiempo += dt
 
             if conversacion_activa and (time.time() - ultimo_turno_usuario > TIMEOUT_CONVERSACION):
@@ -609,60 +619,7 @@ def main():
                     win32con.SWP_NOACTIVATE
                 )
 
-            fx = math.sin(tiempo * 0.9) * 2.0 + math.sin(tiempo * 2.1) * 0.6
-            fy = math.cos(tiempo * 0.8) * 1.8 + math.sin(tiempo * 1.7) * 0.5
-            x = cx + fx
-            y = cy + fy
-
-            color = color_estado()
-
-            if estado == "hablando":
-                radio_glow = 82 + math.sin(tiempo * 2.2) * 5
-                if tiempo - ultimo_pulso_habla > 0.35:
-                    lanzar_onda()
-                    ultimo_pulso_habla = tiempo
-            elif estado == "escuchando":
-                radio_glow = 72 + math.sin(tiempo * 1.6) * 3
-            elif estado == "pensando":
-                radio_glow = 68 + math.sin(tiempo * 1.2) * 2
-            elif estado == "error":
-                radio_glow = 74 + math.sin(tiempo * 4.0) * 4
-            else:
-                radio_glow = 62 + math.sin(tiempo * 1.0) * 2
-
-            screen.fill((0, 0, 0))
-            dibujar_glow(x, y, radio_glow, color)
-            dibujar_anillos(x, y, tiempo, color)
-
-            if estado == "hablando":
-                dibujar_ondas(x, y, color)
-
-            dibujar_nucleo(x, y, tiempo, color)
-
-            # title
-            t_surf = _font_title.render("Charlie", True, (255, 255, 255))
-            screen.blit(t_surf, (W // 2 - t_surf.get_width() // 2, 14))
-
-            # status hint / onboarding tips
-            if primer_uso and estado == "idle":
-                _tips = [
-                    'Di "Charlie" para activarme',
-                    'Di "adios" para terminar',
-                    'Clic derecho para salir',
-                ]
-                tip = _tips[int(tiempo / 3) % len(_tips)]
-                h_surf = _font_status.render(tip, True, (180, 180, 180))
-            else:
-                _hints = {
-                    "idle":       "Di: Charlie...",
-                    "escuchando": "Escuchando...",
-                    "pensando":   "Pensando...",
-                    "hablando":   "Hablando...",
-                    "error":      "Sin conexion",
-                }
-                h_surf = _font_status.render(_hints.get(estado, estado), True, color)
-            screen.blit(h_surf, (W // 2 - h_surf.get_width() // 2, H - 26))
-
+            dibujar_pill(tiempo)
             pygame.display.update()
 
     except KeyboardInterrupt:
