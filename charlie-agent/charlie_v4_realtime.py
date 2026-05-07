@@ -13,6 +13,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from orchestrator import process_user_command
 
+import ctypes
 import numpy as np
 import sounddevice as sd
 import websocket
@@ -21,6 +22,14 @@ import win32gui
 import win32con
 import win32api
 from dotenv import load_dotenv
+
+# -------------------------
+# SINGLETON — exit if another instance is already running
+# -------------------------
+_instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, True, "Global\\CharlieV4Singleton")
+if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    # Another Python child is running; exit quietly before creating any window
+    sys.exit(0)
 
 # -------------------------
 # ENV
@@ -169,10 +178,15 @@ ultimo_turno_usuario = 0.0
 TIMEOUT_CONVERSACION = 15.0
 primer_uso = True   # flips False on first detected speech
 
+# Hard cap on playback buffer: 10 seconds of 24 kHz 16-bit mono = 480 000 bytes.
+# Without this cap, bytearray front-deletion is O(remaining) and becomes a
+# cascade: slow del → audio_lock held longer → deltas pile up → runaway growth.
+AUDIO_BUF_MAX_BYTES = 480_000
+
 # Non-blocking outbound queue — hard cap at 50 items (~5 s of audio at 100 ms/chunk)
-# Keeps peak memory bounded; ws_sender drains faster than mic produces in normal use
 _send_queue: queue.Queue = queue.Queue(maxsize=50)
 _last_queue_log: float = 0.0
+_last_mem_log:   float = 0.0
 
 def set_estado(nuevo):
     global estado
@@ -401,6 +415,13 @@ def on_message(ws, message):
             chunk = base64.b64decode(data["delta"])
             with audio_lock:
                 audio_buffer.extend(chunk)
+                # Hard cap: if buffer exceeds limit, drop oldest audio.
+                # This keeps del audio_buffer[:n] in audio_callback O(bounded),
+                # preventing the runaway memory cascade.
+                overshoot = len(audio_buffer) - AUDIO_BUF_MAX_BYTES
+                if overshoot > 0:
+                    del audio_buffer[:overshoot]
+                    print(f"[audio_buffer] cap enforced, dropped {overshoot} B")
 
         elif event_type == "response.audio.done":
             set_estado("idle")
@@ -557,6 +578,7 @@ def dibujar_pill(t):
 def main():
     global output_stream, tiempo, dragging, drag_offset_x, drag_offset_y
     global conversacion_activa, turno_activo, ignorar_respuesta_actual
+    global _last_mem_log
 
     print("Charlie V4 realtime iniciado.")
     print("Di 'Charlie ...' para que responda.")
@@ -593,7 +615,9 @@ def main():
             dt = clock.tick(30) / 1000.0
             tiempo += dt
 
-            if conversacion_activa and (time.time() - ultimo_turno_usuario > TIMEOUT_CONVERSACION):
+            now = time.time()
+
+            if conversacion_activa and (now - ultimo_turno_usuario > TIMEOUT_CONVERSACION):
                 conversacion_activa = False
                 with turno_lock:
                     turno_activo = False
@@ -601,6 +625,12 @@ def main():
                 limpiar_audio_salida()
                 set_estado("idle")
                 print("Conversación cerrada por silencio.")
+
+            if now - _last_mem_log >= 5.0:
+                with audio_lock:
+                    buf_len = len(audio_buffer)
+                print(f"[mem] audio_buf={buf_len}B ({buf_len//1000}KB) q={_send_queue.qsize()}")
+                _last_mem_log = now
 
             win32gui.SetWindowPos(
                 hwnd,
