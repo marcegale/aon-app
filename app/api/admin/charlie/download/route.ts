@@ -14,6 +14,7 @@ const EXE_PATH = path.join(process.cwd(), "charlie-agent", "dist", "charlie_v4_r
 function buildSetupBat(userName: string): string {
   return `@echo off
 setlocal
+cd /d "%~dp0"
 
 set "INSTALL_DIR=%LOCALAPPDATA%\\Charlie"
 set "EXE_NAME=charlie_v4_realtime.exe"
@@ -24,8 +25,16 @@ echo.
 
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
-copy /Y "%~dp0%EXE_NAME%" "%INSTALL_DIR%\\%EXE_NAME%" >nul
-copy /Y "%~dp0.env.local" "%INSTALL_DIR%\\.env.local" >nul
+echo Copying from: %~dp0
+copy /Y "%~dp0\\charlie_v4_realtime.exe" "%INSTALL_DIR%\\charlie_v4_realtime.exe" >nul
+copy /Y "%~dp0\\.env.local" "%INSTALL_DIR%\\.env.local" >nul
+
+if not exist "%INSTALL_DIR%\\charlie_v4_realtime.exe" (
+    echo ERROR: exe not copied. Verifica que el archivo existe junto a setup.bat.
+    pause
+    exit /b 1
+)
+
 echo  Archivos copiados a: %INSTALL_DIR%
 
 set "SM_DIR=%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs"
