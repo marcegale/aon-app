@@ -42,13 +42,15 @@ else:
 # -------------------------
 # LOGGING
 # -------------------------
+root_logger = logging.getLogger()
+root_logger.handlers.clear()
 _log_handler = RotatingFileHandler(
     str(BASE_DIR / "charlie.log"), maxBytes=512_000, backupCount=2,
     encoding="utf-8",
 )
 _log_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
-logging.getLogger().addHandler(_log_handler)
-logging.getLogger().setLevel(logging.INFO)
+root_logger.addHandler(_log_handler)
+root_logger.setLevel(logging.INFO)
 
 if getattr(sys, "frozen", False):
     class _LogWriter(io.TextIOBase):
