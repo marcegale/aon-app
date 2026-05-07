@@ -51,6 +51,7 @@ _log_handler = RotatingFileHandler(
 _log_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
 root_logger.addHandler(_log_handler)
 root_logger.setLevel(logging.INFO)
+logging.raiseExceptions = False
 
 if getattr(sys, "frozen", False):
     class _LogWriter(io.TextIOBase):
@@ -60,6 +61,8 @@ if getattr(sys, "frozen", False):
                 _LogWriter._in_write = True
                 try:
                     logging.info(s.rstrip())
+                except Exception:
+                    pass
                 finally:
                     _LogWriter._in_write = False
             return len(s)
