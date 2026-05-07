@@ -169,8 +169,10 @@ ultimo_turno_usuario = 0.0
 TIMEOUT_CONVERSACION = 15.0
 primer_uso = True   # flips False on first detected speech
 
-# Non-blocking outbound queue so the audio callback never touches the WebSocket lock
-_send_queue: queue.Queue = queue.Queue(maxsize=200)
+# Non-blocking outbound queue — hard cap at 50 items (~5 s of audio at 100 ms/chunk)
+# Keeps peak memory bounded; ws_sender drains faster than mic produces in normal use
+_send_queue: queue.Queue = queue.Queue(maxsize=50)
+_last_queue_log: float = 0.0
 
 def set_estado(nuevo):
     global estado
@@ -187,7 +189,7 @@ def pcm16_bytes(indata: np.ndarray) -> bytes:
     return audio.tobytes()
 
 def on_audio(indata, frames, time_info, status):
-    # Real-time callback — must never block. Put to queue; sender thread handles send.
+    # Real-time callback — must never block.
     if ws_app is None:
         return
     chunk = pcm16_bytes(indata[:, 0])
@@ -195,18 +197,32 @@ def on_audio(indata, frames, time_info, status):
         "type": "input_audio_buffer.append",
         "audio": base64.b64encode(chunk).decode("utf-8"),
     })
+    # Drop oldest chunk to make room rather than silently discarding the newest
+    if _send_queue.full():
+        try:
+            _send_queue.get_nowait()
+        except queue.Empty:
+            pass
     try:
         _send_queue.put_nowait(msg)
     except queue.Full:
-        pass  # drop chunk if queue full; better than blocking
+        pass  # tiny race window; safe to drop
 
 
 def ws_sender():
     """Drains _send_queue and sends over WebSocket. Runs on its own thread."""
+    global _last_queue_log
     while True:
         try:
             msg = _send_queue.get(timeout=0.5)
         except queue.Empty:
+            # Log queue depth at most once every 10 s when it's notably high
+            qsize = _send_queue.qsize()
+            if qsize > 10:
+                now = time.time()
+                if now - _last_queue_log >= 10.0:
+                    print(f"[send_queue] {qsize} items pending")
+                    _last_queue_log = now
             continue
         if ws_app is not None:
             try:
@@ -242,31 +258,6 @@ def audio_callback(outdata, frames, time_info, status):
 def limpiar_audio_salida():
     with audio_lock:
         audio_buffer.clear()
-
-def terminar_conversacion(ws):
-    """Atomic conversation shutdown — drains all audio state and tells server to stop."""
-    global conversacion_activa, ultimo_turno_usuario, turno_activo, ignorar_respuesta_actual
-    conversacion_activa = False
-    ultimo_turno_usuario = 0.0
-    with turno_lock:
-        turno_activo = False
-        ignorar_respuesta_actual = True
-    # Drain queued microphone chunks so server stops receiving input
-    while not _send_queue.empty():
-        try:
-            _send_queue.get_nowait()
-        except queue.Empty:
-            break
-    limpiar_audio_salida()
-    # Cancel active response then clear server's input buffer
-    for msg_type in ("response.cancel", "input_audio_buffer.clear"):
-        if ws is not None:
-            try:
-                ws.send(json.dumps({"type": msg_type}))
-            except Exception:
-                pass
-    set_estado("idle")
-    print("Conversación terminada.")
 
 # -------------------------
 # SESSION
@@ -317,20 +308,12 @@ def on_message(ws, message):
             primer_uso = False
             ultimo_audio_usuario = time.time()
             limpiar_audio_salida()
-            if conversacion_activa:
-                # Only reopen gate mid-conversation (legitimate interruption)
-                with turno_lock:
-                    turno_activo = True
-                    ignorar_respuesta_actual = False
+            with turno_lock:
+                turno_activo = True
+                ignorar_respuesta_actual = False
             set_estado("escuchando")
 
         elif event_type == "input_audio_buffer.speech_stopped":
-            if not conversacion_activa:
-                # Pre-cancel the speculative response; transcription will re-create if needed
-                try:
-                    ws.send(json.dumps({"type": "response.cancel"}))
-                except Exception:
-                    pass
             set_estado("pensando")
 
         elif event_type == "conversation.item.input_audio_transcription.completed":
@@ -363,14 +346,25 @@ def on_message(ws, message):
 
             # ---- cierre por voz ----
             if es_frase_fin:
-                terminar_conversacion(ws)
+                conversacion_activa = False
+                ultimo_turno_usuario = 0.0
+
+                with turno_lock:
+                    turno_activo = False
+                    ignorar_respuesta_actual = True
+
+                limpiar_audio_salida()
+
+                try:
+                    ws.send(json.dumps({"type": "response.cancel"}))
+                except:
+                    pass
+
+                set_estado("idle")
                 print("Conversación finalizada por frase de salida.")
                 return
 
-            # ---- activación / continuación ----
-            # Capture whether we are re-activating from a closed conversation
-            reactivando = contiene_charlie and not conversacion_activa
-
+            # ---- activación ----
             if contiene_charlie:
                 conversacion_activa = True
                 ultimo_turno_usuario = ahora
@@ -383,13 +377,6 @@ def on_message(ws, message):
 
             if permitido:
                 ultimo_turno_usuario = ahora
-                if reactivando:
-                    # We pre-canceled the speculative response at speech_stopped;
-                    # now explicitly generate the response for this utterance.
-                    try:
-                        ws.send(json.dumps({"type": "response.create"}))
-                    except Exception:
-                        pass
             else:
                 print("Ignorado: conversación no activa y no contiene 'charlie'")
                 limpiar_audio_salida()
@@ -419,10 +406,7 @@ def on_message(ws, message):
             set_estado("idle")
             with turno_lock:
                 turno_activo = True
-                # Only reopen gate if conversation is still active;
-                # don't undo a terminar_conversacion() that just ran
-                if conversacion_activa:
-                    ignorar_respuesta_actual = False
+                ignorar_respuesta_actual = False
 
         elif event_type == "response.done":
             set_estado("idle")
@@ -610,7 +594,12 @@ def main():
             tiempo += dt
 
             if conversacion_activa and (time.time() - ultimo_turno_usuario > TIMEOUT_CONVERSACION):
-                terminar_conversacion(ws_app)
+                conversacion_activa = False
+                with turno_lock:
+                    turno_activo = False
+                    ignorar_respuesta_actual = True
+                limpiar_audio_salida()
+                set_estado("idle")
                 print("Conversación cerrada por silencio.")
 
             win32gui.SetWindowPos(
