@@ -243,3 +243,16 @@ model AgentRun {
   @@map("agent_runs")
   @@schema("public")
 }
+
+model CharlieSession {
+  id              String    @id @default(cuid())
+  deviceKey       String
+  openaiSessionId String?
+  status          String    @default("active")
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([deviceKey])
+  @@map("charlie_sessions")
+  @@schema("public")
+}

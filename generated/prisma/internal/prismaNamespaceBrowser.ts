@@ -62,7 +62,8 @@ export const ModelName = {
   RecruitingCompanyProfile: 'RecruitingCompanyProfile',
   RecruitingAttachment: 'RecruitingAttachment',
   RecruitingCandidate: 'RecruitingCandidate',
-  AgentRun: 'AgentRun'
+  AgentRun: 'AgentRun',
+  CharlieSession: 'CharlieSession'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -270,6 +271,18 @@ export const AgentRunScalarFieldEnum = {
 } as const
 
 export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
+
+
+export const CharlieSessionScalarFieldEnum = {
+  id: 'id',
+  deviceKey: 'deviceKey',
+  openaiSessionId: 'openaiSessionId',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type CharlieSessionScalarFieldEnum = (typeof CharlieSessionScalarFieldEnum)[keyof typeof CharlieSessionScalarFieldEnum]
 
 
 export const SortOrder = {

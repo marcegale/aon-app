@@ -32,7 +32,8 @@ export async function middleware(req: NextRequest) {
     pathname === "/" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/logout");
+    pathname.startsWith("/logout") ||
+    pathname.startsWith("/api/charlie");
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));

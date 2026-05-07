@@ -101,3 +101,8 @@ export type RecruitingCandidate = Prisma.RecruitingCandidateModel
  * 
  */
 export type AgentRun = Prisma.AgentRunModel
+/**
+ * Model CharlieSession
+ * 
+ */
+export type CharlieSession = Prisma.CharlieSessionModel

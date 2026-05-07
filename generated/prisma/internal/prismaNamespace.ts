@@ -395,7 +395,8 @@ export const ModelName = {
   RecruitingCompanyProfile: 'RecruitingCompanyProfile',
   RecruitingAttachment: 'RecruitingAttachment',
   RecruitingCandidate: 'RecruitingCandidate',
-  AgentRun: 'AgentRun'
+  AgentRun: 'AgentRun',
+  CharlieSession: 'CharlieSession'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun"
+    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun" | "charlieSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CharlieSession: {
+      payload: Prisma.$CharlieSessionPayload<ExtArgs>
+      fields: Prisma.CharlieSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharlieSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharlieSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.CharlieSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharlieSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        findMany: {
+          args: Prisma.CharlieSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>[]
+        }
+        create: {
+          args: Prisma.CharlieSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        createMany: {
+          args: Prisma.CharlieSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharlieSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.CharlieSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        update: {
+          args: Prisma.CharlieSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.CharlieSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharlieSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharlieSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.CharlieSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharlieSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.CharlieSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharlieSession>
+        }
+        groupBy: {
+          args: Prisma.CharlieSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharlieSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharlieSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharlieSessionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1531,6 +1606,18 @@ export const AgentRunScalarFieldEnum = {
 } as const
 
 export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
+
+
+export const CharlieSessionScalarFieldEnum = {
+  id: 'id',
+  deviceKey: 'deviceKey',
+  openaiSessionId: 'openaiSessionId',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type CharlieSessionScalarFieldEnum = (typeof CharlieSessionScalarFieldEnum)[keyof typeof CharlieSessionScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1798,6 +1885,7 @@ export type GlobalOmitConfig = {
   recruitingAttachment?: Prisma.RecruitingAttachmentOmit
   recruitingCandidate?: Prisma.RecruitingCandidateOmit
   agentRun?: Prisma.AgentRunOmit
+  charlieSession?: Prisma.CharlieSessionOmit
 }
 
 /* Types for Logging */
