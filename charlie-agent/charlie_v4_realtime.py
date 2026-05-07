@@ -325,6 +325,9 @@ def on_message(ws, message):
             with turno_lock:
                 turno_activo = True
                 ignorar_respuesta_actual = False
+            with audio_lock:
+                buf_len = len(audio_buffer)
+            print(f"[playback_worker_active] speech_started; buf={buf_len}B q={_send_queue.qsize()} conv={conversacion_activa}")
             set_estado("escuchando")
 
         elif event_type == "input_audio_buffer.speech_stopped":
@@ -360,6 +363,7 @@ def on_message(ws, message):
 
             # ---- cierre por voz ----
             if es_frase_fin:
+                print("[conversation_end] frase de salida detectada")
                 conversacion_activa = False
                 ultimo_turno_usuario = 0.0
 
@@ -367,12 +371,35 @@ def on_message(ws, message):
                     turno_activo = False
                     ignorar_respuesta_actual = True
 
+                # Clear playback audio immediately
                 limpiar_audio_salida()
+                print("[audio_buffer_reset] cleared on conversation end")
 
+                # Drain outbound mic queue so server gets no more audio to VAD-detect
+                drained = 0
+                while not _send_queue.empty():
+                    try:
+                        _send_queue.get_nowait()
+                        drained += 1
+                    except queue.Empty:
+                        break
+                if drained:
+                    print(f"[send_queue] drained {drained} chunks on conversation end")
+
+                # Cancel any active response, then clear server-side audio buffer
+                # to prevent VAD firing on stale buffered audio after teardown
                 try:
                     ws.send(json.dumps({"type": "response.cancel"}))
-                except:
+                    print("[response_cancel] sent on conversation end")
+                except Exception:
                     pass
+                try:
+                    ws.send(json.dumps({"type": "input_audio_buffer.clear"}))
+                except Exception:
+                    pass
+
+                # Second clear in case deltas arrived in the race window above
+                limpiar_audio_salida()
 
                 set_estado("idle")
                 print("Conversación finalizada por frase de salida.")
@@ -380,6 +407,8 @@ def on_message(ws, message):
 
             # ---- activación ----
             if contiene_charlie:
+                if not conversacion_activa:
+                    print(f"[conversation_start] activado: {txt[:60]}")
                 conversacion_activa = True
                 ultimo_turno_usuario = ahora
 
@@ -427,7 +456,14 @@ def on_message(ws, message):
             set_estado("idle")
             with turno_lock:
                 turno_activo = True
-                ignorar_respuesta_actual = False
+                # Only reopen the audio gate if a conversation is active.
+                # After "adios", conversacion_activa=False and this response.audio.done
+                # is from the cancel acknowledgement — we must NOT reopen the gate or
+                # stale mic audio in _send_queue will trigger new VAD/response cycles.
+                # During normal conversation speech_started already set this False,
+                # so this is effectively a no-op in the happy path.
+                if conversacion_activa:
+                    ignorar_respuesta_actual = False
 
         elif event_type == "response.done":
             set_estado("idle")
