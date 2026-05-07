@@ -6,6 +6,9 @@ import base64
 import threading
 import time
 import math
+import logging
+import io
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from orchestrator import process_user_command
 
@@ -25,6 +28,26 @@ if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
 else:
     BASE_DIR = Path(__file__).resolve().parent
+
+# -------------------------
+# LOGGING
+# -------------------------
+_log_handler = RotatingFileHandler(
+    str(BASE_DIR / "charlie.log"), maxBytes=512_000, backupCount=2
+)
+_log_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+logging.getLogger().addHandler(_log_handler)
+logging.getLogger().setLevel(logging.INFO)
+
+if getattr(sys, "frozen", False):
+    class _LogWriter(io.TextIOBase):
+        def write(self, s):
+            if s.strip():
+                logging.info(s.rstrip())
+            return len(s)
+        def flush(self): pass
+    sys.stdout = _LogWriter()
+    sys.stderr = _LogWriter()
 
 env_path = BASE_DIR / ".env.local"
 print("Buscando .env.local en:", env_path)
@@ -143,6 +166,7 @@ ignorar_respuesta_actual = False
 conversacion_activa = False
 ultimo_turno_usuario = 0.0
 TIMEOUT_CONVERSACION = 15.0
+primer_uso = True   # flips False on first detected speech
 
 def set_estado(nuevo):
     global estado
@@ -241,7 +265,7 @@ def on_open(ws):
     set_estado("idle")
 
 def on_message(ws, message):
-    global ultimo_audio_asistente, ultimo_audio_usuario, turno_activo, ignorar_respuesta_actual, conversacion_activa, ultimo_turno_usuario
+    global ultimo_audio_asistente, ultimo_audio_usuario, turno_activo, ignorar_respuesta_actual, conversacion_activa, ultimo_turno_usuario, primer_uso
 
     try:
         data = json.loads(message)
@@ -252,6 +276,7 @@ def on_message(ws, message):
 
         # Usuario empieza a hablar -> interrumpe a Charlie
         if event_type == "input_audio_buffer.speech_started":
+            primer_uso = False
             ultimo_audio_usuario = time.time()
             limpiar_audio_salida()
             with turno_lock:
@@ -618,16 +643,24 @@ def main():
             t_surf = _font_title.render("Charlie", True, (255, 255, 255))
             screen.blit(t_surf, (W // 2 - t_surf.get_width() // 2, 14))
 
-            # status hint
-            _hints = {
-                "idle":        "Di: Charlie...",
-                "escuchando":  "Escuchando...",
-                "pensando":    "Pensando...",
-                "hablando":    "Hablando...",
-                "error":       "Sin conexión",
-            }
-            hint = _hints.get(estado, estado)
-            h_surf = _font_status.render(hint, True, color)
+            # status hint / onboarding tips
+            if primer_uso and estado == "idle":
+                _tips = [
+                    'Di "Charlie" para activarme',
+                    'Di "adios" para terminar',
+                    'Clic derecho para salir',
+                ]
+                tip = _tips[int(tiempo / 3) % len(_tips)]
+                h_surf = _font_status.render(tip, True, (180, 180, 180))
+            else:
+                _hints = {
+                    "idle":       "Di: Charlie...",
+                    "escuchando": "Escuchando...",
+                    "pensando":   "Pensando...",
+                    "hablando":   "Hablando...",
+                    "error":      "Sin conexion",
+                }
+                h_surf = _font_status.render(_hints.get(estado, estado), True, color)
             screen.blit(h_surf, (W // 2 - h_surf.get_width() // 2, H - 26))
 
             pygame.display.update()

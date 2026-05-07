@@ -22,7 +22,7 @@ export default async function CharlieAdminPage() {
   });
 
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.admin.bg, color: theme.admin.text }}>
+    <div className="min-h-screen p-8" style={{ color: theme.admin.text }}>
 
       {/* Header */}
       <div className="mb-8">
