@@ -16,6 +16,31 @@ function buildSetupBat(userName: string): string {
 setlocal
 cd /d "%~dp0"
 
+:: Detect if running from inside a zip / temp compressed folder
+set "SCRIPT_PATH=%~dp0"
+echo %SCRIPT_PATH% | findstr /I /C:".zip" >nul
+if not errorlevel 1 (
+    echo.
+    echo  ERROR: Estas ejecutando setup.bat desde dentro del ZIP.
+    echo.
+    echo  Primero haz clic en "Extraer todo", luego ejecuta
+    echo  setup.bat desde la carpeta extraida.
+    echo.
+    pause
+    exit /b 1
+)
+echo %SCRIPT_PATH% | findstr /I /C:"\\Temp\\" >nul
+if not errorlevel 1 (
+    echo.
+    echo  ERROR: Estas ejecutando setup.bat desde una carpeta temporal.
+    echo.
+    echo  Primero haz clic en "Extraer todo", luego ejecuta
+    echo  setup.bat desde la carpeta extraida.
+    echo.
+    pause
+    exit /b 1
+)
+
 set "INSTALL_DIR=%LOCALAPPDATA%\\Charlie"
 set "EXE_NAME=charlie_v4_realtime.exe"
 
@@ -75,9 +100,19 @@ function buildReadme(userName: string): string {
 
 INSTALACION
 -----------
-1. Ejecuta setup.bat (doble clic)
-2. Responde las preguntas de instalacion
-3. Charlie queda en: %LOCALAPPDATA%\\Charlie\\
+IMPORTANTE: NO ejecutes setup.bat desde dentro del ZIP.
+
+Pasos correctos:
+1. Haz clic derecho en el archivo .zip
+2. Selecciona "Extraer todo..." y elige una carpeta
+3. Abre la carpeta extraida
+4. Ejecuta setup.bat (doble clic)
+5. Responde las preguntas de instalacion
+
+Si ejecutas setup.bat directamente desde el ZIP, los archivos
+no se copiaran correctamente y Charlie no arrancara.
+
+Charlie queda instalado en: %LOCALAPPDATA%\\Charlie\\
 
 USO
 ---
