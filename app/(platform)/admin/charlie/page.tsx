@@ -21,84 +21,78 @@ export default async function CharlieAdminPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const t = theme.admin;
-
-  const thStyle: React.CSSProperties = {
-    padding: "10px 14px",
-    textAlign: "left",
-    color: t.textMuted,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    borderBottom: `1px solid ${t.border}`,
-    whiteSpace: "nowrap",
-  };
-
-  const tdStyle: React.CSSProperties = {
-    padding: "10px 14px",
-    fontSize: 13,
-    color: t.text,
-    borderBottom: `1px solid ${t.border}`,
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, padding: "32px 24px" }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>Charlie — Gestión de dispositivos</h1>
-      <p style={{ color: t.textMuted, fontSize: 13, margin: "0 0 32px" }}>
-        Crea un paquete de descarga por usuario. El .exe es el mismo para todos; solo cambia el .env.local.
-      </p>
+    <div className="min-h-screen p-8" style={{ background: theme.admin.bg, color: theme.admin.text }}>
 
-      {/* ── Create form ─────────────────────────────────────────── */}
-      <section style={{ marginBottom: 48 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 600, color: t.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", margin: "0 0 16px" }}>
+      {/* Header */}
+      <div className="mb-8">
+        <p className="text-xs uppercase tracking-[0.28em]" style={{ color: theme.admin.accent }}>
+          Nexa Core Admin
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold">Charlie — Dispositivos</h1>
+        <p className="mt-2 text-sm" style={{ color: theme.admin.textMuted }}>
+          Crea un paquete de descarga por usuario. El .exe es el mismo para todos; solo cambia el .env.local.
+        </p>
+      </div>
+
+      {/* Create form */}
+      <section className="mb-12">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.28em]" style={{ color: theme.admin.textMuted }}>
           Nuevo dispositivo
-        </h2>
+        </p>
         <DeviceForm />
       </section>
 
-      {/* ── Device table ─────────────────────────────────────────── */}
+      {/* Device table */}
       <section>
-        <h2 style={{ fontSize: 14, fontWeight: 600, color: t.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", margin: "0 0 16px" }}>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.28em]" style={{ color: theme.admin.textMuted }}>
           Dispositivos registrados ({devices.length})
-        </h2>
+        </p>
 
         {devices.length === 0 ? (
-          <p style={{ color: t.textMuted, fontSize: 13 }}>Ningún dispositivo aún.</p>
+          <p className="text-sm" style={{ color: theme.admin.textMuted }}>Ningún dispositivo aún.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", background: t.surface, borderRadius: 8, overflow: "hidden" }}>
-              <thead>
+          <div
+            className="overflow-x-auto rounded-2xl"
+            style={{ border: `1px solid ${theme.admin.border}`, background: theme.admin.surface }}
+          >
+            <table className="w-full border-collapse text-sm">
+              <thead
+                className="text-left"
+                style={{ background: theme.admin.surfaceMuted, color: theme.admin.textMuted }}
+              >
                 <tr>
-                  <th style={thStyle}>Usuario</th>
-                  <th style={thStyle}>Device key</th>
-                  <th style={thStyle}>Estado</th>
-                  <th style={thStyle}>Creado</th>
-                  <th style={thStyle}>Revocado</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Usuario</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Device key</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Estado</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Creado</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Revocado</th>
                 </tr>
               </thead>
               <tbody>
                 {devices.map((d) => (
-                  <tr key={d.id}>
-                    <td style={tdStyle}>{d.userName}</td>
-                    <td style={{ ...tdStyle, fontFamily: "monospace", fontSize: 12, color: t.textMuted }}>
+                  <tr
+                    key={d.id}
+                    className="border-t hover:bg-[rgba(244,235,208,0.03)]"
+                    style={{ borderColor: theme.admin.border }}
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap font-medium">{d.userName}</td>
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-xs" style={{ color: theme.admin.textMuted }}>
                       {d.deviceKey.slice(0, 14)}…
                     </td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        display: "inline-block",
-                        padding: "2px 8px",
-                        borderRadius: 4,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        background: d.status === "active" ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
-                        color: d.status === "active" ? "#34d399" : "#f87171",
-                      }}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                        d.status === "active"
+                          ? "bg-emerald-500/10 text-emerald-300"
+                          : "bg-red-500/10 text-red-300"
+                      }`}>
                         {d.status}
                       </span>
                     </td>
-                    <td style={{ ...tdStyle, color: t.textMuted }}>{formatDate(d.createdAt)}</td>
-                    <td style={{ ...tdStyle, color: t.textMuted }}>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: theme.admin.textMuted }}>
+                      {formatDate(d.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: theme.admin.textMuted }}>
                       {d.revokedAt ? formatDate(d.revokedAt) : "—"}
                     </td>
                   </tr>

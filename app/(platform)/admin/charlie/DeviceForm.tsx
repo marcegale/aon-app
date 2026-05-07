@@ -41,7 +41,6 @@ export function DeviceForm() {
       a.click();
       URL.revokeObjectURL(url);
 
-      // Reset for next device
       setUserName("");
       setDeviceKey(generateKey());
     } catch (err: unknown) {
@@ -51,45 +50,27 @@ export function DeviceForm() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    background: theme.admin.surfaceMuted,
-    border: `1px solid ${theme.admin.border}`,
-    color: theme.admin.text,
-    borderRadius: 6,
-    padding: "8px 12px",
-    fontSize: 13,
-    width: "100%",
-    outline: "none",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    color: theme.admin.textMuted,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    marginBottom: 6,
-    display: "block",
-  };
-
   return (
     <form
       onSubmit={handleSubmit}
-      style={{
-        background: theme.admin.surface,
-        border: `1px solid ${theme.admin.border}`,
-        borderRadius: 8,
-        padding: 24,
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        maxWidth: 480,
-      }}
+      className="flex flex-col gap-4 max-w-md rounded-2xl p-6"
+      style={{ background: theme.admin.surface, border: `1px solid ${theme.admin.border}` }}
     >
-      <div>
-        <label style={labelStyle}>Nombre del usuario</label>
+      {/* User name */}
+      <div className="flex flex-col gap-1.5">
+        <label
+          className="text-xs font-semibold uppercase tracking-[0.06em]"
+          style={{ color: theme.admin.textMuted }}
+        >
+          Nombre del usuario
+        </label>
         <input
-          style={inputStyle}
+          className="rounded-md px-3 py-2 text-sm outline-none"
+          style={{
+            background: theme.admin.surfaceMuted,
+            border: `1px solid ${theme.admin.border}`,
+            color: theme.admin.text,
+          }}
           type="text"
           placeholder="Ej: Juan"
           value={userName}
@@ -98,11 +79,22 @@ export function DeviceForm() {
         />
       </div>
 
-      <div>
-        <label style={labelStyle}>Device key</label>
-        <div style={{ display: "flex", gap: 8 }}>
+      {/* Device key */}
+      <div className="flex flex-col gap-1.5">
+        <label
+          className="text-xs font-semibold uppercase tracking-[0.06em]"
+          style={{ color: theme.admin.textMuted }}
+        >
+          Device key
+        </label>
+        <div className="flex gap-2">
           <input
-            style={{ ...inputStyle, fontFamily: "monospace", fontSize: 12 }}
+            className="flex-1 rounded-md px-3 py-2 font-mono text-xs outline-none"
+            style={{
+              background: theme.admin.surfaceMuted,
+              border: `1px solid ${theme.admin.border}`,
+              color: theme.admin.text,
+            }}
             type="text"
             value={deviceKey}
             onChange={(e) => setDeviceKey(e.target.value)}
@@ -111,15 +103,12 @@ export function DeviceForm() {
           <button
             type="button"
             onClick={() => setDeviceKey(generateKey())}
+            className="rounded-md px-3 py-2 text-xs whitespace-nowrap"
             style={{
-              background: theme.admin.surface,
+              background: theme.admin.surfaceMuted,
               border: `1px solid ${theme.admin.border}`,
               color: theme.admin.textMuted,
-              borderRadius: 6,
-              padding: "8px 12px",
-              fontSize: 12,
               cursor: "pointer",
-              whiteSpace: "nowrap",
             }}
           >
             Regenerar
@@ -128,23 +117,14 @@ export function DeviceForm() {
       </div>
 
       {error && (
-        <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading || !userName}
-        style={{
-          background: loading ? theme.admin.surface : theme.admin.accent,
-          color: "#fff",
-          border: "none",
-          borderRadius: 6,
-          padding: "10px 20px",
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: loading ? "default" : "pointer",
-          opacity: loading || !userName ? 0.6 : 1,
-        }}
+        className="rounded-md px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        style={{ background: loading || !userName ? theme.admin.surface : theme.admin.accent, cursor: loading ? "default" : "pointer" }}
       >
         {loading ? "Generando..." : "Crear dispositivo y descargar .zip"}
       </button>
