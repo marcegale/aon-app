@@ -422,10 +422,15 @@ hwnd = pygame.display.get_wm_info()["window"]
 
 # Ventana overlay topmost con transparencia
 ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
-ex_style |= win32con.WS_EX_LAYERED | win32con.WS_EX_TOOLWINDOW
+ex_style |= win32con.WS_EX_LAYERED   # no WS_EX_TOOLWINDOW so it appears in taskbar
 win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
 win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)
-win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 300, 200, W, H, win32con.SWP_SHOWWINDOW)
+_sw = win32api.GetSystemMetrics(0)
+_sh = win32api.GetSystemMetrics(1)
+win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, _sw - W - 24, _sh - H - 64, W, H, win32con.SWP_SHOWWINDOW)
+
+_font_title  = pygame.font.SysFont("segoeui", 13, bold=True)
+_font_status = pygame.font.SysFont("segoeui", 11)
 
 clock = pygame.time.Clock()
 cx, cy = W // 2, H // 2
@@ -608,6 +613,23 @@ def main():
                 dibujar_ondas(x, y, color)
 
             dibujar_nucleo(x, y, tiempo, color)
+
+            # title
+            t_surf = _font_title.render("Charlie", True, (255, 255, 255))
+            screen.blit(t_surf, (W // 2 - t_surf.get_width() // 2, 14))
+
+            # status hint
+            _hints = {
+                "idle":        "Di: Charlie...",
+                "escuchando":  "Escuchando...",
+                "pensando":    "Pensando...",
+                "hablando":    "Hablando...",
+                "error":       "Sin conexión",
+            }
+            hint = _hints.get(estado, estado)
+            h_surf = _font_status.render(hint, True, color)
+            screen.blit(h_surf, (W // 2 - h_surf.get_width() // 2, H - 26))
+
             pygame.display.update()
 
     except KeyboardInterrupt:
