@@ -43,7 +43,8 @@ else:
 # LOGGING
 # -------------------------
 _log_handler = RotatingFileHandler(
-    str(BASE_DIR / "charlie.log"), maxBytes=512_000, backupCount=2
+    str(BASE_DIR / "charlie.log"), maxBytes=512_000, backupCount=2,
+    encoding="utf-8",
 )
 _log_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
 logging.getLogger().addHandler(_log_handler)
@@ -51,9 +52,14 @@ logging.getLogger().setLevel(logging.INFO)
 
 if getattr(sys, "frozen", False):
     class _LogWriter(io.TextIOBase):
+        _in_write = False
         def write(self, s):
-            if s.strip():
-                logging.info(s.rstrip())
+            if s.strip() and not _LogWriter._in_write:
+                _LogWriter._in_write = True
+                try:
+                    logging.info(s.rstrip())
+                finally:
+                    _LogWriter._in_write = False
             return len(s)
         def flush(self): pass
     sys.stdout = _LogWriter()
