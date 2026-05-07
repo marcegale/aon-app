@@ -54,17 +54,15 @@ root_logger.setLevel(logging.INFO)
 logging.raiseExceptions = False
 
 if getattr(sys, "frozen", False):
+    _log_path = str(BASE_DIR / "charlie.log")
     class _LogWriter(io.TextIOBase):
-        _in_write = False
         def write(self, s):
-            if s.strip() and not _LogWriter._in_write:
-                _LogWriter._in_write = True
+            if s.strip():
                 try:
-                    logging.info(s.rstrip())
+                    with open(_log_path, "a", encoding="utf-8", errors="replace") as f:
+                        f.write(s)
                 except Exception:
                     pass
-                finally:
-                    _LogWriter._in_write = False
             return len(s)
         def flush(self): pass
     sys.stdout = _LogWriter()
@@ -303,7 +301,12 @@ def send_session_update(ws):
                 "model": "gpt-4o-mini-transcribe"
             },
             "turn_detection": {
-                "type": "server_vad"
+                "type": "server_vad",
+                "create_response": False,
+                "interrupt_response": False,
+                "threshold": 0.65,
+                "prefix_padding_ms": 300,
+                "silence_duration_ms": 700
             }
         }
     }
@@ -344,6 +347,7 @@ def on_message(ws, message):
 
         elif event_type == "conversation.item.input_audio_transcription.completed":
             text = data.get("transcript", "")
+            item_id = data.get("item_id")
             if not text:
                 return
 
@@ -390,23 +394,31 @@ def on_message(ws, message):
                 print("Conversación finalizada por frase de salida.")
                 return
 
-            # ---- activación ----
-            if contiene_charlie:
-                conversacion_activa = True
-                ultimo_turno_usuario = ahora
-
-            permitido = contiene_charlie or conversacion_activa
-
-            with turno_lock:
-                turno_activo = permitido
-                ignorar_respuesta_actual = not permitido
-
-            if permitido:
-                ultimo_turno_usuario = ahora
-            else:
-                print("Ignorado: conversación no activa y no contiene 'charlie'")
+            # ---- sin wake word y sin conversación activa: descartar item ----
+            if not contiene_charlie and not conversacion_activa:
+                if item_id:
+                    try:
+                        ws.send(json.dumps({"type": "conversation.item.delete", "item_id": item_id}))
+                    except:
+                        pass
                 limpiar_audio_salida()
                 set_estado("idle")
+                print("Ignorado: conversación no activa y no contiene 'charlie'")
+                return
+
+            # ---- activación / respuesta ----
+            if contiene_charlie:
+                conversacion_activa = True
+
+            ultimo_turno_usuario = ahora
+            with turno_lock:
+                turno_activo = True
+                ignorar_respuesta_actual = False
+
+            try:
+                ws.send(json.dumps({"type": "response.create"}))
+            except:
+                pass
 
         elif event_type == "response.text.delta":
             delta = data.get("delta", "")
