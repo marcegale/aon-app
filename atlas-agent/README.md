@@ -108,6 +108,7 @@ python atlas.py
 
 Expected output in `atlas.log`:
 ```
+[atlas] config: Variables faltantes en .env.local: ATLAS_DEVICE_KEY, BACKEND_URL (continuing in dev mode)
 [atlas] Atlas Phase 0 — skeleton demo starting
 [fsm] initialized — state=IDLE
 [orb] OrbWindow.start() — pendiente Fase 1
