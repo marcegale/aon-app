@@ -1,11 +1,9 @@
-# Atlas Phase 0 — minimal dependencies
-# Each phase adds its own dependencies here when introduced.
-#
-# Phase 1 will add: pywebview, aiohttp
+# Atlas Phase 1
 # Phase 2 will add: httpx (for /api/atlas/plan calls)
 # Phase 3 will add: mss, Pillow
 # Phase 4 will add: pyautogui, playwright
 # Phase 5 will add: sounddevice, openwakeword, openai (Whisper)
 
 python-dotenv>=1.0.0
+pywebview>=5.0
 pyinstaller>=6.0.0

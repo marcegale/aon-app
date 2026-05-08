@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas — Cockpit</title>
+  <link rel="stylesheet" href="cockpit.css">
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <div class="header-left">
+        <div class="orb-dot"></div>
+        <span class="brand">Atlas</span>
+      </div>
+      <button id="close-btn">✕</button>
+    </header>
+
+    <div id="state-section">
+      <span class="label">Estado</span>
+      <span id="state-badge">IDLE</span>
+    </div>
+
+    <div id="log-section">
+      <div class="log-label">Eventos</div>
+      <div id="log"></div>
+    </div>
+
+  </div>
+  <script src="cockpit.js"></script>
+</body>
+</html>

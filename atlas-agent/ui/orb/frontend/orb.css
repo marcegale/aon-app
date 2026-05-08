@@ -1,0 +1,129 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* ── Orb ──────────────────────────────────────────────────────────────────── */
+#orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  cursor: grab;
+  position: relative;
+  transition: transform 0.15s ease;
+}
+
+#orb:active { cursor: grabbing; }
+#orb:hover  { transform: scale(1.06); }
+
+/* ── State: IDLE ─────────────────────────────────────────────────────────── */
+#orb.ORB_IDLE {
+  background: radial-gradient(circle at 38% 35%, #4dd9ff, #0a6ef5 60%, #052d8a);
+  box-shadow:
+    0 0 18px 4px rgba(26,159,255,0.55),
+    0 0 40px 8px rgba(26,100,255,0.25),
+    inset 0 0 12px rgba(255,255,255,0.08);
+  animation: pulse-idle 3.2s ease-in-out infinite;
+}
+
+@keyframes pulse-idle {
+  0%, 100% { box-shadow: 0 0 18px 4px rgba(26,159,255,0.55), 0 0 40px 8px rgba(26,100,255,0.25), inset 0 0 12px rgba(255,255,255,0.08); }
+  50%       { box-shadow: 0 0 28px 8px rgba(26,159,255,0.75), 0 0 60px 14px rgba(26,100,255,0.35), inset 0 0 12px rgba(255,255,255,0.08); }
+}
+
+/* ── State: LISTENING ───────────────────────────────────────────────────── */
+#orb.ORB_LISTENING {
+  background: radial-gradient(circle at 38% 35%, #80ffb0, #00c853 55%, #00571e);
+  box-shadow:
+    0 0 20px 6px rgba(0,230,118,0.70),
+    0 0 50px 12px rgba(0,200,83,0.35),
+    inset 0 0 14px rgba(255,255,255,0.10);
+  animation: pulse-listening 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-listening {
+  0%, 100% { box-shadow: 0 0 20px 6px rgba(0,230,118,0.70), 0 0 50px 12px rgba(0,200,83,0.35), inset 0 0 14px rgba(255,255,255,0.10); }
+  50%       { box-shadow: 0 0 30px 10px rgba(0,230,118,0.90), 0 0 70px 20px rgba(0,200,83,0.50), inset 0 0 14px rgba(255,255,255,0.10); }
+}
+
+/* ── State: THINKING ────────────────────────────────────────────────────── */
+#orb.ORB_THINKING {
+  background: conic-gradient(from var(--angle, 0deg), #7c4dff, #b388ff, #7c4dff 120deg, #3d1a8a 240deg, #7c4dff);
+  box-shadow:
+    0 0 22px 6px rgba(124,77,255,0.65),
+    0 0 55px 14px rgba(100,50,220,0.30),
+    inset 0 0 16px rgba(255,255,255,0.06);
+  animation: spin-gradient 1.8s linear infinite;
+}
+
+@property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+@keyframes spin-gradient { to { --angle: 360deg; } }
+
+/* ── State: EXECUTING ───────────────────────────────────────────────────── */
+#orb.ORB_EXECUTING {
+  background: radial-gradient(circle at 38% 35%, #ffd180, #ff9800 55%, #7a3800);
+  box-shadow:
+    0 0 20px 6px rgba(255,152,0,0.75),
+    0 0 50px 14px rgba(255,100,0,0.35),
+    inset 0 0 12px rgba(255,255,255,0.08);
+  animation: pulse-exec 0.75s ease-in-out infinite;
+}
+
+@keyframes pulse-exec {
+  0%, 100% { box-shadow: 0 0 20px 6px rgba(255,152,0,0.75), 0 0 50px 14px rgba(255,100,0,0.35), inset 0 0 12px rgba(255,255,255,0.08); }
+  50%       { box-shadow: 0 0 32px 10px rgba(255,152,0,0.95), 0 0 70px 20px rgba(255,100,0,0.55), inset 0 0 12px rgba(255,255,255,0.08); }
+}
+
+/* ── State: WAITING_PERMISSION ──────────────────────────────────────────── */
+#orb.ORB_WAITING_PERMISSION {
+  background: radial-gradient(circle at 38% 35%, #fff176, #ffeb3b 55%, #7a6000);
+  box-shadow:
+    0 0 20px 6px rgba(255,235,59,0.70),
+    0 0 50px 14px rgba(220,200,0,0.30),
+    inset 0 0 12px rgba(255,255,255,0.10);
+  animation: ping-permission 1.2s ease-out infinite;
+}
+
+@keyframes ping-permission {
+  0%   { transform: scale(1);    opacity: 1; }
+  70%  { transform: scale(1.12); opacity: 0.85; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* ── State: ERROR ───────────────────────────────────────────────────────── */
+#orb.ORB_ERROR {
+  background: radial-gradient(circle at 38% 35%, #ff8a80, #f44336 55%, #7a0000);
+  box-shadow:
+    0 0 20px 6px rgba(244,67,54,0.75),
+    0 0 50px 14px rgba(200,0,0,0.35),
+    inset 0 0 12px rgba(255,255,255,0.08);
+  animation: shake-error 0.55s ease-in-out infinite;
+}
+
+@keyframes shake-error {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  40%       { transform: translateX(4px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+
+/* ── Fade-in on load ────────────────────────────────────────────────────── */
+#orb.loading { opacity: 0; }
+#orb.ready   { transition: opacity 0.4s ease; opacity: 1; }

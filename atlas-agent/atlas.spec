@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Atlas PyInstaller spec — Phase 0 skeleton
+# Atlas PyInstaller spec — Phase 1
 # Run: pyinstaller atlas.spec
 
 block_cipher = None
@@ -8,7 +8,10 @@ a = Analysis(
     ["atlas.py"],
     pathex=["."],
     binaries=[],
-    datas=[],
+    datas=[
+        ("ui/orb/frontend",     "ui/orb/frontend"),
+        ("ui/cockpit/frontend", "ui/cockpit/frontend"),
+    ],
     hiddenimports=[
         "config.settings",
         "broker",
@@ -21,18 +24,15 @@ a = Analysis(
         "ui.orb.orb_window",
         "ui.orb.orb_state",
         "ui.cockpit.cockpit_window",
+        "webview",
+        "webview.platforms.winforms",
+        "clr",
+        "pythonnet",
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        # Excluded until their phases:
-        # Phase 1: pywebview, aiohttp
-        # Phase 2: httpx
-        # Phase 3: mss, PIL
-        # Phase 4: pyautogui, playwright
-        # Phase 5: sounddevice, openwakeword, openai
-    ],
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -55,10 +55,10 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,    # noconsole — Atlas has its own UI
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon="assets/atlas.ico",  # uncomment in Phase 1
+    # icon="assets/atlas.ico",
 )

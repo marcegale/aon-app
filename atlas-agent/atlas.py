@@ -1,65 +1,90 @@
-"""Atlas — Phase 0 skeleton entry point.
+"""Atlas — Phase 1 entry point.
 
-Demonstrates the full module wiring and FSM transition demo without
-any real AI calls, voice, screenshot, or tool execution.
-
-Expected output: four state transitions logged to atlas.log and stdout,
-each producing a broker event that ui_bridge maps to an OrbState.
+pywebview must own the main thread.
+All FSM/broker logic runs in the on_started() background thread.
 """
 
 import logging
 import sys
+import threading
+import time
 from pathlib import Path
 
-# ── Base directory (frozen exe or source) ───────────────────────────────────
+import webview
+
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
 else:
     BASE_DIR = Path(__file__).resolve().parent
 
-# ── Logging must be first ────────────────────────────────────────────────────
 from logging_setup import setup_logging
 setup_logging(BASE_DIR)
 
-# ── Config (tolerates missing .env.local in Phase 0 dev) ────────────────────
 try:
     import config.settings as settings
     settings.validate()
     logging.info("[atlas] config loaded — user=%s", settings.ATLAS_USER_NAME)
 except RuntimeError as exc:
-    logging.warning("[atlas] config: %s (continuing in dev mode)", exc)
+    logging.warning("[atlas] config: %s (dev mode)", exc)
 
-# ── Core modules ─────────────────────────────────────────────────────────────
 from broker import Broker
-from state_machine import StateMachine, IDLE, LISTENING, PLANNING, REPORTING
+from state_machine import (
+    StateMachine,
+    IDLE, LISTENING, CAPTURING_CONTEXT, PLANNING,
+    WAITING_PERMISSION, EXECUTING, VERIFYING, REPORTING, ERROR,
+)
 from ui.orb.orb_window import OrbWindow
 from ui.cockpit.cockpit_window import CockpitWindow
 from ui.ui_bridge import UIBridge
 
 
+def _demo(fsm: StateMachine) -> None:
+    """Timed FSM demo — runs in background thread after UI is ready."""
+    steps = [
+        (LISTENING,  1.2),
+        (PLANNING,   1.5),
+        (EXECUTING,  1.5),
+        (VERIFYING,  1.0),
+        (REPORTING,  1.2),
+        (IDLE,       0.0),
+    ]
+    for state, delay in steps:
+        fsm.transition(state)
+        if delay:
+            time.sleep(delay)
+    logging.info("[atlas] demo complete")
+
+
+def on_started(broker: Broker, fsm: StateMachine) -> None:
+    """Called by pywebview on a background thread once windows are ready."""
+    logging.info("[atlas] UI ready — starting demo in 1.5s")
+    time.sleep(1.5)
+    _demo(fsm)
+
+
 def main() -> None:
     logging.info("=" * 60)
-    logging.info("[atlas] Atlas Phase 0 — skeleton demo starting")
+    logging.info("[atlas] Atlas Phase 1 starting")
 
-    broker   = Broker()
-    fsm      = StateMachine(broker)
-    orb      = OrbWindow()
-    cockpit  = CockpitWindow()
-    bridge   = UIBridge(broker, orb, cockpit)
+    broker  = Broker()
+    fsm     = StateMachine(broker)
+    orb     = OrbWindow(broker)
+    cockpit = CockpitWindow()
+    bridge  = UIBridge(broker, orb, cockpit)  # noqa: F841 — kept alive
 
+    # Create windows (no event loop yet)
     orb.start()
+    cockpit.start()
 
-    logging.info("[atlas] running FSM demo: IDLE → LISTENING → PLANNING → REPORTING → IDLE")
+    logging.info("[atlas] launching pywebview event loop")
 
-    fsm.transition(LISTENING)
-    fsm.transition(PLANNING)
-    fsm.transition(REPORTING)
-    fsm.transition(IDLE)
+    webview.start(
+        func=on_started,
+        args=(broker, fsm),
+        debug=False,
+    )
 
-    logging.info("[atlas] demo complete — all transitions successful")
-
-    bridge.stop()
-    logging.info("[atlas] Atlas Phase 0 — shutdown clean")
+    logging.info("[atlas] pywebview event loop exited — shutdown")
 
 
 if __name__ == "__main__":
