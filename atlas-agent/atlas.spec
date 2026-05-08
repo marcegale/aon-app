@@ -9,7 +9,6 @@ a = Analysis(
     pathex=["."],
     binaries=[],
     datas=[
-        ("ui/orb/frontend",     "ui/orb/frontend"),
         ("ui/cockpit/frontend", "ui/cockpit/frontend"),
     ],
     hiddenimports=[
@@ -28,6 +27,9 @@ a = Analysis(
         "webview.platforms.winforms",
         "clr",
         "pythonnet",
+        "PySide6.QtCore",
+        "PySide6.QtGui",
+        "PySide6.QtWidgets",
     ],
     hookspath=[],
     hooksconfig={},
