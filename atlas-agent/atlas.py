@@ -55,9 +55,10 @@ def _demo(fsm: StateMachine) -> None:
     logging.info("[atlas] demo complete")
 
 
-def on_started(broker: Broker, fsm: StateMachine) -> None:
+def on_started(broker: Broker, fsm: StateMachine, orb: OrbWindow) -> None:
     """Called by pywebview on a background thread once windows are ready."""
-    logging.info("[atlas] UI ready — starting demo in 1.5s")
+    logging.info("[atlas] UI ready — applying transparency")
+    orb.apply_transparency()
     time.sleep(1.5)
     _demo(fsm)
 
@@ -80,7 +81,7 @@ def main() -> None:
 
     webview.start(
         func=on_started,
-        args=(broker, fsm),
+        args=(broker, fsm, orb),
         debug=False,
     )
 
