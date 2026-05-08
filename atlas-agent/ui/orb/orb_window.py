@@ -17,7 +17,7 @@ _COLORKEY      = 0x00000000   # pure black — keyed out → transparent
 
 def _frontend_path() -> str:
     if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent
+        base = Path(sys._MEIPASS) / "ui" / "orb"
     else:
         base = Path(__file__).resolve().parent
     return str(base / "frontend" / "index.html")

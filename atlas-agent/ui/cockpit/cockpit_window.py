@@ -13,7 +13,7 @@ _WINDOW_H = 520
 
 def _frontend_path() -> str:
     if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent
+        base = Path(sys._MEIPASS) / "ui" / "cockpit"
     else:
         base = Path(__file__).resolve().parent
     return str(base / "frontend" / "index.html")
