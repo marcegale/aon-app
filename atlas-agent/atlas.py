@@ -66,6 +66,7 @@ def on_started(broker: Broker, fsm: StateMachine, orb: OrbWindow) -> None:
 def main() -> None:
     logging.info("=" * 60)
     logging.info("[atlas] Atlas Phase 1 starting")
+    logging.info("[atlas] build_marker=2a4ac52 transparency_colorkey")
 
     broker  = Broker()
     fsm     = StateMachine(broker)
