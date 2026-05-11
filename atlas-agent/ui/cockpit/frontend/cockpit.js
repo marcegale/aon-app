@@ -147,7 +147,59 @@ window.showToolResult = function (output, ok) {
   });
 };
 
+function _buildConnectorCard(result) {
+  var connector = result.connector;
+  var card = document.createElement('div');
+  card.className = 'action-result connector-required';
+
+  var header = document.createElement('div');
+  header.className = 'ar-header';
+
+  var status = document.createElement('span');
+  status.className = 'ar-status';
+  status.textContent = '⚠';
+  header.appendChild(status);
+
+  var label = document.createElement('span');
+  label.className = 'ar-label';
+  label.textContent = (result.tool || '') + (result.operation ? ' · ' + result.operation : '');
+  header.appendChild(label);
+
+  var ec = document.createElement('span');
+  ec.className = 'ar-error-code connector';
+  ec.textContent = 'CONNECTOR_REQUIRED';
+  header.appendChild(ec);
+
+  card.appendChild(header);
+
+  var body = document.createElement('div');
+  body.className = 'ar-body';
+
+  var msg = document.createElement('p');
+  msg.className = 'ar-connector-msg';
+  msg.textContent = result.error_message || (connector.display_name + ' no está conectado.');
+  body.appendChild(msg);
+
+  var connectBtn = document.createElement('button');
+  connectBtn.className = 'ar-connect-btn';
+  connectBtn.textContent = 'Conectar ' + connector.display_name;
+  connectBtn.addEventListener('click', function () {
+    pywebview.api.open_external_url(connector.connect_url).catch(function (err) {
+      console.error('open_external_url error', err);
+    });
+  });
+  body.appendChild(connectBtn);
+
+  card.appendChild(body);
+  return card;
+}
+
 function _buildResultCard(result) {
+  // CONNECTOR_REQUIRED: special amber card with a Conectar button
+  if (result.error_code === 'CONNECTOR_REQUIRED' && result.connector) {
+    return _buildConnectorCard(result);
+  }
+
   var ok = result.ok === true;
 
   var card = document.createElement('div');

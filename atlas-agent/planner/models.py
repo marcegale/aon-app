@@ -60,6 +60,23 @@ class RawResult:
 
 
 @dataclass
+class ConnectorRequiredResult:
+    """Metadata for CONNECTOR_REQUIRED results — identifies the missing OAuth connector."""
+    provider: str
+    status: str                       # "disconnected"|"expired"|"error"
+    display_name: str
+    connect_url: str
+
+
+@dataclass
+class DeviceIdentity:
+    """Static identity of the local Atlas installation."""
+    device_key: str
+    user_name: str
+    platform: str = "windows"
+
+
+@dataclass
 class ActionResult:
     """Structured result of a tool execution. Passed to cockpit for display."""
     ok: bool
@@ -72,10 +89,11 @@ class ActionResult:
     duration_ms: int
     truncated: bool
     stderr_truncated: bool
-    error_code: str | None            # "TIMEOUT"|"BLOCKED"|"EXEC_ERROR"|"NON_ZERO_EXIT"|None
+    error_code: str | None            # "TIMEOUT"|"BLOCKED"|"EXEC_ERROR"|"NON_ZERO_EXIT"|"CAPABILITY_UNAVAILABLE"|"CONNECTOR_REQUIRED"|None
     error_message: str | None
     started_at: str                   # ISO 8601 UTC
     finished_at: str                  # ISO 8601 UTC
+    connector: ConnectorRequiredResult | None = None
 
 
 def parse_action_plan(raw: Any) -> ActionPlan | None:

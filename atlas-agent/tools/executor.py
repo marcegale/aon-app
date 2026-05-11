@@ -16,7 +16,7 @@ import time
 from typing import Callable
 
 from capabilities.registry import REGISTRY as _CAP_REGISTRY
-from planner.models import Action, ActionResult, RawResult
+from planner.models import Action, ActionResult, ConnectorRequiredResult, RawResult
 from tools.redactor import redact
 from tools.terminal import run_command
 
@@ -28,6 +28,41 @@ _MAX_STDERR = 300
 _REGISTRY: dict[str, Callable[[dict], RawResult]] = {
     "terminal.run_command": run_command,
 }
+
+_PROVIDER_ALLOWLIST: frozenset[str] = frozenset({
+    "gmail", "google_calendar", "outlook_mail", "outlook_calendar",
+    "whatsapp", "browser_profile", "local_filesystem", "local_apps",
+    "local_agent_claude", "local_agent_codex", "web_agent",
+})
+
+_TOOL_PROVIDER_FALLBACK: dict[str, str] = {
+    "email":    "gmail",
+    "calendar": "google_calendar",
+    "messages": "whatsapp",
+}
+
+_CONNECTOR_DISPLAY_NAMES: dict[str, str] = {
+    "gmail":             "Gmail",
+    "outlook_mail":      "Outlook Mail",
+    "google_calendar":   "Google Calendar",
+    "outlook_calendar":  "Outlook Calendar",
+    "whatsapp":          "WhatsApp",
+    "browser_profile":   "Browser Profile",
+    "local_filesystem":  "Local Filesystem",
+    "local_apps":        "Local Apps",
+    "local_agent_claude":"Claude (local)",
+    "local_agent_codex": "Codex (local)",
+    "web_agent":         "Web Agent",
+}
+
+_CONNECT_URL = "https://app.aigency.com/atlas/connectors"
+
+
+def _resolve_provider(action: Action) -> str:
+    p = action.params.get("provider", "")
+    if isinstance(p, str) and p in _PROVIDER_ALLOWLIST:
+        return p
+    return _TOOL_PROVIDER_FALLBACK.get(action.tool, action.tool)
 
 
 def _now_iso() -> str:
@@ -72,6 +107,30 @@ def execute(action: Action) -> ActionResult:
         )
 
     if cap.availability != "enabled":
+        if cap.requires_external_auth:
+            provider = _resolve_provider(action)
+            display_name = _CONNECTOR_DISPLAY_NAMES.get(provider, provider.replace("_", " ").title())
+            logging.info("[executor] capability '%s' requires external auth — CONNECTOR_REQUIRED", action.tool)
+            ts = _now_iso()
+            return ActionResult(
+                ok=False,
+                tool=action.tool,
+                operation=action.operation,
+                permission_level=action.permission_level,
+                stdout="", stderr="",
+                returncode=None,
+                duration_ms=0,
+                truncated=False, stderr_truncated=False,
+                error_code="CONNECTOR_REQUIRED",
+                error_message=f"{display_name} no está conectado.",
+                started_at=ts, finished_at=ts,
+                connector=ConnectorRequiredResult(
+                    provider=provider,
+                    status="disconnected",
+                    display_name=display_name,
+                    connect_url=_CONNECT_URL,
+                ),
+            )
         reason = cap.unavailable_reason or "Esta capacidad no está disponible todavía."
         logging.info("[executor] capability '%s' is %s — returning unavailable", action.tool, cap.availability)
         return _unavailable(action, reason)

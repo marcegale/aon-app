@@ -232,8 +232,9 @@ header {
   font-size: 12px;
 }
 
-.action-result.ok  { border-left: 3px solid rgba(0,200,100,0.45); }
-.action-result.err { border-left: 3px solid rgba(244,67,54,0.45); }
+.action-result.ok                 { border-left: 3px solid rgba(0,200,100,0.45); }
+.action-result.err                { border-left: 3px solid rgba(244,67,54,0.45); }
+.action-result.connector-required { border-left: 3px solid rgba(255,152,0,0.55); }
 
 .ar-header {
   display: flex;
@@ -271,6 +272,36 @@ header {
   padding: 1px 6px;
   flex-shrink: 0;
 }
+
+.ar-error-code.connector {
+  color: #ffd180;
+  background: rgba(255,152,0,0.10);
+  border-color: rgba(255,152,0,0.25);
+}
+
+.action-result.connector-required .ar-status { color: #ffd180; }
+
+.ar-connector-msg {
+  font-size: 12px;
+  color: #ffd180;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.ar-connect-btn {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: rgba(255,152,0,0.16);
+  border: 1px solid rgba(255,152,0,0.35);
+  color: #ffd180;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.ar-connect-btn:hover  { opacity: 0.85; }
+.ar-connect-btn:active { transform: scale(0.96); }
 
 .ar-duration {
   font-size: 10px;

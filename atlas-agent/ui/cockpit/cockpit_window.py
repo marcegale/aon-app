@@ -20,6 +20,9 @@ def _frontend_path() -> str:
     return str(base / "frontend" / "index.html")
 
 
+_ALLOWED_URL_PREFIXES = ("https://app.aigency.com/",)
+
+
 class _CockpitAPI:
     """Python object exposed to cockpit.js via pywebview js_api."""
 
@@ -51,6 +54,14 @@ class _CockpitAPI:
         if cb is None:
             return
         threading.Thread(target=cb, args=(action_id,), daemon=True).start()
+
+    def open_external_url(self, url: str) -> None:
+        """Opens a URL in the system browser. Restricted to app.aigency.com only."""
+        import webbrowser
+        if isinstance(url, str) and any(url.startswith(p) for p in _ALLOWED_URL_PREFIXES):
+            webbrowser.open(url)
+        else:
+            logging.warning("[cockpit] open_external_url blocked: not in allowed domains")
 
 
 class CockpitWindow:
