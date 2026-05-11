@@ -157,7 +157,7 @@ def _make_input_handler(
 
         # Report
         fsm.transition(REPORTING)
-        cockpit.show_tool_result(tool_result.output or tool_result.error or "", ok=tool_result.ok)
+        cockpit.show_action_result(tool_result)
         fsm.transition(IDLE)
 
     return handle

@@ -1,21 +1,21 @@
 'use strict';
 
-const stateBadge    = document.getElementById('state-badge');
-const orbDot        = document.querySelector('.orb-dot');
-const messagesEl    = document.getElementById('messages');
-const inputEl       = document.getElementById('prompt-input');
-const sendBtn       = document.getElementById('send-btn');
-const permCard      = document.getElementById('permission-card');
-const permBadge     = document.getElementById('perm-badge');
-const permTitle     = document.getElementById('perm-title');
-const permDesc      = document.getElementById('perm-description');
-const permWarning   = document.getElementById('perm-warning');
+const stateBadge     = document.getElementById('state-badge');
+const orbDot         = document.querySelector('.orb-dot');
+const messagesEl     = document.getElementById('messages');
+const inputEl        = document.getElementById('prompt-input');
+const sendBtn        = document.getElementById('send-btn');
+const permCard       = document.getElementById('permission-card');
+const permBadge      = document.getElementById('perm-badge');
+const permTitle      = document.getElementById('perm-title');
+const permDesc       = document.getElementById('perm-description');
+const permWarning    = document.getElementById('perm-warning');
 const permApproveBtn = document.getElementById('perm-approve-btn');
 const permCancelBtn  = document.getElementById('perm-cancel-btn');
 const permCloseBtn   = document.getElementById('perm-close-btn');
 
-let isBusy         = false;
-let thinkingEl     = null;
+let isBusy          = false;
+let thinkingEl      = null;
 let pendingActionId = null;
 
 // ── State colours ──────────────────────────────────────────────────────────
@@ -89,12 +89,12 @@ window.showPermissionCard = function (action, isDestructiveBlocked) {
 
   const level = (action.permission_level || 'SENSITIVE').toUpperCase();
   permBadge.textContent = level;
-  permBadge.className = 'perm-badge ' + level.toLowerCase();
+  permBadge.className   = 'perm-badge ' + level.toLowerCase();
 
-  permTitle.textContent       = action.display && action.display.title       ? action.display.title       : 'Acción requerida';
-  permDesc.textContent        = action.display && action.display.description ? action.display.description : '';
-  permWarning.textContent     = action.display && action.display.warning     ? action.display.warning     : '';
-  permWarning.style.display   = permWarning.textContent ? '' : 'none';
+  permTitle.textContent     = action.display && action.display.title       ? action.display.title       : 'Acción requerida';
+  permDesc.textContent      = action.display && action.display.description ? action.display.description : '';
+  permWarning.textContent   = action.display && action.display.warning     ? action.display.warning     : '';
+  permWarning.style.display = permWarning.textContent ? '' : 'none';
 
   if (isDestructiveBlocked) {
     permApproveBtn.classList.add('hidden');
@@ -116,18 +116,142 @@ window.hidePermissionCard = function () {
   _setBusy(false);
 };
 
-window.showToolResult = function (output, ok) {
+// ── Action Result Card ─────────────────────────────────────────────────────
+window.showActionResult = function (result) {
   _removeThinking();
-  const wrapper = document.createElement('div');
-  wrapper.className = ok ? 'msg atlas tool-result' : 'msg atlas tool-result error';
-
-  const pre = document.createElement('pre');
-  pre.textContent = output || (ok ? '(sin salida)' : 'Error desconocido.');
-  wrapper.appendChild(pre);
-
-  messagesEl.appendChild(wrapper);
+  const card = _buildResultCard(result);
+  messagesEl.appendChild(card);
   _scroll();
 };
+
+// Legacy alias — transforms output+ok into a minimal ActionResult shape
+window.showToolResult = function (output, ok) {
+  window.showActionResult({
+    ok: ok,
+    tool: 'terminal',
+    operation: 'run_command',
+    permission_level: 'SENSITIVE',
+    stdout: output || '',
+    stderr: '',
+    returncode: ok ? 0 : 1,
+    duration_ms: null,
+    truncated: false,
+    stderr_truncated: false,
+    error_code: ok ? null : 'EXEC_ERROR',
+    error_message: ok ? null : output,
+    started_at: null,
+    finished_at: null,
+  });
+};
+
+function _buildResultCard(result) {
+  var ok = result.ok === true;
+
+  var card = document.createElement('div');
+  card.className = 'action-result ' + (ok ? 'ok' : 'err');
+
+  // ── Header ─────────────────────────────────────────────────────────────
+  var header = document.createElement('div');
+  header.className = 'ar-header';
+
+  var status = document.createElement('span');
+  status.className = 'ar-status';
+  status.textContent = ok ? '✓' : '✗';
+  header.appendChild(status);
+
+  var label = document.createElement('span');
+  label.className = 'ar-label';
+  label.textContent = (result.tool || '') + (result.operation ? ' · ' + result.operation : '');
+  header.appendChild(label);
+
+  if (result.error_code) {
+    var ec = document.createElement('span');
+    ec.className = 'ar-error-code';
+    ec.textContent = result.error_code;
+    header.appendChild(ec);
+  }
+
+  if (result.duration_ms !== null && result.duration_ms !== undefined) {
+    var dur = document.createElement('span');
+    dur.className = 'ar-duration';
+    dur.textContent = result.duration_ms + 'ms';
+    header.appendChild(dur);
+  }
+
+  var hasOutput = result.stdout && result.stdout.trim();
+  if (hasOutput) {
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'ar-copy';
+    copyBtn.textContent = 'copiar';
+    copyBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(result.stdout).then(function () {
+        copyBtn.textContent = '✓';
+        setTimeout(function () { copyBtn.textContent = 'copiar'; }, 1500);
+      }).catch(function () {
+        copyBtn.textContent = 'error';
+      });
+    });
+    header.appendChild(copyBtn);
+  }
+
+  card.appendChild(header);
+
+  // ── Body ───────────────────────────────────────────────────────────────
+  var body = document.createElement('div');
+  body.className = 'ar-body';
+
+  if (result.error_code && !hasOutput) {
+    var msg = document.createElement('p');
+    msg.className = 'ar-error-msg';
+    msg.textContent = result.error_message || 'Error desconocido.';
+    body.appendChild(msg);
+  } else {
+    var stdout = result.stdout || '';
+    var pre = document.createElement('pre');
+    pre.className = 'ar-stdout';
+    pre.textContent = stdout.trim() || '(sin salida)';
+    body.appendChild(pre);
+
+    if (result.truncated) {
+      var trunc = document.createElement('p');
+      trunc.className = 'ar-truncated';
+      trunc.textContent = '▸ salida truncada';
+      body.appendChild(trunc);
+    }
+
+    if (result.stderr && result.stderr.trim()) {
+      var sLabel = document.createElement('p');
+      sLabel.className = 'ar-stderr-label';
+      sLabel.textContent = 'stderr';
+      body.appendChild(sLabel);
+
+      var spre = document.createElement('pre');
+      spre.className = 'ar-stderr';
+      spre.textContent = result.stderr.trim();
+      body.appendChild(spre);
+
+      if (result.stderr_truncated) {
+        var strunc = document.createElement('p');
+        strunc.className = 'ar-truncated';
+        strunc.textContent = '▸ stderr truncado';
+        body.appendChild(strunc);
+      }
+    }
+  }
+
+  if (result.returncode !== null && result.returncode !== undefined) {
+    var footer = document.createElement('div');
+    footer.className = 'ar-footer';
+    var exitSpan = document.createElement('span');
+    exitSpan.className = 'ar-exit ' + (result.returncode === 0 ? 'ok' : 'err');
+    exitSpan.textContent = 'exit ' + result.returncode;
+    footer.appendChild(exitSpan);
+    body.appendChild(footer);
+  }
+
+  card.appendChild(body);
+  return card;
+}
 
 // ── Permission card buttons ────────────────────────────────────────────────
 permApproveBtn.addEventListener('click', function () {
@@ -150,7 +274,7 @@ permCloseBtn.addEventListener('click', function () {
 
 // ── Input handling ─────────────────────────────────────────────────────────
 function _send() {
-  const prompt = inputEl.value.trim();
+  var prompt = inputEl.value.trim();
   if (!prompt || isBusy) return;
   inputEl.value = '';
   _autoResize();

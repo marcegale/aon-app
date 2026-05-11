@@ -37,11 +37,41 @@ class ActionPlan:
 
 
 @dataclass
-class ToolResult:
+class ToolResult:  # legacy — kept for backward compat; new code uses ActionResult
     ok: bool
     output: str
     error: str | None = None
     returncode: int | None = None
+
+
+@dataclass
+class RawResult:
+    """Internal contract: tool function → executor. Never exposed to UI or backend."""
+    ok: bool
+    stdout: str = ""
+    stderr: str = ""
+    returncode: int | None = None
+    error_code: str | None = None     # "TIMEOUT"|"BLOCKED"|"EXEC_ERROR"|"NON_ZERO_EXIT"
+    error_message: str | None = None
+
+
+@dataclass
+class ActionResult:
+    """Structured result of a tool execution. Passed to cockpit for display."""
+    ok: bool
+    tool: str
+    operation: str
+    permission_level: str
+    stdout: str
+    stderr: str
+    returncode: int | None
+    duration_ms: int
+    truncated: bool
+    stderr_truncated: bool
+    error_code: str | None            # "TIMEOUT"|"BLOCKED"|"EXEC_ERROR"|"NON_ZERO_EXIT"|None
+    error_message: str | None
+    started_at: str                   # ISO 8601 UTC
+    finished_at: str                  # ISO 8601 UTC
 
 
 def parse_action_plan(raw: Any) -> ActionPlan | None:

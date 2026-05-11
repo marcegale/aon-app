@@ -175,7 +175,17 @@ class CockpitWindow:
         self._permission_pending = False
         self._eval("window.hidePermissionCard()")
 
+    def show_action_result(self, result: Any) -> None:
+        import dataclasses
+        try:
+            d = dataclasses.asdict(result)
+        except TypeError:
+            d = result if isinstance(result, dict) else {}
+        safe = json.dumps(d, ensure_ascii=False)
+        self._eval(f"window.showActionResult({safe})")
+
     def show_tool_result(self, output: str, ok: bool) -> None:
+        # Deprecated legacy alias — wraps output+ok into showActionResult shape
         safe_output = json.dumps(output, ensure_ascii=False)
         safe_ok = "true" if ok else "false"
         self._eval(f"window.showToolResult({safe_output}, {safe_ok})")

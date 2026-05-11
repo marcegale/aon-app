@@ -1,8 +1,8 @@
-"""terminal.run_command — Phase 3A read-only tool.
+"""terminal.run_command — Phase 3B read-only tool.
 
 Validates commands against a strict allowlist before execution.
-Blocklist is applied first; allowlist by prefix second.
-This is an internal validation tool for the Action Runtime.
+Returns RawResult with stdout/stderr separated; executor handles
+truncation, redaction, and ActionResult construction.
 Terminal is NOT the product focus — it validates the pipeline only.
 """
 
@@ -12,13 +12,11 @@ import logging
 import re
 import subprocess
 
-from planner.models import ToolResult
+from planner.models import RawResult
 
 _MAX_TIMEOUT = 10       # seconds — hard cap, ignores backend value if higher
-_MAX_OUTPUT  = 2000     # chars of stdout
-_MAX_STDERR  = 300      # chars of stderr
 
-# Prefixes of commands allowed in Phase 3A (read-only, no file reading)
+# Prefixes of commands allowed (read-only, no file reading)
 ALLOWLIST_PREFIXES: tuple[str, ...] = (
     "pwd",
     "whoami",
@@ -43,7 +41,7 @@ BLOCKLIST_PATTERNS: tuple[str, ...] = (
     # write / destroy
     ">", ">>", "rm", "del", "rmdir", "mv", "move", "cp", "copy",
     "mkdir", "md", "touch", "format", "mkfs",
-    # file reading — explicitly blocked Phase 3A
+    # file reading — explicitly blocked
     "cat", "type", "head", "tail", "more", "less",
     "grep", "findstr", "find", "wc", "du",
     # network download
@@ -76,16 +74,13 @@ def _is_safe(command: str) -> tuple[bool, str]:
     """Return (safe, reason). Blocklist first, then allowlist by prefix."""
     normalized = command.strip().lower()
 
-    # blocklist check
     for pattern in BLOCKLIST_PATTERNS:
         if pattern.lower() in normalized:
             return False, f"Patrón bloqueado: '{pattern}'"
 
-    # shell metacharacter sanity check
     if _UNSAFE_CHARS.search(normalized):
         return False, "Caracteres especiales no permitidos"
 
-    # allowlist prefix check
     for prefix in ALLOWLIST_PREFIXES:
         pl = prefix.lower()
         if normalized == pl or normalized.startswith(pl + " "):
@@ -94,19 +89,23 @@ def _is_safe(command: str) -> tuple[bool, str]:
     return False, "Comando no está en la lista permitida"
 
 
-def run_command(params: dict) -> ToolResult:
-    """Execute a validated read-only command and return its output."""
+def run_command(params: dict) -> RawResult:
+    """Execute a validated read-only command and return stdout/stderr separated."""
     command = params.get("command", "")
     if not isinstance(command, str):
-        return ToolResult(ok=False, output="", error="Comando inválido.")
+        return RawResult(ok=False, error_code="BLOCKED", error_message="Comando inválido.")
     command = command.strip()
     if not command:
-        return ToolResult(ok=False, output="", error="Comando vacío.")
+        return RawResult(ok=False, error_code="BLOCKED", error_message="Comando vacío.")
 
     safe, reason = _is_safe(command)
     if not safe:
         logging.warning("[terminal] BLOCKED cmd=%r reason=%s", command, reason)
-        return ToolResult(ok=False, output="", error=f"Comando bloqueado: {reason}")
+        return RawResult(
+            ok=False,
+            error_code="BLOCKED",
+            error_message=f"Comando bloqueado: {reason}",
+        )
 
     timeout = min(int(params.get("timeout_secs", _MAX_TIMEOUT)), _MAX_TIMEOUT)
 
@@ -117,27 +116,39 @@ def run_command(params: dict) -> ToolResult:
             capture_output=True,
             text=True,
             timeout=timeout,
+            errors="replace",
         )
         stdout = proc.stdout or ""
         stderr = proc.stderr or ""
-        truncated = len(stdout) > _MAX_OUTPUT
 
-        output = stdout[:_MAX_OUTPUT]
-        if truncated:
-            output += "\n[... salida truncada]"
-        if stderr.strip():
-            output += f"\n[stderr]: {stderr[:_MAX_STDERR].strip()}"
+        if proc.returncode != 0:
+            error_code = "NON_ZERO_EXIT"
+            error_message = f"El proceso terminó con código {proc.returncode}."
+        else:
+            error_code = None
+            error_message = None
 
-        logging.info("[terminal] cmd=%r rc=%d out_len=%d", command, proc.returncode, len(stdout))
-        return ToolResult(
-            ok=proc.returncode == 0,
-            output=output.strip(),
+        logging.info("[terminal] cmd=%r rc=%d", command, proc.returncode)
+        return RawResult(
+            ok=(proc.returncode == 0),
+            stdout=stdout,
+            stderr=stderr,
             returncode=proc.returncode,
+            error_code=error_code,
+            error_message=error_message,
         )
 
     except subprocess.TimeoutExpired:
         logging.warning("[terminal] timeout cmd=%r", command)
-        return ToolResult(ok=False, output="", error="El comando excedió el tiempo límite.")
+        return RawResult(
+            ok=False,
+            error_code="TIMEOUT",
+            error_message="El comando excedió el tiempo límite.",
+        )
     except Exception as exc:
         logging.error("[terminal] error cmd=%r exc=%s", command, exc)
-        return ToolResult(ok=False, output="", error="Error al ejecutar el comando.")
+        return RawResult(
+            ok=False,
+            error_code="EXEC_ERROR",
+            error_message="Error al ejecutar el comando.",
+        )
