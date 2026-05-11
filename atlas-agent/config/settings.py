@@ -5,11 +5,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys.executable).resolve().parent
+    _exe_dir = Path(sys.executable).resolve().parent
+    # Prefer .env.local next to the exe; fall back one level (dev layout: dist/ inside atlas-agent/)
+    env_path = _exe_dir / ".env.local"
+    if not env_path.exists():
+        env_path = _exe_dir.parent / ".env.local"
 else:
-    BASE_DIR = Path(__file__).resolve().parent.parent
+    env_path = Path(__file__).resolve().parent.parent / ".env.local"
 
-env_path = BASE_DIR / ".env.local"
 load_dotenv(env_path)
 
 DEVICE_KEY: str = os.getenv("ATLAS_DEVICE_KEY", "")
