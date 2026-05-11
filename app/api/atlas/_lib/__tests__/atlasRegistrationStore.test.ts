@@ -1,0 +1,243 @@
+/**
+ * Phase 4H — Registration Store Tests
+ * Runner: node --experimental-strip-types --test <this-file>
+ * No DB — all Prisma calls are intercepted via DI parameter.
+ */
+
+import { describe, test, beforeEach, afterEach } from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  createPendingRegistration,
+  getRegistrationByDeviceCode,
+  expirePendingRegistrationIfNeeded,
+  type RegistrationDb,
+  type RegistrationRecord,
+} from "../atlasRegistrationStore.ts";
+
+// ── Mock types ────────────────────────────────────────────────────────────────
+
+type DbRow = {
+  id: string;
+  deviceCodeHash: string;
+  status: string;
+  platform: string;
+  clientVersion: string | null;
+  approvedByUserId: string | null;
+  deviceName: string | null;
+  deviceKeyHash: string | null;
+  pickedUpAt: Date | null;
+  expiresAt: Date;
+  createdAt: Date;
+  approvedAt: Date | null;
+  completedAt: Date | null;
+  deniedAt: Date | null;
+  atlasDeviceId: string | null;
+};
+
+// ── Mock helpers ──────────────────────────────────────────────────────────────
+
+function makeRow(overrides: Partial<DbRow> = {}): DbRow {
+  return {
+    id: "reg-test-id",
+    deviceCodeHash: "a".repeat(64),
+    status: "pending",
+    platform: "windows",
+    clientVersion: null,
+    approvedByUserId: null,
+    deviceName: null,
+    deviceKeyHash: null,
+    pickedUpAt: null,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    createdAt: new Date(),
+    approvedAt: null,
+    completedAt: null,
+    deniedAt: null,
+    atlasDeviceId: null,
+    ...overrides,
+  };
+}
+
+type DbOverrides = {
+  create?: (args: { data: Record<string, unknown> }) => Promise<DbRow>;
+  findUnique?: (args: { where: { deviceCodeHash: string } }) => Promise<DbRow | null>;
+  update?: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<DbRow>;
+};
+
+function makeDb(overrides: DbOverrides = {}): RegistrationDb {
+  return {
+    atlasDeviceRegistration: {
+      create: overrides.create ?? (async ({ data }) => makeRow(data as Partial<DbRow>)),
+      findUnique: overrides.findUnique ?? (async () => null),
+      update: overrides.update ?? (async ({ where, data }) =>
+        makeRow({ id: where.id, ...data as Partial<DbRow> })
+      ),
+    },
+  };
+}
+
+// ── Env isolation ─────────────────────────────────────────────────────────────
+
+let savedSecret: string | undefined;
+
+function saveEnv(): void { savedSecret = process.env.ATLAS_DEVICE_CODE_SECRET; }
+function restoreEnv(): void {
+  if (savedSecret === undefined) delete process.env.ATLAS_DEVICE_CODE_SECRET;
+  else process.env.ATLAS_DEVICE_CODE_SECRET = savedSecret;
+}
+function setSecret(s = "test-secret-32chars-padded!!!!!!"): void {
+  process.env.ATLAS_DEVICE_CODE_SECRET = s;
+}
+function clearSecret(): void { delete process.env.ATLAS_DEVICE_CODE_SECRET; }
+
+// ── createPendingRegistration ─────────────────────────────────────────────────
+
+describe("createPendingRegistration", () => {
+  beforeEach(saveEnv);
+  afterEach(restoreEnv);
+
+  test("SECRET_NOT_CONFIGURED cuando falta env var", async () => {
+    clearSecret();
+    const r = await createPendingRegistration({ device_code: "ABCD1234", platform: "windows" }, makeDb());
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "SECRET_NOT_CONFIGURED");
+  });
+
+  test("crea pending con expiresAt aproximadamente +15 min", async () => {
+    setSecret();
+    const before = Date.now();
+    const r = await createPendingRegistration({ device_code: "ABCD1234", platform: "linux" }, makeDb());
+    assert.ok(r.ok);
+    if (r.ok) {
+      assert.strictEqual(r.data.status, "pending");
+      const diff = r.data.expiresAt.getTime() - before;
+      assert.ok(diff >= 14 * 60 * 1000, `expiresAt demasiado pronto: ${diff}ms`);
+      assert.ok(diff <= 16 * 60 * 1000, `expiresAt demasiado tarde: ${diff}ms`);
+    }
+  });
+
+  test("usa HMAC para deviceCodeHash — no guarda device_code raw", async () => {
+    setSecret();
+    let captured: Record<string, unknown> | null = null;
+    const db = makeDb({
+      create: async ({ data }) => { captured = data; return makeRow(data as Partial<DbRow>); },
+    });
+    await createPendingRegistration({ device_code: "RAWCODE1", platform: "windows" }, db);
+    assert.ok(captured !== null, "create debe haberse llamado");
+    const d = captured as Record<string, unknown>;
+    assert.ok(!("device_code" in d), "device_code raw no debe guardarse");
+    assert.ok("deviceCodeHash" in d, "deviceCodeHash debe estar presente");
+    const hash = d.deviceCodeHash as string;
+    assert.strictEqual(hash.length, 64, "HMAC-SHA256 debe ser 64 hex chars");
+    assert.match(hash, /^[0-9a-f]{64}$/, "debe ser hex lowercase");
+  });
+
+  test("DB_ERROR cuando db.create lanza", async () => {
+    setSecret();
+    const db = makeDb({ create: async () => { throw new Error("connection refused"); } });
+    const r = await createPendingRegistration({ device_code: "ABCD1234", platform: "windows" }, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+});
+
+// ── getRegistrationByDeviceCode ───────────────────────────────────────────────
+
+describe("getRegistrationByDeviceCode", () => {
+  beforeEach(saveEnv);
+  afterEach(restoreEnv);
+
+  test("SECRET_NOT_CONFIGURED cuando falta env var", async () => {
+    clearSecret();
+    const r = await getRegistrationByDeviceCode("ABCD1234", makeDb());
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "SECRET_NOT_CONFIGURED");
+  });
+
+  test("null cuando findUnique retorna null", async () => {
+    setSecret();
+    const r = await getRegistrationByDeviceCode("ABCD1234", makeDb({ findUnique: async () => null }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.data, null);
+  });
+
+  test("retorna record existente aunque expiresAt esté en el pasado", async () => {
+    setSecret();
+    const expiredRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    const r = await getRegistrationByDeviceCode("ABCD1234", makeDb({ findUnique: async () => expiredRow }));
+    assert.ok(r.ok);
+    if (r.ok) {
+      assert.ok(r.data !== null, "debe retornar el record aunque esté expirado");
+      assert.strictEqual(r.data?.status, "pending");
+    }
+  });
+
+  test("DB_ERROR cuando findUnique lanza", async () => {
+    setSecret();
+    const db = makeDb({ findUnique: async () => { throw new Error("timeout"); } });
+    const r = await getRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+});
+
+// ── expirePendingRegistrationIfNeeded ─────────────────────────────────────────
+
+describe("expirePendingRegistrationIfNeeded", () => {
+  function makeRecord(overrides: Partial<RegistrationRecord> = {}): RegistrationRecord {
+    return {
+      id: "rec-id",
+      status: "pending",
+      platform: "windows",
+      clientVersion: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+      approvedAt: null,
+      completedAt: null,
+      deniedAt: null,
+      pickedUpAt: null,
+      atlasDeviceId: null,
+      ...overrides,
+    };
+  }
+
+  test("no-op cuando status no es pending", async () => {
+    const rec = makeRecord({ status: "approved" });
+    const r = await expirePendingRegistrationIfNeeded(rec, makeDb());
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.data.expired, false);
+  });
+
+  test("no-op cuando pending pero no expiró", async () => {
+    const rec = makeRecord({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    const r = await expirePendingRegistrationIfNeeded(rec, makeDb());
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.data.expired, false);
+  });
+
+  test("actualiza status='expired' cuando pending y expiró", async () => {
+    const rec = makeRecord({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    let updateCalled = false;
+    let updatedData: Record<string, unknown> | null = null;
+    const db = makeDb({
+      update: async ({ where, data }) => {
+        updateCalled = true;
+        updatedData = data;
+        return makeRow({ id: where.id, status: "expired" });
+      },
+    });
+    const r = await expirePendingRegistrationIfNeeded(rec, db);
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.data.expired, true);
+    assert.ok(updateCalled, "db.update debe haberse llamado");
+    assert.strictEqual((updatedData as Record<string, unknown>)?.status, "expired");
+  });
+
+  test("DB_ERROR cuando update lanza", async () => {
+    const rec = makeRecord({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    const db = makeDb({ update: async () => { throw new Error("deadlock"); } });
+    const r = await expirePendingRegistrationIfNeeded(rec, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+});
