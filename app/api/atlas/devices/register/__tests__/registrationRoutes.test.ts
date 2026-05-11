@@ -1,21 +1,18 @@
 /**
- * Fase 4E — Registration Route Handler Tests
+ * Fase 4I — Registration Route Handler Tests
  *
- * Runner (requires next-server loader for "next/server" resolution):
+ * Runner:
  *   node --experimental-strip-types \
  *     --import ./app/api/atlas/_lib/next-server-loader-register.mjs \
  *     --test app/api/atlas/devices/register/__tests__/registrationRoutes.test.ts
  *
  * Or via npm: npm run test:registration
- *
- * Tests import real route handlers and the shared validation helper.
- * No logic is re-implemented inline.
  */
 
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
-import { POST as startPOST, GET as startGET } from "../start/route.ts";
+import { createStartPostHandler, GET as startGET } from "../start/route.ts";
 import { POST as pollPOST,  GET as pollGET  } from "../poll/route.ts";
 import { POST as completePOST, GET as completeGET } from "../complete/route.ts";
 import {
@@ -25,6 +22,7 @@ import {
   validateStartBody,
   validatePollBody,
 } from "../_lib/registrationValidation.ts";
+import type { StoreResult, RegistrationRecord } from "../../../_lib/atlasRegistrationStore.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,7 +35,45 @@ function makePost(body: unknown): Request {
 }
 
 async function status(res: Response): Promise<number> { return res.status; }
-async function code(res: Response): Promise<string>   { return ((await res.json()) as { error?: { code?: string } }).error?.code ?? ""; }
+async function json(res: Response): Promise<unknown>  { return res.json(); }
+async function code(res: Response): Promise<string>   {
+  return ((await res.json()) as { error?: { code?: string } }).error?.code ?? "";
+}
+
+// ── Mock factories for /start ─────────────────────────────────────────────────
+
+function makeSuccessRecord(deviceCode: string): RegistrationRecord {
+  return {
+    id: "reg-id",
+    status: "pending",
+    platform: "windows",
+    clientVersion: null,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    createdAt: new Date(),
+    approvedAt: null,
+    completedAt: null,
+    deniedAt: null,
+    pickedUpAt: null,
+    atlasDeviceId: null,
+  };
+}
+
+type MockResult = StoreResult<RegistrationRecord>;
+
+function makeStartHandler(mockResult: MockResult) {
+  return createStartPostHandler({
+    createPendingRegistration: async (input) => {
+      if (mockResult.ok) {
+        return { ok: true, data: makeSuccessRecord(input.device_code) };
+      }
+      return mockResult;
+    },
+  });
+}
+
+const startPOST_success      = makeStartHandler({ ok: true, data: makeSuccessRecord("PLACEHOLDER") });
+const startPOST_secretMissing = makeStartHandler({ ok: false, code: "SECRET_NOT_CONFIGURED", message: "not set" });
+const startPOST_dbError       = makeStartHandler({ ok: false, code: "DB_ERROR", message: "db fail" });
 
 // ── registrationValidation helper (pure, no next/server) ──────────────────────
 
@@ -108,58 +144,96 @@ describe("registrationValidation — validatePollBody", () => {
   test("non-object fails", () => { assert.ok(!validatePollBody(null).ok); });
 });
 
-// ── /register/start route handler ─────────────────────────────────────────────
+// ── /register/start — POST ────────────────────────────────────────────────────
 
-describe("/register/start — POST", () => {
-  test("valid body → 501 NOT_CONFIGURED", async () => {
-    const res = await startPOST(makePost({ device_code: "ABC12345", platform: "windows" }));
-    assert.strictEqual(await status(res), 501);
+describe("/register/start — POST success path", () => {
+  test("valid body → 200 ok:true", async () => {
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { ok: boolean };
+    assert.strictEqual(body.ok, true);
+  });
+
+  test("response includes expires_at as ISO string", async () => {
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+    const body = await json(res) as { expires_at: string };
+    assert.ok(typeof body.expires_at === "string", "expires_at must be a string");
+    assert.ok(!isNaN(Date.parse(body.expires_at)), "expires_at must be a valid ISO date");
+  });
+
+  test("response includes poll_interval_secs: 5", async () => {
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "linux" }));
+    const body = await json(res) as { poll_interval_secs: number };
+    assert.strictEqual(body.poll_interval_secs, 5);
+  });
+
+  test("response includes registration_url with encoded device_code", async () => {
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+    const body = await json(res) as { registration_url: string };
+    assert.ok(typeof body.registration_url === "string", "registration_url must be a string");
+    assert.ok(body.registration_url.includes("ABC12345"), "registration_url must contain device_code");
+    assert.ok(body.registration_url.startsWith("https://app.aigency.com/atlas/register"), "must be aigency URL");
+  });
+
+  test("valid body with client_version → 200", async () => {
+    const res = await startPOST_success(makePost({ device_code: "TEST1234", platform: "linux", client_version: "4I" }));
+    assert.strictEqual(await status(res), 200);
+  });
+});
+
+describe("/register/start — POST store errors", () => {
+  test("SECRET_NOT_CONFIGURED → 503 NOT_CONFIGURED", async () => {
+    const res = await startPOST_secretMissing(makePost({ device_code: "ABC12345", platform: "windows" }));
+    assert.strictEqual(await status(res), 503);
     assert.strictEqual(await code(res), "NOT_CONFIGURED");
   });
 
-  test("valid body with client_version → 501", async () => {
-    const res = await startPOST(makePost({ device_code: "TEST1234", platform: "linux", client_version: "4E" }));
-    assert.strictEqual(await status(res), 501);
+  test("DB_ERROR → 503 REGISTRATION_UNAVAILABLE", async () => {
+    const res = await startPOST_dbError(makePost({ device_code: "ABC12345", platform: "windows" }));
+    assert.strictEqual(await status(res), 503);
+    assert.strictEqual(await code(res), "REGISTRATION_UNAVAILABLE");
   });
+});
 
+describe("/register/start — POST input validation (400)", () => {
   test("missing device_code → 400 INVALID_REQUEST", async () => {
-    const res = await startPOST(makePost({ platform: "windows" }));
+    const res = await startPOST_success(makePost({ platform: "windows" }));
     assert.strictEqual(await status(res), 400);
     assert.strictEqual(await code(res), "INVALID_REQUEST");
   });
 
   test("device_code not string → 400", async () => {
-    const res = await startPOST(makePost({ device_code: 123, platform: "windows" }));
+    const res = await startPOST_success(makePost({ device_code: 123, platform: "windows" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code invalid chars → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "!@#$%", platform: "windows" }));
+    const res = await startPOST_success(makePost({ device_code: "!@#$%", platform: "windows" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code < 4 chars → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "ABC", platform: "windows" }));
+    const res = await startPOST_success(makePost({ device_code: "ABC", platform: "windows" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code > 16 chars → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "A".repeat(17), platform: "windows" }));
+    const res = await startPOST_success(makePost({ device_code: "A".repeat(17), platform: "windows" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("missing platform → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "ABC12345" }));
+    const res = await startPOST_success(makePost({ device_code: "ABC12345" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("invalid platform → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "ABC12345", platform: "amiga" }));
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "amiga" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("client_version not string → 400", async () => {
-    const res = await startPOST(makePost({ device_code: "ABC12345", platform: "windows", client_version: 99 }));
+    const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows", client_version: 99 }));
     assert.strictEqual(await status(res), 400);
   });
 });
