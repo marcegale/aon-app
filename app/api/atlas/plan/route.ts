@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { validateAtlasDeviceKey } from "../_lib/atlasDeviceAuth";
 
 export const runtime = "nodejs";
 
@@ -79,16 +80,12 @@ export async function POST(request: Request) {
 
   const { device_key, prompt } = body as Record<string, unknown>;
 
-  const expectedKey = process.env.ATLAS_DEV_DEVICE_KEY;
-  if (expectedKey) {
-    if (device_key !== expectedKey) {
-      return NextResponse.json(
-        { ok: false, error: { code: "INVALID_DEVICE_KEY", message: "Invalid device key." } },
-        { status: 401 }
-      );
-    }
-  } else {
-    console.warn("[atlas/plan] ATLAS_DEV_DEVICE_KEY not set — accepting without key validation");
+  const auth = validateAtlasDeviceKey(device_key);
+  if (!auth.ok) {
+    return NextResponse.json(
+      { ok: false, error: { code: auth.code, message: auth.message } },
+      { status: auth.httpStatus }
+    );
   }
 
   if (typeof prompt !== "string" || prompt.trim().length === 0) {
