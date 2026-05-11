@@ -12,6 +12,7 @@ import {
   getRegistrationByDeviceCode,
   expirePendingRegistrationIfNeeded,
   getPollStatusByDeviceCode,
+  approveRegistrationByDeviceCode,
   type RegistrationDb,
   type RegistrationRecord,
 } from "../atlasRegistrationStore.ts";
@@ -338,5 +339,150 @@ describe("getPollStatusByDeviceCode", () => {
     const r = await getPollStatusByDeviceCode("ABCD1234", db);
     assert.ok(!r.ok);
     if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+});
+
+// ── approveRegistrationByDeviceCode ──────────────────────────────────────────
+
+describe("approveRegistrationByDeviceCode", () => {
+  beforeEach(saveEnv);
+  afterEach(restoreEnv);
+
+  const INPUT = { device_code: "ABCD1234", supabaseUserId: "user-abc", deviceName: "My PC" };
+
+  test("SECRET_NOT_CONFIGURED cuando falta env var", async () => {
+    clearSecret();
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb());
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "SECRET_NOT_CONFIGURED");
+  });
+
+  test("NOT_FOUND cuando findUnique retorna null", async () => {
+    setSecret();
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb({ findUnique: async () => null }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "NOT_FOUND");
+  });
+
+  test("pending vigente → actualiza approved + approvedByUserId + deviceName + approvedAt", async () => {
+    setSecret();
+    const validRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    let capturedData: Record<string, unknown> | null = null;
+    const db = makeDb({
+      findUnique: async () => validRow,
+      update: async ({ where, data }) => {
+        capturedData = data;
+        return makeRow({ id: where.id, ...data as Partial<DbRow> });
+      },
+    });
+    const r = await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(r.ok, `expected ok, got ${JSON.stringify(r)}`);
+    if (r.ok) assert.strictEqual(r.status, "approved");
+    assert.ok(capturedData !== null, "update debe haberse llamado");
+    const d = capturedData as Record<string, unknown>;
+    assert.strictEqual(d.status, "approved");
+    assert.strictEqual(d.approvedByUserId, "user-abc");
+    assert.strictEqual(d.deviceName, "My PC");
+    assert.ok(d.approvedAt instanceof Date, "approvedAt debe ser Date");
+  });
+
+  test("pending expirado → retorna REGISTRATION_EXPIRED", async () => {
+    setSecret();
+    const expiredRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    const db = makeDb({
+      findUnique: async () => expiredRow,
+      update: async ({ where, data }) => makeRow({ id: where.id, ...data as Partial<DbRow> }),
+    });
+    const r = await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "REGISTRATION_EXPIRED");
+  });
+
+  test("status approved → REGISTRATION_ALREADY_APPROVED", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved" });
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb({ findUnique: async () => row }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "REGISTRATION_ALREADY_APPROVED");
+  });
+
+  test("status completed → REGISTRATION_ALREADY_COMPLETED", async () => {
+    setSecret();
+    const row = makeRow({ status: "completed" });
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb({ findUnique: async () => row }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "REGISTRATION_ALREADY_COMPLETED");
+  });
+
+  test("status expired → REGISTRATION_EXPIRED", async () => {
+    setSecret();
+    const row = makeRow({ status: "expired", expiresAt: new Date(Date.now() - 1_000) });
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb({ findUnique: async () => row }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "REGISTRATION_EXPIRED");
+  });
+
+  test("status denied → REGISTRATION_DENIED", async () => {
+    setSecret();
+    const row = makeRow({ status: "denied" });
+    const r = await approveRegistrationByDeviceCode(INPUT, makeDb({ findUnique: async () => row }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "REGISTRATION_DENIED");
+  });
+
+  test("DB_ERROR en lookup → propaga DB_ERROR", async () => {
+    setSecret();
+    const db = makeDb({ findUnique: async () => { throw new Error("conn failed"); } });
+    const r = await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("DB_ERROR en update → DB_ERROR", async () => {
+    setSecret();
+    const validRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    const db = makeDb({
+      findUnique: async () => validRow,
+      update: async () => { throw new Error("write failed"); },
+    });
+    const r = await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("update no escribe deviceKeyHash", async () => {
+    setSecret();
+    const validRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    let capturedData: Record<string, unknown> | null = null;
+    const db = makeDb({
+      findUnique: async () => validRow,
+      update: async ({ where, data }) => { capturedData = data; return makeRow({ id: where.id }); },
+    });
+    await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!("deviceKeyHash" in (capturedData ?? {})), "deviceKeyHash no debe escribirse");
+  });
+
+  test("update no escribe atlasDeviceId", async () => {
+    setSecret();
+    const validRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    let capturedData: Record<string, unknown> | null = null;
+    const db = makeDb({
+      findUnique: async () => validRow,
+      update: async ({ where, data }) => { capturedData = data; return makeRow({ id: where.id }); },
+    });
+    await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!("atlasDeviceId" in (capturedData ?? {})), "atlasDeviceId no debe escribirse");
+  });
+
+  test("update no escribe pickedUpAt", async () => {
+    setSecret();
+    const validRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    let capturedData: Record<string, unknown> | null = null;
+    const db = makeDb({
+      findUnique: async () => validRow,
+      update: async ({ where, data }) => { capturedData = data; return makeRow({ id: where.id }); },
+    });
+    await approveRegistrationByDeviceCode(INPUT, db);
+    assert.ok(!("pickedUpAt" in (capturedData ?? {})), "pickedUpAt no debe escribirse");
   });
 });

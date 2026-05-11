@@ -189,6 +189,73 @@ export async function getPollStatusByDeviceCode(
   return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
 }
 
+// ── approveRegistrationByDeviceCode ──────────────────────────────────────────
+
+export type ApproveErrorCode =
+  | StoreErrorCode
+  | "NOT_FOUND"
+  | "REGISTRATION_EXPIRED"
+  | "REGISTRATION_ALREADY_APPROVED"
+  | "REGISTRATION_ALREADY_COMPLETED"
+  | "REGISTRATION_DENIED";
+
+export type ApproveResult =
+  | { ok: true; status: "approved" }
+  | { ok: false; code: ApproveErrorCode; message: string };
+
+export type ApproveRegistrationInput = {
+  device_code: string;
+  supabaseUserId: string;
+  deviceName?: string;
+};
+
+export async function approveRegistrationByDeviceCode(
+  input: ApproveRegistrationInput,
+  db?: RegistrationDb,
+): Promise<ApproveResult> {
+  const lookup = await getRegistrationByDeviceCode(input.device_code, db);
+
+  if (!lookup.ok) {
+    return { ok: false, code: lookup.code, message: lookup.message };
+  }
+
+  if (lookup.data === null) {
+    return { ok: false, code: "NOT_FOUND", message: "Device code not found." };
+  }
+
+  const record = lookup.data;
+
+  if (record.status === "pending") {
+    if (record.expiresAt < new Date()) {
+      await expirePendingRegistrationIfNeeded(record, db); // best-effort, result ignored
+      return { ok: false, code: "REGISTRATION_EXPIRED", message: "Registration has expired." };
+    }
+
+    const theDb = db ?? await getDefaultDb();
+    try {
+      await theDb.atlasDeviceRegistration.update({
+        where: { id: record.id },
+        data: {
+          status: "approved",
+          approvedByUserId: input.supabaseUserId,
+          deviceName: input.deviceName ?? null,
+          approvedAt: new Date(),
+        },
+      });
+      return { ok: true, status: "approved" };
+    } catch {
+      return { ok: false, code: "DB_ERROR", message: "Failed to approve registration." };
+    }
+  }
+
+  if (record.status === "approved")   return { ok: false, code: "REGISTRATION_ALREADY_APPROVED",   message: "Registration already approved." };
+  if (record.status === "completed")  return { ok: false, code: "REGISTRATION_ALREADY_COMPLETED", message: "Registration already completed." };
+  if (record.status === "expired")    return { ok: false, code: "REGISTRATION_EXPIRED",            message: "Registration has expired." };
+  if (record.status === "denied")     return { ok: false, code: "REGISTRATION_DENIED",             message: "Registration was denied." };
+
+  return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
+}
+
 // ── expirePendingRegistrationIfNeeded ─────────────────────────────────────────
 
 export async function expirePendingRegistrationIfNeeded(

@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 
 import { createStartPostHandler, GET as startGET } from "../start/route.ts";
 import { createPollPostHandler, GET as pollGET  } from "../poll/route.ts";
-import { POST as completePOST, GET as completeGET } from "../complete/route.ts";
+import { createCompletePostHandler, GET as completeGET } from "../complete/route.ts";
 import {
   validateDeviceCode,
   validatePlatform,
@@ -26,6 +26,7 @@ import type {
   StoreResult,
   RegistrationRecord,
   PollStoreResult,
+  ApproveResult,
 } from "../../../_lib/atlasRegistrationStore.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -364,38 +365,132 @@ describe("/register/poll — GET", () => {
   });
 });
 
-// ── /register/complete route handler ──────────────────────────────────────────
+// ── /register/complete — mock factories ──────────────────────────────────────
 
-describe("/register/complete — POST", () => {
-  test("valid body → 501 NOT_CONFIGURED", async () => {
-    const res = await completePOST(makePost({ device_code: "CMPL1234" }));
-    assert.strictEqual(await status(res), 501);
-    assert.strictEqual(await code(res), "NOT_CONFIGURED");
+const AUTH_USER = "user-123";
+
+function makeCompleteHandler(opts: {
+  userId?: string | null;
+  approveResult: ApproveResult;
+}) {
+  return createCompletePostHandler({
+    getAuthenticatedUserId: async () => opts.userId ?? null,
+    approveRegistrationByDeviceCode: async () => opts.approveResult,
   });
+}
 
+const completeOk        = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: true, status: "approved" } });
+const completeUnauth    = makeCompleteHandler({ userId: null,      approveResult: { ok: true, status: "approved" } });
+const completeNotFound  = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "NOT_FOUND",                    message: "nf" } });
+const completeExpired   = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "REGISTRATION_EXPIRED",          message: "ex" } });
+const completeAlreadyApproved  = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "REGISTRATION_ALREADY_APPROVED",   message: "aa" } });
+const completeAlreadyCompleted = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "REGISTRATION_ALREADY_COMPLETED",  message: "ac" } });
+const completeDenied    = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "REGISTRATION_DENIED",           message: "dn" } });
+const completeSecret    = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "SECRET_NOT_CONFIGURED",         message: "sc" } });
+const completeDbError   = makeCompleteHandler({ userId: AUTH_USER, approveResult: { ok: false, code: "DB_ERROR",                     message: "db" } });
+
+// For input-validation tests: auth/approve never reached
+const completeAny = completeOk;
+
+// ── /register/complete — POST ─────────────────────────────────────────────────
+
+describe("/register/complete — POST success", () => {
+  test("authenticated + valid → 200 ok:true status:approved", async () => {
+    const res = await completeOk(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { ok: boolean; status: string; device_key?: unknown };
+    assert.strictEqual(body.ok, true);
+    assert.strictEqual(body.status, "approved");
+    assert.ok(!("device_key" in body), "device_key must not be present");
+  });
+});
+
+describe("/register/complete — POST auth errors", () => {
+  test("unauthenticated → 401 UNAUTHENTICATED", async () => {
+    const res = await completeUnauth(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 401);
+    assert.strictEqual(await code(res), "UNAUTHENTICATED");
+  });
+});
+
+describe("/register/complete — POST input validation (400)", () => {
   test("missing device_code → 400", async () => {
-    const res = await completePOST(makePost({}));
+    const res = await completeAny(makePost({}));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code not string → 400", async () => {
-    const res = await completePOST(makePost({ device_code: null }));
+    const res = await completeAny(makePost({ device_code: null }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code invalid chars → 400", async () => {
-    const res = await completePOST(makePost({ device_code: "inv@lid" }));
+    const res = await completeAny(makePost({ device_code: "inv@lid" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code < 4 chars → 400", async () => {
-    const res = await completePOST(makePost({ device_code: "XY" }));
+    const res = await completeAny(makePost({ device_code: "XY" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code > 16 chars → 400", async () => {
-    const res = await completePOST(makePost({ device_code: "C".repeat(17) }));
+    const res = await completeAny(makePost({ device_code: "C".repeat(17) }));
     assert.strictEqual(await status(res), 400);
+  });
+
+  test("device_name non-string → 400", async () => {
+    const res = await completeAny(makePost({ device_code: "CMPL1234", device_name: 42 }));
+    assert.strictEqual(await status(res), 400);
+  });
+
+  test("device_name >80 chars → 400", async () => {
+    const res = await completeAny(makePost({ device_code: "CMPL1234", device_name: "A".repeat(81) }));
+    assert.strictEqual(await status(res), 400);
+  });
+});
+
+describe("/register/complete — POST store errors", () => {
+  test("NOT_FOUND → 404 DEVICE_CODE_NOT_FOUND", async () => {
+    const res = await completeNotFound(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 404);
+    assert.strictEqual(await code(res), "DEVICE_CODE_NOT_FOUND");
+  });
+
+  test("REGISTRATION_EXPIRED → 409", async () => {
+    const res = await completeExpired(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 409);
+    assert.strictEqual(await code(res), "REGISTRATION_EXPIRED");
+  });
+
+  test("REGISTRATION_ALREADY_APPROVED → 409", async () => {
+    const res = await completeAlreadyApproved(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 409);
+    assert.strictEqual(await code(res), "REGISTRATION_ALREADY_APPROVED");
+  });
+
+  test("REGISTRATION_ALREADY_COMPLETED → 409", async () => {
+    const res = await completeAlreadyCompleted(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 409);
+    assert.strictEqual(await code(res), "REGISTRATION_ALREADY_COMPLETED");
+  });
+
+  test("REGISTRATION_DENIED → 409", async () => {
+    const res = await completeDenied(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 409);
+    assert.strictEqual(await code(res), "REGISTRATION_DENIED");
+  });
+
+  test("SECRET_NOT_CONFIGURED → 503 NOT_CONFIGURED", async () => {
+    const res = await completeSecret(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 503);
+    assert.strictEqual(await code(res), "NOT_CONFIGURED");
+  });
+
+  test("DB_ERROR → 503 REGISTRATION_UNAVAILABLE", async () => {
+    const res = await completeDbError(makePost({ device_code: "CMPL1234" }));
+    assert.strictEqual(await status(res), 503);
+    assert.strictEqual(await code(res), "REGISTRATION_UNAVAILABLE");
   });
 });
 
