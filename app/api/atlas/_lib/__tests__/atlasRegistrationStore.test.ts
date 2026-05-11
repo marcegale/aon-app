@@ -113,12 +113,15 @@ function makeDeviceRow(overrides: Partial<DbDeviceRow> = {}): DbDeviceRow {
   };
 }
 
+type TransactionFn = <T>(fn: (tx: PickupDb) => Promise<T>) => Promise<T>;
+
 type PickupDbOverrides = DbOverrides & {
   atlasDeviceCreate?: (args: { data: Record<string, unknown> }) => Promise<DbDeviceRow>;
+  $transaction?: TransactionFn;
 };
 
 function makePickupDb(overrides: PickupDbOverrides = {}): PickupDb {
-  return {
+  const self: PickupDb = {
     atlasDeviceRegistration: {
       create: overrides.create ?? (async ({ data }) => makeRow(data as Partial<DbRow>)),
       findUnique: overrides.findUnique ?? (async () => null),
@@ -129,7 +132,9 @@ function makePickupDb(overrides: PickupDbOverrides = {}): PickupDb {
     atlasDevice: {
       create: overrides.atlasDeviceCreate ?? (async () => makeDeviceRow()),
     },
+    $transaction: overrides.$transaction ?? ((fn) => fn(self)),
   };
+  return self;
 }
 
 // ── Env isolation ─────────────────────────────────────────────────────────────
@@ -684,5 +689,107 @@ describe("pickupApprovedRegistrationByDeviceCode", () => {
     const r = await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
     assert.ok(!r.ok);
     if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("approved sin approvedByUserId → DB_ERROR", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved", approvedByUserId: null });
+    const r = await pickupApprovedRegistrationByDeviceCode("ABCD1234", makePickupDb({ findUnique: async () => row }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("$transaction es llamado en approved pickup", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved", approvedByUserId: "user-123" });
+    let txCalled = false;
+    const db = makePickupDb({
+      findUnique: async () => row,
+      $transaction: (fn) => {
+        txCalled = true;
+        const tx: PickupDb = {
+          atlasDeviceRegistration: {
+            create: async ({ data }) => makeRow(data as Partial<DbRow>),
+            findUnique: async () => row,
+            update: async ({ where, data }) => makeRow({ id: where.id, ...data as Partial<DbRow> }),
+          },
+          atlasDevice: { create: async () => makeDeviceRow() },
+          $transaction: (fn2) => fn2(tx),
+        };
+        return fn(tx);
+      },
+    });
+    await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(txCalled, "$transaction debe haberse llamado");
+  });
+
+  test("$transaction falla → DB_ERROR", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved", approvedByUserId: "user-123" });
+    const db = makePickupDb({
+      findUnique: async () => row,
+      $transaction: async () => { throw new Error("tx connection lost"); },
+    });
+    const r = await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("re-read dentro de tx con pickedUpAt existente → completed sin device_key", async () => {
+    setSecret();
+    const outerRow = makeRow({ status: "approved", approvedByUserId: "user-123" });
+    const innerRow = makeRow({ status: "approved", approvedByUserId: "user-123", pickedUpAt: new Date(), atlasDeviceId: "dev-existing" });
+    let calls = 0;
+    const db = makePickupDb({ findUnique: async () => calls++ === 0 ? outerRow : innerRow });
+    const r = await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(r.ok);
+    if (r.ok) {
+      assert.strictEqual(r.status, "completed");
+      assert.ok(!("device_key" in r), "device_key must not be present");
+    }
+  });
+
+  test("re-read dentro de tx con atlasDeviceId existente → completed sin device_key", async () => {
+    setSecret();
+    const outerRow = makeRow({ status: "approved", approvedByUserId: "user-123" });
+    const innerRow = makeRow({ status: "approved", approvedByUserId: "user-123", atlasDeviceId: "dev-already" });
+    let calls = 0;
+    const db = makePickupDb({ findUnique: async () => calls++ === 0 ? outerRow : innerRow });
+    const r = await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(r.ok);
+    if (r.ok) {
+      assert.strictEqual(r.status, "completed");
+      assert.ok(!("device_key" in r), "device_key must not be present");
+    }
+  });
+
+  test("AtlasDevice.create y registration.update ocurren dentro de la tx", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved", approvedByUserId: "user-123" });
+    let deviceCreatedInsideTx = false;
+    let regUpdatedInsideTx = false;
+    const db = makePickupDb({
+      findUnique: async () => row,
+      $transaction: (fn) => {
+        const tx: PickupDb = {
+          atlasDeviceRegistration: {
+            create: async ({ data }) => makeRow(data as Partial<DbRow>),
+            findUnique: async () => row,
+            update: async ({ where, data }) => {
+              regUpdatedInsideTx = true;
+              return makeRow({ id: where.id, ...data as Partial<DbRow> });
+            },
+          },
+          atlasDevice: {
+            create: async () => { deviceCreatedInsideTx = true; return makeDeviceRow(); },
+          },
+          $transaction: (fn2) => fn2(tx),
+        };
+        return fn(tx);
+      },
+    });
+    await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
+    assert.ok(deviceCreatedInsideTx, "AtlasDevice.create debe ocurrir dentro de la tx");
+    assert.ok(regUpdatedInsideTx, "registration.update debe ocurrir dentro de la tx");
   });
 });

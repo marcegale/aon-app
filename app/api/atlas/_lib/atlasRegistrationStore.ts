@@ -49,6 +49,7 @@ export interface PickupDb extends RegistrationDb {
   atlasDevice: {
     create(args: { data: Record<string, unknown> }): Promise<DbAtlasDeviceRow>;
   };
+  $transaction<T>(fn: (tx: PickupDb) => Promise<T>): Promise<T>;
 }
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -303,6 +304,7 @@ export async function pickupApprovedRegistrationByDeviceCode(
   const deviceCodeHash = hmacSha256hex(device_code, secret);
   const theDb = db ?? await getDefaultPickupDb();
 
+  // Fast-path read — routes non-approved statuses without opening a transaction.
   let row: DbRegistrationRow | null;
   try {
     row = await theDb.atlasDeviceRegistration.findUnique({ where: { deviceCodeHash } });
@@ -329,41 +331,49 @@ export async function pickupApprovedRegistrationByDeviceCode(
   if (row.status === "completed") return { ok: true, status: "completed" };
 
   if (row.status === "approved") {
-    const device_key = generateAtlasDeviceKey();
-    const deviceKeyHash = hashAtlasDeviceKey(device_key);
-
-    let deviceId: string;
+    // Re-read + write inside a transaction to prevent duplicate device-key issuance.
     try {
-      const device = await theDb.atlasDevice.create({
-        data: {
-          supabaseUserId: row.approvedByUserId!,
-          deviceName: row.deviceName ?? "Atlas Desktop",
-          deviceKeyHash,
-          platform: row.platform,
-          clientVersion: row.clientVersion ?? null,
-        },
-      });
-      deviceId = device.id;
-    } catch {
-      return { ok: false, code: "DB_ERROR", message: "Failed to create device." };
-    }
+      return await theDb.$transaction(async (tx) => {
+        const fresh = await tx.atlasDeviceRegistration.findUnique({ where: { deviceCodeHash } });
 
-    try {
-      await theDb.atlasDeviceRegistration.update({
-        where: { id: row.id },
-        data: {
-          status: "completed",
-          deviceKeyHash,
-          atlasDeviceId: deviceId,
-          pickedUpAt: new Date(),
-          completedAt: new Date(),
-        },
+        // Concurrent pickup already completed — return idempotent completed.
+        if (!fresh || fresh.status !== "approved" || fresh.pickedUpAt !== null || fresh.atlasDeviceId !== null) {
+          return { ok: true, status: "completed" };
+        }
+
+        if (!fresh.approvedByUserId) {
+          return { ok: false, code: "DB_ERROR", message: "Registration missing approvedByUserId." };
+        }
+
+        const device_key = generateAtlasDeviceKey();
+        const deviceKeyHash = hashAtlasDeviceKey(device_key);
+
+        const device = await tx.atlasDevice.create({
+          data: {
+            supabaseUserId: fresh.approvedByUserId,
+            deviceName: fresh.deviceName ?? "Atlas Desktop",
+            deviceKeyHash,
+            platform: fresh.platform,
+            clientVersion: fresh.clientVersion ?? null,
+          },
+        });
+
+        await tx.atlasDeviceRegistration.update({
+          where: { id: fresh.id },
+          data: {
+            status: "completed",
+            deviceKeyHash,
+            atlasDeviceId: device.id,
+            pickedUpAt: new Date(),
+            completedAt: new Date(),
+          },
+        });
+
+        return { ok: true, status: "approved", device_key, deviceId: device.id };
       });
     } catch {
-      return { ok: false, code: "DB_ERROR", message: "Failed to complete registration." };
+      return { ok: false, code: "DB_ERROR", message: "Failed to complete registration pickup." };
     }
-
-    return { ok: true, status: "approved", device_key, deviceId };
   }
 
   return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
