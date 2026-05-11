@@ -8,6 +8,7 @@
     "start": "next start -p $PORT -H 0.0.0.0",
     "lint": "eslint",
     "test:atlas": "node --experimental-strip-types --test",
+    "test:registration": "node --experimental-strip-types --import ./app/api/atlas/_lib/next-server-loader-register.mjs --test",
     "postinstall": "prisma generate"
   },
   "dependencies": {
