@@ -25,7 +25,7 @@ import {
 import type {
   StoreResult,
   RegistrationRecord,
-  PollStoreResult,
+  PickupStatusResult,
   ApproveResult,
 } from "../../../_lib/atlasRegistrationStore.ts";
 
@@ -253,20 +253,20 @@ describe("/register/start — GET", () => {
 
 // ── /register/poll — mock factories ──────────────────────────────────────────
 
-function makePollHandler(mockResult: PollStoreResult) {
+function makePollHandler(mockResult: PickupStatusResult) {
   return createPollPostHandler({
-    getPollStatusByDeviceCode: async () => mockResult,
+    pickupApprovedRegistrationByDeviceCode: async () => mockResult,
   });
 }
 
-const pollPOST_pending           = makePollHandler({ ok: true, status: "pending" });
-const pollPOST_expired           = makePollHandler({ ok: true, status: "expired" });
-const pollPOST_denied            = makePollHandler({ ok: true, status: "denied" });
-const pollPOST_completed         = makePollHandler({ ok: true, status: "completed" });
-const pollPOST_approvedPickup    = makePollHandler({ ok: true, status: "approved_pending_pickup" });
-const pollPOST_notFound          = makePollHandler({ ok: false, code: "NOT_FOUND", message: "not found" });
-const pollPOST_secretMissing     = makePollHandler({ ok: false, code: "SECRET_NOT_CONFIGURED", message: "no secret" });
-const pollPOST_dbError           = makePollHandler({ ok: false, code: "DB_ERROR", message: "db fail" });
+const pollPOST_pending       = makePollHandler({ ok: true, status: "pending" });
+const pollPOST_expired       = makePollHandler({ ok: true, status: "expired" });
+const pollPOST_denied        = makePollHandler({ ok: true, status: "denied" });
+const pollPOST_completed     = makePollHandler({ ok: true, status: "completed" });
+const pollPOST_approved      = makePollHandler({ ok: true, status: "approved", device_key: "atl_" + "a".repeat(64), deviceId: "dev-test-id" });
+const pollPOST_notFound      = makePollHandler({ ok: false, code: "NOT_FOUND", message: "not found" });
+const pollPOST_secretMissing = makePollHandler({ ok: false, code: "SECRET_NOT_CONFIGURED", message: "no secret" });
+const pollPOST_dbError       = makePollHandler({ ok: false, code: "DB_ERROR", message: "db fail" });
 
 // For input-validation tests (400s): store is never reached, mock doesn't matter
 const pollPOST_any = pollPOST_pending;
@@ -303,12 +303,14 @@ describe("/register/poll — POST status responses", () => {
     assert.strictEqual(body.status, "completed");
   });
 
-  test("approved_pending_pickup → 200 sin device_key", async () => {
-    const res = await pollPOST_approvedPickup(makePost({ device_code: "POLL1234" }));
+  test("approved → 200 status:approved con device_key", async () => {
+    const res = await pollPOST_approved(makePost({ device_code: "POLL1234" }));
     assert.strictEqual(await status(res), 200);
-    const body = await json(res) as { status: string; device_key?: unknown };
-    assert.strictEqual(body.status, "approved_pending_pickup");
-    assert.ok(!("device_key" in body), "device_key must not be present");
+    const body = await json(res) as { ok: boolean; status: string; device_key?: string };
+    assert.strictEqual(body.ok, true);
+    assert.strictEqual(body.status, "approved");
+    assert.ok(typeof body.device_key === "string", "device_key debe ser string");
+    assert.ok(body.device_key!.startsWith("atl_"), "device_key debe empezar con atl_");
   });
 
   test("NOT_FOUND → 404 DEVICE_CODE_NOT_FOUND", async () => {

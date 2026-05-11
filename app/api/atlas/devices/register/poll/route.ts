@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { validatePollBody } from "../_lib/registrationValidation.ts";
 import {
-  getPollStatusByDeviceCode,
-  type PollStoreResult,
+  pickupApprovedRegistrationByDeviceCode,
+  type PickupStatusResult,
 } from "../../../_lib/atlasRegistrationStore.ts";
 
 export const runtime = "nodejs";
 
-type GetPollStatusFn = (device_code: string) => Promise<PollStoreResult>;
+type GetPickupStatusFn = (device_code: string) => Promise<PickupStatusResult>;
 
-type PollDeps = { getPollStatusByDeviceCode: GetPollStatusFn };
+type PollDeps = { pickupApprovedRegistrationByDeviceCode: GetPickupStatusFn };
 
 export function createPollPostHandler(
-  deps: PollDeps = { getPollStatusByDeviceCode },
+  deps: PollDeps = { pickupApprovedRegistrationByDeviceCode },
 ) {
   return async function POST(request: Request): Promise<Response> {
     let body: unknown;
@@ -34,7 +34,7 @@ export function createPollPostHandler(
     }
 
     const b = body as { device_code: string };
-    const result = await deps.getPollStatusByDeviceCode(b.device_code);
+    const result = await deps.pickupApprovedRegistrationByDeviceCode(b.device_code);
 
     if (!result.ok) {
       if (result.code === "NOT_FOUND") {
@@ -52,6 +52,13 @@ export function createPollPostHandler(
       return NextResponse.json(
         { ok: false, error: { code: "REGISTRATION_UNAVAILABLE", message: "Device registration is unavailable. Try again." } },
         { status: 503 },
+      );
+    }
+
+    if (result.status === "approved") {
+      return NextResponse.json(
+        { ok: true, status: result.status, device_key: result.device_key },
+        { status: 200 },
       );
     }
 

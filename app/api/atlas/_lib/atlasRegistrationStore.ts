@@ -1,4 +1,5 @@
 import { hmacSha256hex } from "./atlasHashUtils.ts";
+import { generateAtlasDeviceKey, hashAtlasDeviceKey } from "./atlasDeviceKey.ts";
 
 // ── Internal DB interface (minimal, for DI) ───────────────────────────────────
 
@@ -25,6 +26,28 @@ export interface RegistrationDb {
     create(args: { data: Record<string, unknown> }): Promise<DbRegistrationRow>;
     findUnique(args: { where: { deviceCodeHash: string } }): Promise<DbRegistrationRow | null>;
     update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<DbRegistrationRow>;
+  };
+}
+
+// ── Internal DB interface for AtlasDevice ─────────────────────────────────────
+
+interface DbAtlasDeviceRow {
+  id: string;
+  supabaseUserId: string;
+  deviceName: string;
+  deviceKeyHash: string;
+  status: string;
+  lastSeenAt: Date | null;
+  createdAt: Date;
+  revokedAt: Date | null;
+  platform: string;
+  clientVersion: string | null;
+  fingerprint: string | null;
+}
+
+export interface PickupDb extends RegistrationDb {
+  atlasDevice: {
+    create(args: { data: Record<string, unknown> }): Promise<DbAtlasDeviceRow>;
   };
 }
 
@@ -81,6 +104,11 @@ function mapRow(row: DbRegistrationRow): RegistrationRecord {
 async function getDefaultDb(): Promise<RegistrationDb> {
   const { prisma } = await import("../../../lib/prisma.ts");
   return prisma as unknown as RegistrationDb;
+}
+
+async function getDefaultPickupDb(): Promise<PickupDb> {
+  const { prisma } = await import("../../../lib/prisma.ts");
+  return prisma as unknown as PickupDb;
 }
 
 // ── createPendingRegistration ─────────────────────────────────────────────────
@@ -252,6 +280,91 @@ export async function approveRegistrationByDeviceCode(
   if (record.status === "completed")  return { ok: false, code: "REGISTRATION_ALREADY_COMPLETED", message: "Registration already completed." };
   if (record.status === "expired")    return { ok: false, code: "REGISTRATION_EXPIRED",            message: "Registration has expired." };
   if (record.status === "denied")     return { ok: false, code: "REGISTRATION_DENIED",             message: "Registration was denied." };
+
+  return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
+}
+
+// ── pickupApprovedRegistrationByDeviceCode ────────────────────────────────────
+
+export type PickupStatusResult =
+  | { ok: true; status: "pending" | "expired" | "denied" | "completed" }
+  | { ok: true; status: "approved"; device_key: string; deviceId: string }
+  | { ok: false; code: StoreErrorCode | "NOT_FOUND"; message: string };
+
+export async function pickupApprovedRegistrationByDeviceCode(
+  device_code: string,
+  db?: PickupDb,
+): Promise<PickupStatusResult> {
+  const secret = process.env.ATLAS_DEVICE_CODE_SECRET;
+  if (!secret) {
+    return { ok: false, code: "SECRET_NOT_CONFIGURED", message: "ATLAS_DEVICE_CODE_SECRET is not set." };
+  }
+
+  const deviceCodeHash = hmacSha256hex(device_code, secret);
+  const theDb = db ?? await getDefaultPickupDb();
+
+  let row: DbRegistrationRow | null;
+  try {
+    row = await theDb.atlasDeviceRegistration.findUnique({ where: { deviceCodeHash } });
+  } catch {
+    return { ok: false, code: "DB_ERROR", message: "Failed to query registration." };
+  }
+
+  if (!row) {
+    return { ok: false, code: "NOT_FOUND", message: "Device code not found." };
+  }
+
+  if (row.status === "pending") {
+    if (row.expiresAt < new Date()) {
+      try {
+        await theDb.atlasDeviceRegistration.update({ where: { id: row.id }, data: { status: "expired" } });
+      } catch { /* best-effort */ }
+      return { ok: true, status: "expired" };
+    }
+    return { ok: true, status: "pending" };
+  }
+
+  if (row.status === "expired")   return { ok: true, status: "expired" };
+  if (row.status === "denied")    return { ok: true, status: "denied" };
+  if (row.status === "completed") return { ok: true, status: "completed" };
+
+  if (row.status === "approved") {
+    const device_key = generateAtlasDeviceKey();
+    const deviceKeyHash = hashAtlasDeviceKey(device_key);
+
+    let deviceId: string;
+    try {
+      const device = await theDb.atlasDevice.create({
+        data: {
+          supabaseUserId: row.approvedByUserId!,
+          deviceName: row.deviceName ?? "Atlas Desktop",
+          deviceKeyHash,
+          platform: row.platform,
+          clientVersion: row.clientVersion ?? null,
+        },
+      });
+      deviceId = device.id;
+    } catch {
+      return { ok: false, code: "DB_ERROR", message: "Failed to create device." };
+    }
+
+    try {
+      await theDb.atlasDeviceRegistration.update({
+        where: { id: row.id },
+        data: {
+          status: "completed",
+          deviceKeyHash,
+          atlasDeviceId: deviceId,
+          pickedUpAt: new Date(),
+          completedAt: new Date(),
+        },
+      });
+    } catch {
+      return { ok: false, code: "DB_ERROR", message: "Failed to complete registration." };
+    }
+
+    return { ok: true, status: "approved", device_key, deviceId };
+  }
 
   return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
 }
