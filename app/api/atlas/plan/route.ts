@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   const { device_key, prompt } = body as Record<string, unknown>;
 
-  const auth = validateAtlasDeviceKey(device_key);
+  const auth = await validateAtlasDeviceKey(device_key);
   if (!auth.ok) {
     return NextResponse.json(
       { ok: false, error: { code: auth.code, message: auth.message } },
