@@ -1,12 +1,15 @@
 'use strict';
 
-const MAX_LOG_ENTRIES = 50;
-
 const stateBadge = document.getElementById('state-badge');
 const orbDot     = document.querySelector('.orb-dot');
-const logEl      = document.getElementById('log');
+const messagesEl = document.getElementById('messages');
+const inputEl    = document.getElementById('prompt-input');
+const sendBtn    = document.getElementById('send-btn');
 
-// ── State colours for the header dot ──────────────────────────────────────
+let isBusy      = false;
+let thinkingEl  = null;
+
+// ── State colours ──────────────────────────────────────────────────────────
 const DOT_COLORS = {
   IDLE:               ['#1a9fff', 'rgba(26,159,255,0.7)'],
   LISTENING:          ['#00e676', 'rgba(0,230,118,0.7)'],
@@ -21,56 +24,109 @@ const DOT_COLORS = {
 
 // ── Public API (called from Python via evaluate_js) ────────────────────────
 window.setCockpitState = function (fsmState) {
-  // remove all state classes
   stateBadge.className = '';
   stateBadge.classList.add(fsmState);
   stateBadge.textContent = fsmState;
-
   const [color, glow] = DOT_COLORS[fsmState] || DOT_COLORS['IDLE'];
   orbDot.style.background = color;
   orbDot.style.boxShadow  = `0 0 6px ${glow}`;
 };
 
-window.appendEvent = function (event) {
-  // event: { name, body, time }
-  const entry = document.createElement('div');
-  entry.className = 'log-entry';
-
-  const t = document.createElement('span');
-  t.className = 'log-time';
-  t.textContent = event.time || _now();
-
-  const ev = document.createElement('span');
-  ev.className = 'log-event';
-  ev.textContent = event.name || 'event';
-
-  const b = document.createElement('span');
-  b.className = 'log-body';
-  b.textContent = event.body || '';
-
-  entry.append(t, ev, b);
-  logEl.appendChild(entry);
-
-  // cap entries
-  while (logEl.children.length > MAX_LOG_ENTRIES) {
-    logEl.removeChild(logEl.firstChild);
-  }
-
-  logEl.scrollTop = logEl.scrollHeight;
+window.appendEvent = function (_event) {
+  // FSM state transitions are reflected in the state badge; no visible log.
 };
 
-// ── Close button ──────────────────────────────────────────────────────────
-document.getElementById('close-btn').addEventListener('click', () => {
-  pywebview.api.close_cockpit().catch(() => {});
+window.showUserMessage = function (text) {
+  _removeThinking();
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  _scroll();
+};
+
+window.showAtlasResponse = function (text, mode, isError) {
+  _removeThinking();
+  const el = document.createElement('div');
+  el.className = isError ? 'msg atlas error' : 'msg atlas';
+  el.textContent = text;
+  if (mode === 'mock') {
+    const badge = document.createElement('span');
+    badge.className = 'mode-badge';
+    badge.textContent = 'mock';
+    el.appendChild(badge);
+  }
+  messagesEl.appendChild(el);
+  _scroll();
+};
+
+window.setThinking = function (active) {
+  if (active) {
+    if (thinkingEl) return;
+    thinkingEl = document.createElement('div');
+    thinkingEl.className = 'msg atlas thinking';
+    thinkingEl.innerHTML = '<span></span><span></span><span></span>';
+    messagesEl.appendChild(thinkingEl);
+    _scroll();
+    _setBusy(true);
+  } else {
+    _removeThinking();
+    _setBusy(false);
+  }
+};
+
+// ── Input handling ─────────────────────────────────────────────────────────
+function _send() {
+  const prompt = inputEl.value.trim();
+  if (!prompt || isBusy) return;
+  inputEl.value = '';
+  _autoResize();
+  pywebview.api.send_message(prompt).catch(function (err) {
+    console.error('send_message error', err);
+    _setBusy(false);
+  });
+}
+
+sendBtn.addEventListener('click', _send);
+
+inputEl.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    _send();
+  }
+});
+
+inputEl.addEventListener('input', _autoResize);
+
+document.getElementById('close-btn').addEventListener('click', function () {
+  pywebview.api.close_cockpit().catch(function () {});
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function _now() {
-  return new Date().toTimeString().slice(0, 8);
+function _setBusy(busy) {
+  isBusy = busy;
+  sendBtn.disabled = busy;
+  inputEl.disabled = busy;
+}
+
+function _removeThinking() {
+  if (thinkingEl) {
+    thinkingEl.remove();
+    thinkingEl = null;
+  }
+}
+
+function _scroll() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function _autoResize() {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
+window.addEventListener('load', function () {
   window.setCockpitState('IDLE');
-  window.appendEvent({ name: 'atlas', body: 'Phase 1 cockpit ready', time: _now() });
+  _autoResize();
 });

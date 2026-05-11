@@ -14,17 +14,22 @@
         <div class="orb-dot"></div>
         <span class="brand">Atlas</span>
       </div>
-      <button id="close-btn">✕</button>
+      <div class="header-right">
+        <span id="state-badge">IDLE</span>
+        <button id="close-btn">✕</button>
+      </div>
     </header>
 
-    <div id="state-section">
-      <span class="label">Estado</span>
-      <span id="state-badge">IDLE</span>
-    </div>
+    <div id="messages"></div>
 
-    <div id="log-section">
-      <div class="log-label">Eventos</div>
-      <div id="log"></div>
+    <div id="input-area">
+      <textarea
+        id="prompt-input"
+        placeholder="Escribe a Atlas…"
+        rows="1"
+        maxlength="8000"
+      ></textarea>
+      <button id="send-btn" title="Enviar">↑</button>
     </div>
 
   </div>

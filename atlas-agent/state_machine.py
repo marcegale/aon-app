@@ -23,7 +23,7 @@ ALL_STATES = {
 # ── Valid transitions ────────────────────────────────────────────────────────
 # ERROR is always reachable from any state (handled separately).
 TRANSITIONS: dict[str, set[str]] = {
-    IDLE:               {LISTENING, ERROR},
+    IDLE:               {LISTENING, PLANNING, ERROR},
     LISTENING:          {CAPTURING_CONTEXT, PLANNING, ERROR},
     CAPTURING_CONTEXT:  {PLANNING, ERROR},
     PLANNING:           {WAITING_PERMISSION, EXECUTING, REPORTING, ERROR},

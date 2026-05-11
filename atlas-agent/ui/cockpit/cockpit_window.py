@@ -1,14 +1,15 @@
 import json
 import logging
 import sys
+import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import webview
 
 _WINDOW_W = 380
-_WINDOW_H = 520
+_WINDOW_H = 580
 
 
 def _frontend_path() -> str:
@@ -28,12 +29,21 @@ class _CockpitAPI:
     def close_cockpit(self):
         self._cockpit.close()
 
+    def send_message(self, prompt: str):
+        """Called from JS when user submits. Runs input callback in daemon thread."""
+        if not isinstance(prompt, str):
+            return
+        cb = self._cockpit._input_callback
+        if cb is None:
+            return
+        threading.Thread(target=cb, args=(prompt,), daemon=True).start()
+
 
 class CockpitWindow:
     """Optional expanded Atlas panel.
 
     Starts hidden. open()/close() toggle visibility.
-    send_event() pushes entries into the JS event log.
+    All Python→JS calls go through _eval().
     """
 
     def __init__(self) -> None:
@@ -41,9 +51,12 @@ class CockpitWindow:
         self._api = _CockpitAPI(self)
         self._visible = False
         self._ready = False
+        self._input_callback: Callable[[str], None] | None = None
+
+    def set_input_callback(self, fn: Callable[[str], None]) -> None:
+        self._input_callback = fn
 
     def start(self) -> None:
-        """Create the pywebview window hidden (does not start event loop)."""
         self._win = webview.create_window(
             title="Atlas — Cockpit",
             url=_frontend_path(),
@@ -81,9 +94,15 @@ class CockpitWindow:
     def is_visible(self) -> bool:
         return self._visible
 
-    def send_event(self, event_name: str, payload: Any = None) -> None:
+    def _eval(self, js: str) -> None:
         if self._win is None or not self._ready:
             return
+        try:
+            self._win.evaluate_js(js)
+        except Exception as exc:
+            logging.warning("[cockpit] evaluate_js error: %s", exc)
+
+    def send_event(self, event_name: str, payload: Any = None) -> None:
         body = ""
         if isinstance(payload, dict):
             frm = payload.get("from", "")
@@ -97,16 +116,23 @@ class CockpitWindow:
 
         ts = time.strftime("%H:%M:%S")
         evt_js = json.dumps({"name": event_name, "body": body, "time": ts})
-        try:
-            self._win.evaluate_js(f"window.appendEvent({evt_js})")
-        except Exception as exc:
-            logging.warning("[cockpit] send_event error: %s", exc)
+        self._eval(f"window.appendEvent({evt_js})")
 
-        # keep state badge in sync when it's a state_changed event
         if event_name == "state_changed" and isinstance(payload, dict):
             to = payload.get("to", "")
             if to:
-                try:
-                    self._win.evaluate_js(f"window.setCockpitState('{to}')")
-                except Exception:
-                    pass
+                self._eval(f"window.setCockpitState('{to}')")
+
+    def show_user_message(self, text: str) -> None:
+        safe = json.dumps(text)
+        self._eval(f"window.showUserMessage({safe})")
+
+    def show_atlas_response(self, text: str, mode: str = "", is_error: bool = False) -> None:
+        safe_text = json.dumps(text)
+        safe_mode = json.dumps(mode)
+        safe_err  = "true" if is_error else "false"
+        self._eval(f"window.showAtlasResponse({safe_text}, {safe_mode}, {safe_err})")
+
+    def set_thinking(self, active: bool) -> None:
+        flag = "true" if active else "false"
+        self._eval(f"window.setThinking({flag})")
