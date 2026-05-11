@@ -17,8 +17,8 @@
 
 import * as runtime from "@prisma/client/runtime/index-browser"
 
-export type * from '../models'
-export type * from './prismaNamespace'
+export type * from '../models.ts'
+export type * from './prismaNamespace.ts'
 
 export const Decimal = runtime.Decimal
 
@@ -64,7 +64,9 @@ export const ModelName = {
   RecruitingCandidate: 'RecruitingCandidate',
   AgentRun: 'AgentRun',
   CharlieSession: 'CharlieSession',
-  CharlieDevice: 'CharlieDevice'
+  CharlieDevice: 'CharlieDevice',
+  AtlasDevice: 'AtlasDevice',
+  AtlasDeviceRegistration: 'AtlasDeviceRegistration'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -296,6 +298,44 @@ export const CharlieDeviceScalarFieldEnum = {
 } as const
 
 export type CharlieDeviceScalarFieldEnum = (typeof CharlieDeviceScalarFieldEnum)[keyof typeof CharlieDeviceScalarFieldEnum]
+
+
+export const AtlasDeviceScalarFieldEnum = {
+  id: 'id',
+  supabaseUserId: 'supabaseUserId',
+  deviceName: 'deviceName',
+  deviceKeyHash: 'deviceKeyHash',
+  status: 'status',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt',
+  platform: 'platform',
+  clientVersion: 'clientVersion',
+  fingerprint: 'fingerprint'
+} as const
+
+export type AtlasDeviceScalarFieldEnum = (typeof AtlasDeviceScalarFieldEnum)[keyof typeof AtlasDeviceScalarFieldEnum]
+
+
+export const AtlasDeviceRegistrationScalarFieldEnum = {
+  id: 'id',
+  deviceCodeHash: 'deviceCodeHash',
+  status: 'status',
+  platform: 'platform',
+  clientVersion: 'clientVersion',
+  approvedByUserId: 'approvedByUserId',
+  deviceName: 'deviceName',
+  deviceKeyHash: 'deviceKeyHash',
+  pickedUpAt: 'pickedUpAt',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  approvedAt: 'approvedAt',
+  completedAt: 'completedAt',
+  deniedAt: 'deniedAt',
+  atlasDeviceId: 'atlasDeviceId'
+} as const
+
+export type AtlasDeviceRegistrationScalarFieldEnum = (typeof AtlasDeviceRegistrationScalarFieldEnum)[keyof typeof AtlasDeviceRegistrationScalarFieldEnum]
 
 
 export const SortOrder = {

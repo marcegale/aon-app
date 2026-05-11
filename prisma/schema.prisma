@@ -269,3 +269,49 @@ model CharlieDevice {
   @@map("charlie_devices")
   @@schema("public")
 }
+
+model AtlasDevice {
+  id            String    @id @default(cuid())
+  supabaseUserId String
+  deviceName    String
+  deviceKeyHash String    @unique
+  status        String    @default("active")
+  lastSeenAt    DateTime?
+  createdAt     DateTime  @default(now())
+  revokedAt     DateTime?
+  platform      String    @default("windows")
+  clientVersion String?
+  fingerprint   String?
+
+  registrations AtlasDeviceRegistration[]
+
+  @@index([supabaseUserId])
+  @@index([deviceKeyHash])
+  @@index([status])
+  @@map("atlas_devices")
+  @@schema("public")
+}
+
+model AtlasDeviceRegistration {
+  id               String    @id @default(cuid())
+  deviceCodeHash   String    @unique
+  status           String    @default("pending")
+  platform         String
+  clientVersion    String?
+  approvedByUserId String?
+  deviceName       String?
+  deviceKeyHash    String?
+  pickedUpAt       DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  approvedAt       DateTime?
+  completedAt      DateTime?
+  deniedAt         DateTime?
+  atlasDeviceId    String?
+  atlasDevice      AtlasDevice? @relation(fields: [atlasDeviceId], references: [id])
+
+  @@index([deviceCodeHash])
+  @@index([status, expiresAt])
+  @@map("atlas_device_registrations")
+  @@schema("public")
+}
