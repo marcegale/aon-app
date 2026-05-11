@@ -33,7 +33,8 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/logout") ||
-    pathname.startsWith("/api/charlie");
+    pathname.startsWith("/api/charlie") ||
+    pathname.startsWith("/api/atlas");
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));
