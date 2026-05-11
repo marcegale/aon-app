@@ -38,6 +38,20 @@ class _CockpitAPI:
             return
         threading.Thread(target=cb, args=(prompt,), daemon=True).start()
 
+    def approve_action(self, action_id: str):
+        """Called from JS when user clicks Permitir."""
+        cb = self._cockpit._approve_callback
+        if cb is None:
+            return
+        threading.Thread(target=cb, args=(action_id,), daemon=True).start()
+
+    def cancel_action(self, action_id: str):
+        """Called from JS when user clicks Cancelar or Cerrar."""
+        cb = self._cockpit._cancel_callback
+        if cb is None:
+            return
+        threading.Thread(target=cb, args=(action_id,), daemon=True).start()
+
 
 class CockpitWindow:
     """Optional expanded Atlas panel.
@@ -52,9 +66,18 @@ class CockpitWindow:
         self._visible = False
         self._ready = False
         self._input_callback: Callable[[str], None] | None = None
+        self._approve_callback: Callable[[str], None] | None = None
+        self._cancel_callback: Callable[[str], None] | None = None
+        self._permission_pending = False
 
     def set_input_callback(self, fn: Callable[[str], None]) -> None:
         self._input_callback = fn
+
+    def set_approve_callback(self, fn: Callable[[str], None]) -> None:
+        self._approve_callback = fn
+
+    def set_cancel_callback(self, fn: Callable[[str], None]) -> None:
+        self._cancel_callback = fn
 
     def start(self) -> None:
         self._win = webview.create_window(
@@ -87,6 +110,11 @@ class CockpitWindow:
     def close(self) -> None:
         if self._win is None:
             return
+        # Unblock any pending gate.wait() when user closes the cockpit
+        if self._permission_pending:
+            cb = self._cancel_callback
+            if cb:
+                threading.Thread(target=cb, args=("__closed__",), daemon=True).start()
         self._win.hide()
         self._visible = False
         logging.info("[cockpit] closed")
@@ -136,3 +164,18 @@ class CockpitWindow:
     def set_thinking(self, active: bool) -> None:
         flag = "true" if active else "false"
         self._eval(f"window.setThinking({flag})")
+
+    def show_permission_card(self, action_dict: dict, destructive_blocked: bool = False) -> None:
+        self._permission_pending = True
+        safe_action = json.dumps(action_dict, ensure_ascii=False)
+        safe_blocked = "true" if destructive_blocked else "false"
+        self._eval(f"window.showPermissionCard({safe_action}, {safe_blocked})")
+
+    def hide_permission_card(self) -> None:
+        self._permission_pending = False
+        self._eval("window.hidePermissionCard()")
+
+    def show_tool_result(self, output: str, ok: bool) -> None:
+        safe_output = json.dumps(output, ensure_ascii=False)
+        safe_ok = "true" if ok else "false"
+        self._eval(f"window.showToolResult({safe_output}, {safe_ok})")

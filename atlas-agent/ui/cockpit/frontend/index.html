@@ -22,6 +22,22 @@
 
     <div id="messages"></div>
 
+    <div id="permission-card" class="hidden">
+      <div class="perm-header">
+        <span class="perm-badge" id="perm-badge">SENSITIVE</span>
+        <span class="perm-title" id="perm-title">Acción requerida</span>
+      </div>
+      <div class="perm-body">
+        <p class="perm-description" id="perm-description"></p>
+        <p class="perm-warning" id="perm-warning"></p>
+      </div>
+      <div class="perm-buttons">
+        <button class="perm-btn cancel" id="perm-cancel-btn">Cancelar</button>
+        <button class="perm-btn approve" id="perm-approve-btn">Permitir</button>
+        <button class="perm-btn close-only hidden" id="perm-close-btn">Cerrar</button>
+      </div>
+    </div>
+
     <div id="input-area">
       <textarea
         id="prompt-input"

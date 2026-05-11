@@ -1,13 +1,22 @@
 'use strict';
 
-const stateBadge = document.getElementById('state-badge');
-const orbDot     = document.querySelector('.orb-dot');
-const messagesEl = document.getElementById('messages');
-const inputEl    = document.getElementById('prompt-input');
-const sendBtn    = document.getElementById('send-btn');
+const stateBadge    = document.getElementById('state-badge');
+const orbDot        = document.querySelector('.orb-dot');
+const messagesEl    = document.getElementById('messages');
+const inputEl       = document.getElementById('prompt-input');
+const sendBtn       = document.getElementById('send-btn');
+const permCard      = document.getElementById('permission-card');
+const permBadge     = document.getElementById('perm-badge');
+const permTitle     = document.getElementById('perm-title');
+const permDesc      = document.getElementById('perm-description');
+const permWarning   = document.getElementById('perm-warning');
+const permApproveBtn = document.getElementById('perm-approve-btn');
+const permCancelBtn  = document.getElementById('perm-cancel-btn');
+const permCloseBtn   = document.getElementById('perm-close-btn');
 
-let isBusy      = false;
-let thinkingEl  = null;
+let isBusy         = false;
+let thinkingEl     = null;
+let pendingActionId = null;
 
 // ── State colours ──────────────────────────────────────────────────────────
 const DOT_COLORS = {
@@ -74,6 +83,70 @@ window.setThinking = function (active) {
     _setBusy(false);
   }
 };
+
+window.showPermissionCard = function (action, isDestructiveBlocked) {
+  pendingActionId = action.id || null;
+
+  const level = (action.permission_level || 'SENSITIVE').toUpperCase();
+  permBadge.textContent = level;
+  permBadge.className = 'perm-badge ' + level.toLowerCase();
+
+  permTitle.textContent       = action.display && action.display.title       ? action.display.title       : 'Acción requerida';
+  permDesc.textContent        = action.display && action.display.description ? action.display.description : '';
+  permWarning.textContent     = action.display && action.display.warning     ? action.display.warning     : '';
+  permWarning.style.display   = permWarning.textContent ? '' : 'none';
+
+  if (isDestructiveBlocked) {
+    permApproveBtn.classList.add('hidden');
+    permCancelBtn.classList.add('hidden');
+    permCloseBtn.classList.remove('hidden');
+  } else {
+    permApproveBtn.classList.remove('hidden');
+    permCancelBtn.classList.remove('hidden');
+    permCloseBtn.classList.add('hidden');
+  }
+
+  permCard.classList.remove('hidden');
+  _setBusy(true);
+};
+
+window.hidePermissionCard = function () {
+  permCard.classList.add('hidden');
+  pendingActionId = null;
+  _setBusy(false);
+};
+
+window.showToolResult = function (output, ok) {
+  _removeThinking();
+  const wrapper = document.createElement('div');
+  wrapper.className = ok ? 'msg atlas tool-result' : 'msg atlas tool-result error';
+
+  const pre = document.createElement('pre');
+  pre.textContent = output || (ok ? '(sin salida)' : 'Error desconocido.');
+  wrapper.appendChild(pre);
+
+  messagesEl.appendChild(wrapper);
+  _scroll();
+};
+
+// ── Permission card buttons ────────────────────────────────────────────────
+permApproveBtn.addEventListener('click', function () {
+  pywebview.api.approve_action(pendingActionId || '').catch(function (err) {
+    console.error('approve_action error', err);
+  });
+});
+
+permCancelBtn.addEventListener('click', function () {
+  pywebview.api.cancel_action(pendingActionId || '').catch(function (err) {
+    console.error('cancel_action error', err);
+  });
+});
+
+permCloseBtn.addEventListener('click', function () {
+  pywebview.api.cancel_action(pendingActionId || '').catch(function (err) {
+    console.error('cancel_action (close) error', err);
+  });
+});
 
 // ── Input handling ─────────────────────────────────────────────────────────
 function _send() {
