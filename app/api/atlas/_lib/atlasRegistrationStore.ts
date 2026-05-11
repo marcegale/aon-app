@@ -137,6 +137,58 @@ export async function getRegistrationByDeviceCode(
   }
 }
 
+// ── getPollStatusByDeviceCode ─────────────────────────────────────────────────
+
+export type PollRegistrationStatus =
+  | "pending"
+  | "expired"
+  | "denied"
+  | "completed"
+  | "approved_pending_pickup";
+
+export type PollStoreResult =
+  | { ok: true; status: PollRegistrationStatus }
+  | { ok: false; code: StoreErrorCode | "NOT_FOUND"; message: string };
+
+export async function getPollStatusByDeviceCode(
+  device_code: string,
+  db?: RegistrationDb,
+): Promise<PollStoreResult> {
+  const lookup = await getRegistrationByDeviceCode(device_code, db);
+
+  if (!lookup.ok) {
+    return { ok: false, code: lookup.code, message: lookup.message };
+  }
+
+  if (lookup.data === null) {
+    return { ok: false, code: "NOT_FOUND", message: "Device code not found." };
+  }
+
+  const record = lookup.data;
+
+  if (record.status === "pending") {
+    if (record.expiresAt < new Date()) {
+      const expireResult = await expirePendingRegistrationIfNeeded(record, db);
+      if (!expireResult.ok) {
+        return { ok: false, code: expireResult.code, message: expireResult.message };
+      }
+      return { ok: true, status: "expired" };
+    }
+    return { ok: true, status: "pending" };
+  }
+
+  if (record.status === "approved") {
+    return { ok: true, status: "approved_pending_pickup" };
+  }
+
+  const terminal: PollRegistrationStatus[] = ["expired", "denied", "completed"];
+  if (terminal.includes(record.status as PollRegistrationStatus)) {
+    return { ok: true, status: record.status as PollRegistrationStatus };
+  }
+
+  return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
+}
+
 // ── expirePendingRegistrationIfNeeded ─────────────────────────────────────────
 
 export async function expirePendingRegistrationIfNeeded(

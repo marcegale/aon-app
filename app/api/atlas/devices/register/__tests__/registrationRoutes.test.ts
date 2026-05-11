@@ -13,7 +13,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 import { createStartPostHandler, GET as startGET } from "../start/route.ts";
-import { POST as pollPOST,  GET as pollGET  } from "../poll/route.ts";
+import { createPollPostHandler, GET as pollGET  } from "../poll/route.ts";
 import { POST as completePOST, GET as completeGET } from "../complete/route.ts";
 import {
   validateDeviceCode,
@@ -22,7 +22,11 @@ import {
   validateStartBody,
   validatePollBody,
 } from "../_lib/registrationValidation.ts";
-import type { StoreResult, RegistrationRecord } from "../../../_lib/atlasRegistrationStore.ts";
+import type {
+  StoreResult,
+  RegistrationRecord,
+  PollStoreResult,
+} from "../../../_lib/atlasRegistrationStore.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -246,37 +250,108 @@ describe("/register/start — GET", () => {
   });
 });
 
-// ── /register/poll route handler ──────────────────────────────────────────────
+// ── /register/poll — mock factories ──────────────────────────────────────────
 
-describe("/register/poll — POST", () => {
-  test("valid body → 501 NOT_CONFIGURED", async () => {
-    const res = await pollPOST(makePost({ device_code: "POLL1234" }));
-    assert.strictEqual(await status(res), 501);
+function makePollHandler(mockResult: PollStoreResult) {
+  return createPollPostHandler({
+    getPollStatusByDeviceCode: async () => mockResult,
+  });
+}
+
+const pollPOST_pending           = makePollHandler({ ok: true, status: "pending" });
+const pollPOST_expired           = makePollHandler({ ok: true, status: "expired" });
+const pollPOST_denied            = makePollHandler({ ok: true, status: "denied" });
+const pollPOST_completed         = makePollHandler({ ok: true, status: "completed" });
+const pollPOST_approvedPickup    = makePollHandler({ ok: true, status: "approved_pending_pickup" });
+const pollPOST_notFound          = makePollHandler({ ok: false, code: "NOT_FOUND", message: "not found" });
+const pollPOST_secretMissing     = makePollHandler({ ok: false, code: "SECRET_NOT_CONFIGURED", message: "no secret" });
+const pollPOST_dbError           = makePollHandler({ ok: false, code: "DB_ERROR", message: "db fail" });
+
+// For input-validation tests (400s): store is never reached, mock doesn't matter
+const pollPOST_any = pollPOST_pending;
+
+// ── /register/poll — POST status responses ────────────────────────────────────
+
+describe("/register/poll — POST status responses", () => {
+  test("pending → 200 ok:true status:pending", async () => {
+    const res = await pollPOST_pending(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { ok: boolean; status: string };
+    assert.strictEqual(body.ok, true);
+    assert.strictEqual(body.status, "pending");
+  });
+
+  test("expired → 200 status:expired", async () => {
+    const res = await pollPOST_expired(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { status: string };
+    assert.strictEqual(body.status, "expired");
+  });
+
+  test("denied → 200 status:denied", async () => {
+    const res = await pollPOST_denied(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { status: string };
+    assert.strictEqual(body.status, "denied");
+  });
+
+  test("completed → 200 status:completed", async () => {
+    const res = await pollPOST_completed(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { status: string };
+    assert.strictEqual(body.status, "completed");
+  });
+
+  test("approved_pending_pickup → 200 sin device_key", async () => {
+    const res = await pollPOST_approvedPickup(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 200);
+    const body = await json(res) as { status: string; device_key?: unknown };
+    assert.strictEqual(body.status, "approved_pending_pickup");
+    assert.ok(!("device_key" in body), "device_key must not be present");
+  });
+
+  test("NOT_FOUND → 404 DEVICE_CODE_NOT_FOUND", async () => {
+    const res = await pollPOST_notFound(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 404);
+    assert.strictEqual(await code(res), "DEVICE_CODE_NOT_FOUND");
+  });
+
+  test("SECRET_NOT_CONFIGURED → 503 NOT_CONFIGURED", async () => {
+    const res = await pollPOST_secretMissing(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 503);
     assert.strictEqual(await code(res), "NOT_CONFIGURED");
   });
 
+  test("DB_ERROR → 503 REGISTRATION_UNAVAILABLE", async () => {
+    const res = await pollPOST_dbError(makePost({ device_code: "POLL1234" }));
+    assert.strictEqual(await status(res), 503);
+    assert.strictEqual(await code(res), "REGISTRATION_UNAVAILABLE");
+  });
+});
+
+describe("/register/poll — POST input validation (400)", () => {
   test("missing device_code → 400", async () => {
-    const res = await pollPOST(makePost({}));
+    const res = await pollPOST_any(makePost({}));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code not string → 400", async () => {
-    const res = await pollPOST(makePost({ device_code: true }));
+    const res = await pollPOST_any(makePost({ device_code: true }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code invalid chars → 400", async () => {
-    const res = await pollPOST(makePost({ device_code: "bad-code!" }));
+    const res = await pollPOST_any(makePost({ device_code: "bad-code!" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code < 4 chars → 400", async () => {
-    const res = await pollPOST(makePost({ device_code: "AB" }));
+    const res = await pollPOST_any(makePost({ device_code: "AB" }));
     assert.strictEqual(await status(res), 400);
   });
 
   test("device_code > 16 chars → 400", async () => {
-    const res = await pollPOST(makePost({ device_code: "Z".repeat(17) }));
+    const res = await pollPOST_any(makePost({ device_code: "Z".repeat(17) }));
     assert.strictEqual(await status(res), 400);
   });
 });

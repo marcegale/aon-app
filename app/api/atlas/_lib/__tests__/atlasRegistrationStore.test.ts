@@ -11,6 +11,7 @@ import {
   createPendingRegistration,
   getRegistrationByDeviceCode,
   expirePendingRegistrationIfNeeded,
+  getPollStatusByDeviceCode,
   type RegistrationDb,
   type RegistrationRecord,
 } from "../atlasRegistrationStore.ts";
@@ -237,6 +238,104 @@ describe("expirePendingRegistrationIfNeeded", () => {
     const rec = makeRecord({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
     const db = makeDb({ update: async () => { throw new Error("deadlock"); } });
     const r = await expirePendingRegistrationIfNeeded(rec, db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+});
+
+// ── getPollStatusByDeviceCode ─────────────────────────────────────────────────
+
+describe("getPollStatusByDeviceCode", () => {
+  beforeEach(saveEnv);
+  afterEach(restoreEnv);
+
+  test("SECRET_NOT_CONFIGURED cuando falta env var", async () => {
+    clearSecret();
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb());
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "SECRET_NOT_CONFIGURED");
+  });
+
+  test("NOT_FOUND cuando findUnique retorna null", async () => {
+    setSecret();
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => null }));
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "NOT_FOUND");
+  });
+
+  test("pending vigente → status pending", async () => {
+    setSecret();
+    const row = makeRow({ status: "pending", expiresAt: new Date(Date.now() + 60_000) });
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => row }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "pending");
+  });
+
+  test("pending expirado → llama update y retorna expired", async () => {
+    setSecret();
+    const expiredRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    let updateCalled = false;
+    const db = makeDb({
+      findUnique: async () => expiredRow,
+      update: async ({ where, data }) => {
+        updateCalled = true;
+        return makeRow({ id: where.id, ...data as Partial<DbRow> });
+      },
+    });
+    const r = await getPollStatusByDeviceCode("ABCD1234", db);
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "expired");
+    assert.ok(updateCalled, "db.update debe haberse llamado para expirar");
+  });
+
+  test("status expired existente → expired", async () => {
+    setSecret();
+    const row = makeRow({ status: "expired", expiresAt: new Date(Date.now() - 1_000) });
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => row }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "expired");
+  });
+
+  test("status denied → denied", async () => {
+    setSecret();
+    const row = makeRow({ status: "denied" });
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => row }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "denied");
+  });
+
+  test("status completed → completed", async () => {
+    setSecret();
+    const row = makeRow({ status: "completed" });
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => row }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "completed");
+  });
+
+  test("status approved → approved_pending_pickup", async () => {
+    setSecret();
+    const row = makeRow({ status: "approved" });
+    const r = await getPollStatusByDeviceCode("ABCD1234", makeDb({ findUnique: async () => row }));
+    assert.ok(r.ok);
+    if (r.ok) assert.strictEqual(r.status, "approved_pending_pickup");
+  });
+
+  test("DB_ERROR en lookup → propaga DB_ERROR", async () => {
+    setSecret();
+    const db = makeDb({ findUnique: async () => { throw new Error("network error"); } });
+    const r = await getPollStatusByDeviceCode("ABCD1234", db);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
+  });
+
+  test("DB_ERROR al expirar → propaga DB_ERROR", async () => {
+    setSecret();
+    const expiredRow = makeRow({ status: "pending", expiresAt: new Date(Date.now() - 1_000) });
+    const db = makeDb({
+      findUnique: async () => expiredRow,
+      update: async () => { throw new Error("write failed"); },
+    });
+    const r = await getPollStatusByDeviceCode("ABCD1234", db);
     assert.ok(!r.ok);
     if (!r.ok) assert.strictEqual(r.code, "DB_ERROR");
   });
