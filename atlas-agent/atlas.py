@@ -37,6 +37,7 @@ from state_machine import (
 from planner import planner as planner_mod
 from planner.models import parse_action_plan, Action
 from tools.executor import execute as tool_execute
+from capabilities.registry import REGISTRY as _cap_registry
 from permissions.guard import requires_card, is_destructive_blocked
 from ui.orb.orb_window import OrbWindow
 from ui.cockpit.cockpit_window import CockpitWindow
@@ -118,8 +119,19 @@ def _make_input_handler(
             fsm.transition(IDLE)
             return
 
-        # Agentic — Phase 3A handles first action only
+        # Agentic — execute first action
         action = action_plan.actions[0]
+
+        # Stub/disabled capabilities skip permission gate — executor handles gracefully
+        _cap = _cap_registry.get(action.tool)
+        if _cap is None or _cap.availability != "enabled":
+            fsm.transition(EXECUTING)
+            _result = tool_execute(action)
+            fsm.transition(VERIFYING)
+            fsm.transition(REPORTING)
+            cockpit.show_action_result(_result)
+            fsm.transition(IDLE)
+            return
 
         if is_destructive_blocked(action):
             # Show informational card; never execute

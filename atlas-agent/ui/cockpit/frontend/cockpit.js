@@ -67,6 +67,7 @@ window.showAtlasResponse = function (text, mode, isError) {
   }
   messagesEl.appendChild(el);
   _scroll();
+  _focusInput();
 };
 
 window.setThinking = function (active) {
@@ -114,6 +115,7 @@ window.hidePermissionCard = function () {
   permCard.classList.add('hidden');
   pendingActionId = null;
   _setBusy(false);
+  _focusInput();
 };
 
 // ── Action Result Card ─────────────────────────────────────────────────────
@@ -122,6 +124,7 @@ window.showActionResult = function (result) {
   const card = _buildResultCard(result);
   messagesEl.appendChild(card);
   _scroll();
+  _focusInput();
 };
 
 // Legacy alias — transforms output+ok into a minimal ActionResult shape
@@ -300,6 +303,16 @@ document.getElementById('close-btn').addEventListener('click', function () {
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+window._focusInput = function () {
+  if (!isBusy && inputEl && !inputEl.disabled) {
+    inputEl.focus();
+  }
+};
+
+function _focusInput() {
+  window._focusInput();
+}
+
 function _setBusy(busy) {
   isBusy = busy;
   sendBtn.disabled = busy;
@@ -326,4 +339,5 @@ function _autoResize() {
 window.addEventListener('load', function () {
   window.setCockpitState('IDLE');
   _autoResize();
+  _focusInput();
 });

@@ -12,6 +12,9 @@ a = Analysis(
         ("ui/cockpit/frontend", "ui/cockpit/frontend"),
     ],
     hiddenimports=[
+        "capabilities",
+        "capabilities.models",
+        "capabilities.registry",
         "config.settings",
         "broker",
         "state_machine",

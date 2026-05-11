@@ -4,10 +4,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-# ── Tool/operation/level allowlists (desktop-side schema guard) ──────────────
-_KNOWN_TOOLS: set[str] = {"terminal"}
+from capabilities.registry import REGISTRY as _CAP_REGISTRY
+
+# ── Tool/operation/level allowlists derived from capability registry ──────────
+# Only tools present in REGISTRY are accepted; executor decides availability.
+_KNOWN_TOOLS: set[str] = set(_CAP_REGISTRY.keys())
 _KNOWN_OPERATIONS: dict[str, set[str]] = {
-    "terminal": {"run_command"},
+    cap_id: {op.id for op in cap.operations}
+    for cap_id, cap in _CAP_REGISTRY.items()
 }
 _KNOWN_LEVELS: set[str] = {"PUBLIC", "SENSITIVE", "DESTRUCTIVE"}
 

@@ -105,6 +105,7 @@ class CockpitWindow:
             return
         self._win.show()
         self._visible = True
+        self._eval("setTimeout(window._focusInput, 150)")
         logging.info("[cockpit] opened")
 
     def close(self) -> None:

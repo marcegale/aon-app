@@ -1,9 +1,11 @@
-"""Generic tool executor — Phase 3B.
+"""Generic tool executor — Phase 3C.
 
-Maps tool.operation keys to Python callables that return RawResult.
+Two-stage dispatch:
+  1. Capability registry check — rejects stub/disabled tools with CAPABILITY_UNAVAILABLE.
+  2. Tool handler dispatch — executes enabled tools via _REGISTRY callable map.
+
 Wraps each call with timing, redaction, and truncation to produce ActionResult.
-The FSM must be in EXECUTING state before this is called — that gate is owned
-by atlas.py, not here.
+FSM must be in EXECUTING state before this is called — that gate is atlas.py's job.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import logging
 import time
 from typing import Callable
 
+from capabilities.registry import REGISTRY as _CAP_REGISTRY
 from planner.models import Action, ActionResult, RawResult
 from tools.redactor import redact
 from tools.terminal import run_command
@@ -20,7 +23,8 @@ from tools.terminal import run_command
 _MAX_STDOUT = 2000
 _MAX_STDERR = 300
 
-# Registry: "tool.operation" → function(params: dict) -> RawResult
+# Runtime dispatch: "tool.operation" → function(params: dict) -> RawResult
+# Only enabled capabilities should have entries here.
 _REGISTRY: dict[str, Callable[[dict], RawResult]] = {
     "terminal.run_command": run_command,
 }
@@ -30,7 +34,49 @@ def _now_iso() -> str:
     return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _unavailable(action: Action, reason: str) -> ActionResult:
+    ts = _now_iso()
+    return ActionResult(
+        ok=False,
+        tool=action.tool,
+        operation=action.operation,
+        permission_level=action.permission_level,
+        stdout="", stderr="",
+        returncode=None,
+        duration_ms=0,
+        truncated=False, stderr_truncated=False,
+        error_code="CAPABILITY_UNAVAILABLE",
+        error_message=reason,
+        started_at=ts, finished_at=ts,
+    )
+
+
 def execute(action: Action) -> ActionResult:
+    # ── Stage 1: capability availability check ────────────────────────────────
+    cap = _CAP_REGISTRY.get(action.tool)
+    if cap is None:
+        logging.error("[executor] unknown capability '%s'", action.tool)
+        ts = _now_iso()
+        return ActionResult(
+            ok=False,
+            tool=action.tool,
+            operation=action.operation,
+            permission_level=action.permission_level,
+            stdout="", stderr="",
+            returncode=None,
+            duration_ms=0,
+            truncated=False, stderr_truncated=False,
+            error_code="EXEC_ERROR",
+            error_message=f"Capability '{action.tool}' desconocida.",
+            started_at=ts, finished_at=ts,
+        )
+
+    if cap.availability != "enabled":
+        reason = cap.unavailable_reason or "Esta capacidad no está disponible todavía."
+        logging.info("[executor] capability '%s' is %s — returning unavailable", action.tool, cap.availability)
+        return _unavailable(action, reason)
+
+    # ── Stage 2: tool handler dispatch ───────────────────────────────────────
     key = f"{action.tool}.{action.operation}"
     fn  = _REGISTRY.get(key)
 
@@ -47,7 +93,7 @@ def execute(action: Action) -> ActionResult:
             duration_ms=0,
             truncated=False, stderr_truncated=False,
             error_code="EXEC_ERROR",
-            error_message=f"Tool '{key}' no disponible.",
+            error_message=f"Operación '{key}' no disponible.",
             started_at=ts, finished_at=ts,
         )
 
