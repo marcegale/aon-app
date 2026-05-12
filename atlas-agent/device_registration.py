@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import secrets
 import time
-from typing import Callable, Optional
+from dataclasses import dataclass
+from typing import Callable, Optional, Union
 
 from device_client import AtlasDeviceClient, PollResult, StartResult
 
@@ -13,6 +14,20 @@ from device_client import AtlasDeviceClient, PollResult, StartResult
 def generate_device_code() -> str:
     """Generate a cryptographically random device identifier."""
     return secrets.token_hex(16)
+
+
+@dataclass
+class RegistrationStarted:
+    device_code: str
+    registration_url: str | None
+    expires_at: str | None
+    poll_interval_secs: int | None
+
+
+@dataclass
+class RegistrationFlowError:
+    code: str
+    message: str
 
 
 class DeviceRegistrationFlow:
@@ -31,8 +46,25 @@ class DeviceRegistrationFlow:
         from device_credentials import save_device_key
         save_device_key(key)
 
-    def start(self, device_id: str) -> StartResult:
-        return self._client.start_registration(device_id)
+    def start(
+        self,
+        platform: str = "windows",
+        client_version: Optional[str] = None,
+    ) -> Union[RegistrationStarted, RegistrationFlowError]:
+        device_code = generate_device_code()
+        result = self._client.start_registration(device_code, platform, client_version)
+        if result.ok:
+            return RegistrationStarted(
+                device_code=device_code,
+                registration_url=result.registration_url,
+                expires_at=result.expires_at,
+                poll_interval_secs=result.poll_interval_secs,
+            )
+        error = result.error
+        return RegistrationFlowError(
+            code=error.code if error else "UNKNOWN",
+            message=error.message if error else "",
+        )
 
     def poll_once(self, device_code: str) -> PollResult:
         return self._client.poll_registration(device_code)

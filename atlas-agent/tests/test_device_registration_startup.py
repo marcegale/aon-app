@@ -19,6 +19,7 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from device_client import AtlasDeviceClient
+from device_registration import RegistrationFlowError, RegistrationStarted
 from device_registration_startup import (
     StartupRegistrationResult,
     maybe_start_registration_from_startup_check,
@@ -43,24 +44,27 @@ def _make_check(should_start: bool, state: DeviceState | None = None) -> Startup
     )
 
 
-def _success_flow(device_code: str = "dc_test123", url: str = "https://example.com/r", **extra):
-    """Return a mock flow whose start() reports success."""
+def _success_flow(
+    device_code: str = "dc_test123",
+    url: str = "https://example.com/r",
+    expires_at: str = "2024-06-01T12:00:00Z",
+    poll_interval_secs: int = 5,
+):
+    """Return a mock flow whose start() returns RegistrationStarted."""
     flow = mock.MagicMock()
-    flow.start.return_value = {
-        "ok": True,
-        "device_code": device_code,
-        "registration_url": url,
-        "expires_at": "2024-06-01T12:00:00Z",
-        "poll_interval_secs": 5,
-        **extra,
-    }
+    flow.start.return_value = RegistrationStarted(
+        device_code=device_code,
+        registration_url=url,
+        expires_at=expires_at,
+        poll_interval_secs=poll_interval_secs,
+    )
     return flow
 
 
 def _error_flow(error_code: str = "REGISTRATION_UNAVAILABLE", message: str = "Cannot register."):
-    """Return a mock flow whose start() reports failure."""
+    """Return a mock flow whose start() returns RegistrationFlowError."""
     flow = mock.MagicMock()
-    flow.start.return_value = {"ok": False, "error_code": error_code, "message": message}
+    flow.start.return_value = RegistrationFlowError(code=error_code, message=message)
     return flow
 
 
@@ -204,7 +208,6 @@ class TestStateMapping(unittest.TestCase):
 
     def _result_for_state(self, state: DeviceState) -> StartupRegistrationResult:
         from device_startup import run_startup_device_check
-        # Determine expected flags from the state machine
         check = run_startup_device_check(
             validate_device_key_fn=self._validator_for(state),
             load_device_key_fn=self._loader_for(state),

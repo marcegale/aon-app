@@ -3,7 +3,7 @@ Atlas Desktop — Startup registration trigger.
 
 When the startup device check indicates registration is needed,
 this module starts the registration flow:
-  1. generate a device_code
+  1. generate a device_code (internally, inside DeviceRegistrationFlow.start)
   2. call the registration start endpoint via DeviceRegistrationFlow
   3. return the result so the UI layer can display it
 
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from device_client import AtlasDeviceClient
-from device_registration import DeviceRegistrationFlow, generate_device_code
+from device_registration import DeviceRegistrationFlow, RegistrationStarted, RegistrationFlowError
 from device_startup import StartupDeviceCheck
 
 
@@ -32,38 +32,8 @@ class StartupRegistrationResult:
     message: str = ""
 
 
-class _DefaultStartupFlow:
-    """
-    Adapts DeviceRegistrationFlow to the (platform, client_version) start API.
-
-    Generates a fresh device_code internally so the caller never needs to
-    manage it.  Returns a plain dict so downstream code stays dependency-free.
-    """
-
-    def __init__(self, client: AtlasDeviceClient) -> None:
-        self._flow = DeviceRegistrationFlow(client)
-
-    def start(self, platform: str, client_version: str | None = None) -> dict:
-        device_code = generate_device_code()
-        result = self._flow.start(device_code)
-        if result.ok:
-            return {
-                "ok": True,
-                "device_code": device_code,
-                "registration_url": result.pickup_id,   # best available in current API
-                "expires_at": None,                     # expires_in only; ISO not available
-                "poll_interval_secs": None,
-            }
-        error = result.error
-        return {
-            "ok": False,
-            "error_code": error.code if error else "UNKNOWN",
-            "message": error.message if error else "Registration start failed.",
-        }
-
-
-def _default_flow_factory(client: AtlasDeviceClient) -> _DefaultStartupFlow:
-    return _DefaultStartupFlow(client)
+def _default_flow_factory(client: AtlasDeviceClient) -> DeviceRegistrationFlow:
+    return DeviceRegistrationFlow(client)
 
 
 def maybe_start_registration_from_startup_check(
@@ -88,8 +58,8 @@ def maybe_start_registration_from_startup_check(
         OS/platform identifier sent to the backend (default "windows").
     flow_factory:
         Injectable factory: (client: AtlasDeviceClient) -> flow object.
-        flow object must have: start(platform, client_version) -> dict
-        Default uses _DefaultStartupFlow wrapping DeviceRegistrationFlow.
+        flow object must have: start(platform, client_version) -> RegistrationStarted | RegistrationFlowError
+        Default uses DeviceRegistrationFlow directly.
 
     Returns
     -------
@@ -114,22 +84,23 @@ def maybe_start_registration_from_startup_check(
     client = AtlasDeviceClient(backend_url)
     flow = _factory(client)
 
-    start_dict: dict = flow.start(platform=platform, client_version=client_version)
+    start_result = flow.start(platform=platform, client_version=client_version)
 
-    if start_dict.get("ok"):
+    if isinstance(start_result, RegistrationStarted):
         return StartupRegistrationResult(
             attempted=True,
             started=True,
-            device_code=start_dict.get("device_code"),
-            registration_url=start_dict.get("registration_url"),
-            expires_at=start_dict.get("expires_at"),
-            poll_interval_secs=start_dict.get("poll_interval_secs"),
+            device_code=start_result.device_code,
+            registration_url=start_result.registration_url,
+            expires_at=start_result.expires_at,
+            poll_interval_secs=start_result.poll_interval_secs,
             message="Registration started.",
         )
 
+    # RegistrationFlowError
     return StartupRegistrationResult(
         attempted=True,
         started=False,
-        error_code=start_dict.get("error_code") or "REGISTRATION_START_FAILED",
-        message=start_dict.get("message") or "Registration start failed.",
+        error_code=start_result.code,
+        message=start_result.message,
     )

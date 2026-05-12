@@ -20,9 +20,9 @@ class ClientError:
 @dataclass
 class StartResult:
     ok: bool
-    device_code: Optional[str] = None
-    pickup_id: Optional[str] = None
-    expires_in: Optional[int] = None
+    registration_url: Optional[str] = None
+    expires_at: Optional[str] = None
+    poll_interval_secs: Optional[int] = None
     error: Optional[ClientError] = None
 
 
@@ -59,15 +59,23 @@ class AtlasDeviceClient:
             msg = f"HTTP {exc.code}"
         return ClientError(code="HTTP_ERROR", message=msg)
 
-    def start_registration(self, device_id: str) -> StartResult:
+    def start_registration(
+        self,
+        device_code: str,
+        platform: str = "windows",
+        client_version: Optional[str] = None,
+    ) -> StartResult:
+        body: dict = {"device_code": device_code, "platform": platform}
+        if client_version is not None:
+            body["client_version"] = client_version
         try:
-            code, body = self._post_json("/api/atlas/register/start", {"device_id": device_id})
+            code, resp = self._post_json("/api/atlas/devices/register/start", body)
             if code == 200:
                 return StartResult(
                     ok=True,
-                    device_code=body.get("device_code"),
-                    pickup_id=body.get("pickup_id"),
-                    expires_in=body.get("expires_in"),
+                    registration_url=resp.get("registration_url"),
+                    expires_at=resp.get("expires_at"),
+                    poll_interval_secs=resp.get("poll_interval_secs"),
                 )
             return StartResult(ok=False, error=ClientError("HTTP_ERROR", f"HTTP {code}"))
         except urllib.error.HTTPError as exc:
@@ -79,7 +87,7 @@ class AtlasDeviceClient:
 
     def poll_registration(self, device_code: str) -> PollResult:
         try:
-            code, body = self._post_json("/api/atlas/register/pickup", {"device_code": device_code})
+            code, body = self._post_json("/api/atlas/devices/register/poll", {"device_code": device_code})
             if code == 200:
                 return PollResult(
                     ok=True,

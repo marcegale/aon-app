@@ -51,13 +51,17 @@ class TestStartRegistration(unittest.TestCase):
         self.client = AtlasDeviceClient(BASE_URL)
 
     def test_success_200_returns_all_fields(self) -> None:
-        body = {"device_code": "dc_abc", "pickup_id": "pu_xyz", "expires_in": 300}
+        body = {
+            "registration_url": "https://example.com/register",
+            "expires_at": "2024-06-01T12:00:00Z",
+            "poll_interval_secs": 5,
+        }
         with mock.patch("urllib.request.urlopen", return_value=_mock_response(body)):
-            result = self.client.start_registration("dev-001")
+            result = self.client.start_registration("dc_abc123")
         self.assertTrue(result.ok)
-        self.assertEqual(result.device_code, "dc_abc")
-        self.assertEqual(result.pickup_id, "pu_xyz")
-        self.assertEqual(result.expires_in, 300)
+        self.assertEqual(result.registration_url, "https://example.com/register")
+        self.assertEqual(result.expires_at, "2024-06-01T12:00:00Z")
+        self.assertEqual(result.poll_interval_secs, 5)
         self.assertIsNone(result.error)
 
     def test_http_error_409_returns_http_error_with_message(self) -> None:

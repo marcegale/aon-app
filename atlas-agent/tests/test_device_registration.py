@@ -15,7 +15,12 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from device_client import ClientError, PollResult, StartResult
-from device_registration import DeviceRegistrationFlow, generate_device_code
+from device_registration import (
+    DeviceRegistrationFlow,
+    RegistrationFlowError,
+    RegistrationStarted,
+    generate_device_code,
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -116,7 +121,7 @@ class TestPollLoop(unittest.TestCase):
         self.assertEqual(sleep_calls, [7.5])
 
 
-# ── start / poll_once ─────────────────────────────────────────────────────────
+# ── start ─────────────────────────────────────────────────────────────────────
 
 class TestDelegation(unittest.TestCase):
 
@@ -124,13 +129,40 @@ class TestDelegation(unittest.TestCase):
         client = mock.MagicMock()
         return DeviceRegistrationFlow(client=client, save_fn=lambda _: None, sleep_fn=lambda _: None), client
 
-    def test_start_delegates_to_client(self) -> None:
+    def test_start_generates_device_code_and_returns_registration_started(self) -> None:
         flow, client = self._flow()
-        expected = StartResult(ok=True, device_code="dc_x", pickup_id="pu_y", expires_in=300)
-        client.start_registration.return_value = expected
-        result = flow.start("dev-123")
-        client.start_registration.assert_called_once_with("dev-123")
-        self.assertIs(result, expected)
+        client.start_registration.return_value = StartResult(
+            ok=True,
+            registration_url="https://example.com/register",
+            expires_at="2024-06-01T12:00:00Z",
+            poll_interval_secs=5,
+        )
+        with mock.patch("device_registration.generate_device_code", return_value="dc_mocked"):
+            result = flow.start()
+        client.start_registration.assert_called_once_with("dc_mocked", "windows", None)
+        self.assertIsInstance(result, RegistrationStarted)
+        self.assertEqual(result.device_code, "dc_mocked")
+        self.assertEqual(result.registration_url, "https://example.com/register")
+        self.assertEqual(result.expires_at, "2024-06-01T12:00:00Z")
+        self.assertEqual(result.poll_interval_secs, 5)
+
+    def test_start_error_returns_registration_flow_error(self) -> None:
+        flow, client = self._flow()
+        client.start_registration.return_value = StartResult(
+            ok=False,
+            error=ClientError(code="NETWORK_ERROR", message="Connection refused"),
+        )
+        result = flow.start()
+        self.assertIsInstance(result, RegistrationFlowError)
+        self.assertEqual(result.code, "NETWORK_ERROR")
+        self.assertEqual(result.message, "Connection refused")
+
+    def test_start_forwards_platform_and_client_version(self) -> None:
+        flow, client = self._flow()
+        client.start_registration.return_value = StartResult(ok=True)
+        with mock.patch("device_registration.generate_device_code", return_value="dc_x"):
+            flow.start(platform="linux", client_version="2.0.0")
+        client.start_registration.assert_called_once_with("dc_x", "linux", "2.0.0")
 
     def test_poll_once_delegates_to_client(self) -> None:
         flow, client = self._flow()
