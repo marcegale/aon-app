@@ -172,12 +172,51 @@ describe("/register/start — POST success path", () => {
     assert.strictEqual(body.poll_interval_secs, 5);
   });
 
-  test("response includes registration_url with encoded device_code", async () => {
+  test("registration_url contains device_code", async () => {
     const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
     const body = await json(res) as { registration_url: string };
     assert.ok(typeof body.registration_url === "string", "registration_url must be a string");
     assert.ok(body.registration_url.includes("ABC12345"), "registration_url must contain device_code");
-    assert.ok(body.registration_url.startsWith("https://app.aigency.com/atlas/register"), "must be aigency URL");
+    assert.ok(body.registration_url.includes("/atlas/register"), "must include /atlas/register path");
+  });
+
+  test("registration_url uses fallback domain when NEXT_PUBLIC_APP_URL not set", async () => {
+    const prev = process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    try {
+      const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+      const body = await json(res) as { registration_url: string };
+      assert.ok(body.registration_url.startsWith("https://app.aigency.com/atlas/register"), "fallback must be app.aigency.com");
+    } finally {
+      if (prev !== undefined) process.env.NEXT_PUBLIC_APP_URL = prev;
+    }
+  });
+
+  test("registration_url uses NEXT_PUBLIC_APP_URL when set", async () => {
+    const prev = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    try {
+      const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+      const body = await json(res) as { registration_url: string };
+      assert.ok(body.registration_url.startsWith("http://localhost:3000/atlas/register"), "must use NEXT_PUBLIC_APP_URL");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = prev;
+    }
+  });
+
+  test("registration_url strips trailing slash from NEXT_PUBLIC_APP_URL", async () => {
+    const prev = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000/";
+    try {
+      const res = await startPOST_success(makePost({ device_code: "ABC12345", platform: "windows" }));
+      const body = await json(res) as { registration_url: string };
+      assert.ok(!body.registration_url.includes("//atlas/register"), "must not have double slash");
+      assert.ok(body.registration_url.startsWith("http://localhost:3000/atlas/register"), "must strip trailing slash");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = prev;
+    }
   });
 
   test("valid body with client_version → 200", async () => {

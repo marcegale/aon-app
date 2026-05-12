@@ -58,12 +58,13 @@ export function createStartPostHandler(
       );
     }
 
+    const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? "https://app.aigency.com").replace(/\/$/, "");
     return NextResponse.json(
       {
         ok: true,
         expires_at: result.data.expiresAt.toISOString(),
         poll_interval_secs: 5,
-        registration_url: `https://app.aigency.com/atlas/register?code=${encodeURIComponent(b.device_code)}`,
+        registration_url: `${appBase}/atlas/register?code=${encodeURIComponent(b.device_code)}`,
       },
       { status: 200 },
     );
