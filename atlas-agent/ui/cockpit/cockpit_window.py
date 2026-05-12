@@ -22,7 +22,12 @@ def _frontend_path() -> str:
     return str(base / "frontend" / "index.html")
 
 
-_ALLOWED_URL_PREFIXES = ("https://app.aigency.com/",)
+import os as _os
+_extra_base = _os.getenv("NEXT_PUBLIC_APP_URL", "").rstrip("/")
+_ALLOWED_URL_PREFIXES = tuple(filter(None, [
+    "https://app.aigency.com/",
+    (_extra_base + "/") if _extra_base else None,
+]))
 
 
 class _CockpitAPI:
