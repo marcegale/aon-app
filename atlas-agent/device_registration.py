@@ -11,9 +11,16 @@ from typing import Callable, Optional, Union
 from device_client import AtlasDeviceClient, PollResult, StartResult
 
 
+_DEVICE_CODE_RE = r"^[A-Za-z0-9]{4,16}$"
+
+
 def generate_device_code() -> str:
-    """Generate a cryptographically random device identifier."""
-    return secrets.token_hex(16)
+    """Generate a cryptographically random device identifier.
+
+    Produces 16 lowercase hex chars — within the backend constraint of
+    4–16 alphanumeric characters (/register/start, /register/poll).
+    """
+    return secrets.token_hex(8)  # 8 bytes → 16 hex chars; fits [A-Za-z0-9]{4,16}
 
 
 @dataclass

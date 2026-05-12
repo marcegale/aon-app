@@ -187,6 +187,14 @@ class TestGenerateDeviceCode(unittest.TestCase):
         codes = {generate_device_code() for _ in range(5)}
         self.assertEqual(len(codes), 5)
 
+    def test_matches_backend_constraint_4_to_16_alphanumeric(self) -> None:
+        """Backend /register/start and /register/poll require ^[A-Za-z0-9]{4,16}$."""
+        import re
+        pattern = re.compile(r"^[A-Za-z0-9]{4,16}$")
+        for _ in range(20):
+            code = generate_device_code()
+            self.assertRegex(code, pattern, f"code {code!r} does not match backend constraint")
+
 
 if __name__ == "__main__":
     unittest.main()
