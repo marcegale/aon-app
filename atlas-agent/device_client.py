@@ -84,6 +84,10 @@ class AtlasDeviceClient:
             return StartResult(ok=False, error=ClientError("NETWORK_ERROR", str(exc.reason)))
         except (json.JSONDecodeError, ValueError) as exc:
             return StartResult(ok=False, error=ClientError("INVALID_RESPONSE", str(exc)))
+        except (TimeoutError, OSError) as exc:
+            # urllib wraps most errors as URLError, but a socket timeout during
+            # response reading (h.getresponse) propagates as a raw TimeoutError/OSError.
+            return StartResult(ok=False, error=ClientError("NETWORK_ERROR", str(exc)))
 
     def poll_registration(self, device_code: str) -> PollResult:
         try:
@@ -101,3 +105,6 @@ class AtlasDeviceClient:
             return PollResult(ok=False, error=ClientError("NETWORK_ERROR", str(exc.reason)))
         except (json.JSONDecodeError, ValueError) as exc:
             return PollResult(ok=False, error=ClientError("INVALID_RESPONSE", str(exc)))
+        except (TimeoutError, OSError) as exc:
+            # Same as start_registration: raw socket timeout during response read.
+            return PollResult(ok=False, error=ClientError("NETWORK_ERROR", str(exc)))
