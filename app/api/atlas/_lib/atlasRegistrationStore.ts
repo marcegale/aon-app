@@ -26,6 +26,10 @@ export interface RegistrationDb {
     create(args: { data: Record<string, unknown> }): Promise<DbRegistrationRow>;
     findUnique(args: { where: { deviceCodeHash: string } }): Promise<DbRegistrationRow | null>;
     update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<DbRegistrationRow>;
+    updateMany(args: {
+      where: { status: string; expiresAt: { lt: Date } };
+      data: { status: string };
+    }): Promise<{ count: number }>;
   };
 }
 
@@ -377,6 +381,27 @@ export async function pickupApprovedRegistrationByDeviceCode(
   }
 
   return { ok: false, code: "DB_ERROR", message: "Unknown registration status." };
+}
+
+// ── cleanupExpiredPendingRegistrations ───────────────────────────────────────
+
+export type CleanupExpiredRegistrationsResult =
+  | { ok: true; count: number }
+  | { ok: false; code: "DB_ERROR"; message: string };
+
+export async function cleanupExpiredPendingRegistrations(
+  db?: RegistrationDb,
+): Promise<CleanupExpiredRegistrationsResult> {
+  const theDb = db ?? await getDefaultDb();
+  try {
+    const result = await theDb.atlasDeviceRegistration.updateMany({
+      where: { status: "pending", expiresAt: { lt: new Date() } },
+      data: { status: "expired" },
+    });
+    return { ok: true, count: result.count };
+  } catch {
+    return { ok: false, code: "DB_ERROR", message: "Failed to cleanup expired registrations." };
+  }
 }
 
 // ── expirePendingRegistrationIfNeeded ─────────────────────────────────────────

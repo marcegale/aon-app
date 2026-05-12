@@ -14,6 +14,7 @@ import {
   getPollStatusByDeviceCode,
   approveRegistrationByDeviceCode,
   pickupApprovedRegistrationByDeviceCode,
+  cleanupExpiredPendingRegistrations,
   type RegistrationDb,
   type RegistrationRecord,
   type PickupDb,
@@ -66,6 +67,7 @@ type DbOverrides = {
   create?: (args: { data: Record<string, unknown> }) => Promise<DbRow>;
   findUnique?: (args: { where: { deviceCodeHash: string } }) => Promise<DbRow | null>;
   update?: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<DbRow>;
+  updateMany?: (args: { where: { status: string; expiresAt: { lt: Date } }; data: { status: string } }) => Promise<{ count: number }>;
 };
 
 function makeDb(overrides: DbOverrides = {}): RegistrationDb {
@@ -76,6 +78,7 @@ function makeDb(overrides: DbOverrides = {}): RegistrationDb {
       update: overrides.update ?? (async ({ where, data }) =>
         makeRow({ id: where.id, ...data as Partial<DbRow> })
       ),
+      updateMany: overrides.updateMany ?? (async () => ({ count: 0 })),
     },
   };
 }
@@ -128,6 +131,7 @@ function makePickupDb(overrides: PickupDbOverrides = {}): PickupDb {
       update: overrides.update ?? (async ({ where, data }) =>
         makeRow({ id: where.id, ...data as Partial<DbRow> })
       ),
+      updateMany: overrides.updateMany ?? (async () => ({ count: 0 })),
     },
     atlasDevice: {
       create: overrides.atlasDeviceCreate ?? (async () => makeDeviceRow()),
@@ -791,5 +795,94 @@ describe("pickupApprovedRegistrationByDeviceCode", () => {
     await pickupApprovedRegistrationByDeviceCode("ABCD1234", db);
     assert.ok(deviceCreatedInsideTx, "AtlasDevice.create debe ocurrir dentro de la tx");
     assert.ok(regUpdatedInsideTx, "registration.update debe ocurrir dentro de la tx");
+  });
+});
+
+// ── cleanupExpiredPendingRegistrations ────────────────────────────────────────
+
+describe("cleanupExpiredPendingRegistrations", () => {
+  beforeEach(saveEnv);
+  afterEach(restoreEnv);
+
+  test("marks pending expired registrations → ok:true with count N", async () => {
+    let callCount = 0;
+    const db = makeDb({ updateMany: async () => { callCount++; return { count: 3 }; } });
+    const result = await cleanupExpiredPendingRegistrations(db);
+    assert.ok(result.ok);
+    if (result.ok) assert.strictEqual(result.count, 3);
+    assert.strictEqual(callCount, 1, "updateMany must be called exactly once");
+  });
+
+  test("calls updateMany with where status:'pending' and expiresAt.lt as a Date", async () => {
+    let capturedWhere: { status: string; expiresAt: { lt: Date } } | null = null;
+    const db = makeDb({
+      updateMany: async ({ where }) => { capturedWhere = where; return { count: 0 }; },
+    });
+    const before = new Date();
+    await cleanupExpiredPendingRegistrations(db);
+    const after = new Date();
+    assert.ok(capturedWhere !== null, "updateMany must be called");
+    assert.strictEqual(capturedWhere!.status, "pending");
+    assert.ok(capturedWhere!.expiresAt.lt instanceof Date, "expiresAt.lt must be a Date");
+    assert.ok(
+      capturedWhere!.expiresAt.lt >= before && capturedWhere!.expiresAt.lt <= after,
+      "expiresAt.lt must be approximately now",
+    );
+  });
+
+  test("calls updateMany with data status:'expired'", async () => {
+    let capturedData: { status: string } | null = null;
+    const db = makeDb({
+      updateMany: async ({ data }) => { capturedData = data; return { count: 0 }; },
+    });
+    await cleanupExpiredPendingRegistrations(db);
+    assert.ok(capturedData !== null);
+    assert.strictEqual(capturedData!.status, "expired");
+  });
+
+  test("does not require ATLAS_DEVICE_CODE_SECRET", async () => {
+    clearSecret();
+    const db = makeDb({ updateMany: async () => ({ count: 2 }) });
+    const result = await cleanupExpiredPendingRegistrations(db);
+    assert.ok(result.ok, "must succeed without ATLAS_DEVICE_CODE_SECRET");
+    if (result.ok) assert.strictEqual(result.count, 2);
+  });
+
+  test("DB throw → DB_ERROR", async () => {
+    const db = makeDb({ updateMany: async () => { throw new Error("db gone"); } });
+    const result = await cleanupExpiredPendingRegistrations(db);
+    assert.ok(!result.ok);
+    if (!result.ok) {
+      assert.strictEqual(result.code, "DB_ERROR");
+      assert.ok(result.message.length > 0);
+    }
+  });
+
+  test("does not log anything", async () => {
+    const logs: string[] = [];
+    const orig = { log: console.log, warn: console.warn, error: console.error };
+    console.log   = (...a: unknown[]) => logs.push(a.map(String).join(" "));
+    console.warn  = (...a: unknown[]) => logs.push(a.map(String).join(" "));
+    console.error = (...a: unknown[]) => logs.push(a.map(String).join(" "));
+    try {
+      const db = makeDb({ updateMany: async () => ({ count: 0 }) });
+      await cleanupExpiredPendingRegistrations(db);
+    } finally {
+      console.log   = orig.log;
+      console.warn  = orig.warn;
+      console.error = orig.error;
+    }
+    assert.strictEqual(logs.length, 0, "cleanup must produce no console output");
+  });
+
+  test("where.status is 'pending' — approved/completed/denied rows are not targeted", async () => {
+    let capturedWhere: { status: string } | null = null;
+    const db = makeDb({
+      updateMany: async ({ where }) => { capturedWhere = where as { status: string }; return { count: 0 }; },
+    });
+    await cleanupExpiredPendingRegistrations(db);
+    assert.ok(capturedWhere !== null);
+    assert.strictEqual(capturedWhere!.status, "pending",
+      "updateMany must target only 'pending' rows — approved/completed/denied must not be touched");
   });
 });

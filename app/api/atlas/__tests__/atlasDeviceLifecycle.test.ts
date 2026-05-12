@@ -14,6 +14,7 @@ import {
   createPendingRegistration,
   approveRegistrationByDeviceCode,
   pickupApprovedRegistrationByDeviceCode,
+  cleanupExpiredPendingRegistrations,
   type PickupDb,
 } from "../_lib/atlasRegistrationStore.ts";
 import {
@@ -122,6 +123,16 @@ class FakeStore {
         },
         async update({ where, data }: { where: { id: string }; data: Record<string, unknown> }) {
           return store.findAndUpdateReg(where.id, data);
+        },
+        async updateMany({ where, data }: { where: { status: string; expiresAt: { lt: Date } }; data: { status: string } }) {
+          let count = 0;
+          for (const [k, r] of store.regs.entries()) {
+            if (r.status === where.status && r.expiresAt < where.expiresAt.lt) {
+              store.regs.set(k, { ...r, status: data.status });
+              count++;
+            }
+          }
+          return { count };
         },
       },
       atlasDevice: {
@@ -553,5 +564,83 @@ describe("production auth errors", () => {
       assert.strictEqual(result.code, "DEVICE_AUTH_UNAVAILABLE");
       assert.strictEqual(result.httpStatus, 503);
     }
+  });
+});
+
+// ── Test 7+8 — Registration cleanup integration ───────────────────────────────
+
+describe("registration cleanup integration", () => {
+  test("cleanup marks expired pending registration — subsequent pickup returns expired, no device_key", async () => {
+    const store   = new FakeStore();
+    const db      = store.asPickupDb();
+    const devCode = "device-code-cleanup-lifecycle";
+
+    // Create pending registration, then simulate expiry
+    await createPendingRegistration({ device_code: devCode, platform: "windows" }, db);
+    store.expireAllRegistrations();
+
+    // Cleanup runs → count 1
+    const cleanupResult = await cleanupExpiredPendingRegistrations(db);
+    assert.ok(cleanupResult.ok);
+    if (cleanupResult.ok) assert.strictEqual(cleanupResult.count, 1);
+
+    // Store row is now expired
+    const regRow = [...store.regs.values()][0];
+    assert.strictEqual(regRow.status, "expired");
+
+    // Pickup sees expired status — no device_key issued
+    const pickupResult = await pickupApprovedRegistrationByDeviceCode(devCode, db);
+    assert.ok(pickupResult.ok);
+    if (pickupResult.ok) assert.strictEqual(pickupResult.status, "expired");
+    assert.ok(!("device_key" in (pickupResult.ok ? pickupResult : {})), "no device_key for expired");
+
+    // No device created
+    assert.strictEqual(store.devs.size, 0);
+  });
+
+  test("cleanup does not affect approved, completed, or denied registrations", async () => {
+    const store   = new FakeStore();
+    const db      = store.asPickupDb();
+    const userId  = "user-cleanup-isolation";
+
+    // 1. Register and approve one device (status → approved, not yet picked up)
+    await createPendingRegistration({ device_code: "code-approved", platform: "windows" }, db);
+    await approveRegistrationByDeviceCode({ device_code: "code-approved", supabaseUserId: userId }, db);
+
+    // 2. Create and fully complete another (status → completed)
+    await createPendingRegistration({ device_code: "code-completed", platform: "windows" }, db);
+    await approveRegistrationByDeviceCode({ device_code: "code-completed", supabaseUserId: userId }, db);
+    await pickupApprovedRegistrationByDeviceCode("code-completed", db);
+
+    // 3. Create one pending and expire it
+    await createPendingRegistration({ device_code: "code-expired", platform: "windows" }, db);
+    for (const [k, r] of store.regs.entries()) {
+      if (r.status === "pending") store.regs.set(k, { ...r, expiresAt: new Date(Date.now() - 1_000) });
+    }
+
+    // Snapshot statuses before cleanup
+    const before = [...store.regs.values()].map(r => ({ hash: r.deviceCodeHash.slice(0, 8), status: r.status }));
+    const approvedBefore  = before.filter(r => r.status === "approved").length;
+    const completedBefore = before.filter(r => r.status === "completed").length;
+    const pendingBefore   = before.filter(r => r.status === "pending").length;
+
+    assert.strictEqual(approvedBefore,  1);
+    assert.strictEqual(completedBefore, 1);
+    assert.strictEqual(pendingBefore,   1);
+
+    // Run cleanup
+    const cleanupResult = await cleanupExpiredPendingRegistrations(db);
+    assert.ok(cleanupResult.ok);
+    if (cleanupResult.ok) assert.strictEqual(cleanupResult.count, 1, "only 1 pending-expired row touched");
+
+    // After cleanup: approved and completed rows are unchanged
+    const after = [...store.regs.values()];
+    const approvedAfter  = after.filter(r => r.status === "approved").length;
+    const completedAfter = after.filter(r => r.status === "completed").length;
+    const expiredAfter   = after.filter(r => r.status === "expired").length;
+
+    assert.strictEqual(approvedAfter,  1, "approved row must remain approved");
+    assert.strictEqual(completedAfter, 1, "completed row must remain completed");
+    assert.strictEqual(expiredAfter,   1, "only the pending-expired row becomes expired");
   });
 });
