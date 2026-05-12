@@ -259,5 +259,64 @@ class TestShowRegistrationFailed(unittest.TestCase):
         cw._win.evaluate_js.assert_not_called()
 
 
+class _SyncThread:
+    """Runs target synchronously on start() — avoids threading in tests."""
+    def __init__(self, target=None, daemon=None, **kw):
+        self._target = target
+    def start(self):
+        if self._target:
+            self._target()
+    def join(self, timeout=None):
+        pass
+
+
+class TestRegistrationRetryCallback(unittest.TestCase):
+    """Phase 5K: retry callback registration and _CockpitAPI.retry_registration."""
+
+    def test_set_retry_callback_stores_fn(self) -> None:
+        cw = CockpitWindow()
+        fn = mock.MagicMock()
+        cw.set_registration_retry_callback(fn)
+        self.assertIs(cw._registration_retry_callback, fn)
+
+    def test_retry_callback_none_by_default(self) -> None:
+        cw = CockpitWindow()
+        self.assertIsNone(cw._registration_retry_callback)
+
+    def test_api_retry_calls_callback(self) -> None:
+        cw = _cockpit_ready()
+        called: list[bool] = []
+        cw.set_registration_retry_callback(lambda: called.append(True))
+
+        with mock.patch("ui.cockpit.cockpit_window.threading.Thread", _SyncThread):
+            result = cw._api.retry_registration()
+
+        self.assertEqual(called, [True])
+        self.assertEqual(result, {"ok": True})
+
+    def test_api_retry_returns_ok_true(self) -> None:
+        cw = _cockpit_ready()
+        cw.set_registration_retry_callback(lambda: None)
+
+        with mock.patch("ui.cockpit.cockpit_window.threading.Thread", _SyncThread):
+            result = cw._api.retry_registration()
+
+        self.assertTrue(result.get("ok"))
+
+    def test_api_retry_returns_ok_false_when_no_callback(self) -> None:
+        cw = _cockpit_ready()
+        # no callback set
+        result = cw._api.retry_registration()
+        self.assertFalse(result.get("ok"))
+        self.assertIn("error", result)
+
+    def test_api_retry_no_callback_does_not_raise(self) -> None:
+        cw = CockpitWindow()
+        cw._win = mock.MagicMock()
+        # Should return a dict, not raise
+        result = cw._api.retry_registration()
+        self.assertIsInstance(result, dict)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,7 @@ const regExpiresEl   = document.getElementById('reg-expires');
 const regUrlEl       = document.getElementById('reg-url-fallback');
 const regCopyBtn     = document.getElementById('reg-copy-btn');
 const regOpenBtn     = document.getElementById('reg-open-btn');
+const regRetryBtn    = document.getElementById('reg-retry-btn');
 const regStatusEl    = document.getElementById('reg-status');
 const regErrorEl     = document.getElementById('reg-error');
 
@@ -144,6 +145,8 @@ window.showRegistrationCard = function (reg) {
     : '';
   if (regStatusEl) regStatusEl.textContent = '';
   if (regErrorEl)  regErrorEl.classList.add('hidden');
+  if (regRetryBtn) regRetryBtn.classList.add('hidden');
+  if (regOpenBtn)  regOpenBtn.classList.remove('hidden');
   _regUrl = reg.registration_url || null;
   regCard.classList.remove('hidden');
   regCard.classList.remove('reg-success');
@@ -167,6 +170,7 @@ window.showRegistrationSuccess = function () {
   var titleEl = regCard.querySelector('.reg-title');
   if (titleEl) titleEl.textContent = 'Dispositivo registrado. Atlas está listo.';
   if (regStatusEl) regStatusEl.textContent = '';
+  if (regRetryBtn) regRetryBtn.classList.add('hidden');
   var btnsEl = regCard.querySelector('.reg-buttons');
   if (btnsEl) btnsEl.style.display = 'none';
   _setBusy(false);
@@ -176,8 +180,10 @@ window.showRegistrationSuccess = function () {
 
 window.showRegistrationFailed = function (err) {
   if (!regErrorEl) return;
-  regErrorEl.textContent = (err && err.message) ? err.message : 'Registration failed.';
+  regErrorEl.textContent = (err && err.message) ? err.message : 'Registro fallido.';
   regErrorEl.classList.remove('hidden');
+  if (regRetryBtn) regRetryBtn.classList.remove('hidden');
+  if (regOpenBtn)  regOpenBtn.classList.add('hidden');
 };
 
 // ── Action Result Card ─────────────────────────────────────────────────────
@@ -406,6 +412,15 @@ regOpenBtn.addEventListener('click', function () {
   if (!_regUrl) return;
   pywebview.api.open_external_url(_regUrl).catch(function (err) {
     console.error('open_external_url error', err);
+  });
+});
+
+regRetryBtn.addEventListener('click', function () {
+  if (regStatusEl) regStatusEl.textContent = 'Iniciando nuevo registro...';
+  if (regErrorEl)  regErrorEl.classList.add('hidden');
+  regRetryBtn.classList.add('hidden');
+  pywebview.api.retry_registration().catch(function () {
+    regRetryBtn.classList.remove('hidden');
   });
 });
 

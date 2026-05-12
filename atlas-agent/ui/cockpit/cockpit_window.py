@@ -65,6 +65,14 @@ class _CockpitAPI:
         else:
             logging.warning("[cockpit] open_external_url blocked: not in allowed domains")
 
+    def retry_registration(self) -> dict:
+        """Called from JS when the user clicks the retry button."""
+        cb = self._cockpit._registration_retry_callback
+        if cb is None:
+            return {"ok": False, "error": "No retry callback registered"}
+        threading.Thread(target=cb, daemon=True).start()
+        return {"ok": True}
+
 
 class CockpitWindow:
     """Optional expanded Atlas panel.
@@ -81,6 +89,7 @@ class CockpitWindow:
         self._input_callback: Callable[[str], None] | None = None
         self._approve_callback: Callable[[str], None] | None = None
         self._cancel_callback: Callable[[str], None] | None = None
+        self._registration_retry_callback: Callable[[], None] | None = None
         self._permission_pending = False
         self._pending_reg: Any = None
         self._pending_reg_status: str | None = None
@@ -93,6 +102,9 @@ class CockpitWindow:
 
     def set_cancel_callback(self, fn: Callable[[str], None]) -> None:
         self._cancel_callback = fn
+
+    def set_registration_retry_callback(self, fn: Callable[[], None]) -> None:
+        self._registration_retry_callback = fn
 
     def start(self) -> None:
         self._win = webview.create_window(
