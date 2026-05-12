@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 import sys
@@ -20,7 +22,24 @@ def _frontend_path() -> str:
     return str(base / "frontend" / "index.html")
 
 
-_ALLOWED_URL_PREFIXES = ("https://app.aigency.com/",)
+import os as _os
+
+
+def _build_allowed_prefixes(*base_urls: str) -> tuple[str, ...]:
+    """Return normalised (trailing-slash) URL prefix tuple, deduped, non-empty."""
+    seen: list[str] = []
+    for u in base_urls:
+        norm = u.rstrip("/") + "/"
+        if norm != "/" and norm not in seen:
+            seen.append(norm)
+    return tuple(seen)
+
+
+_ALLOWED_URL_PREFIXES = _build_allowed_prefixes(
+    "https://app.aigency.com",
+    _os.getenv("NEXT_PUBLIC_APP_URL", ""),
+    _os.getenv("BACKEND_URL", ""),
+)
 
 
 class _CockpitAPI:
@@ -63,6 +82,29 @@ class _CockpitAPI:
         else:
             logging.warning("[cockpit] open_external_url blocked: not in allowed domains")
 
+    def retry_registration(self) -> dict:
+        """Called from JS when the user clicks the retry button."""
+        cb = self._cockpit._registration_retry_callback
+        if cb is None:
+            return {"ok": False, "error": "No retry callback registered"}
+        with self._cockpit._retry_lock:
+            if self._cockpit._retry_in_progress:
+                return {"ok": False, "error": "Retry already in progress"}
+            self._cockpit._retry_in_progress = True
+
+        def _run() -> None:
+            try:
+                cb()
+            finally:
+                self._cockpit._retry_in_progress = False
+
+        try:
+            threading.Thread(target=_run, daemon=True).start()
+        except Exception:
+            self._cockpit._retry_in_progress = False
+            return {"ok": False, "error": "Failed to start retry thread"}
+        return {"ok": True}
+
 
 class CockpitWindow:
     """Optional expanded Atlas panel.
@@ -79,7 +121,12 @@ class CockpitWindow:
         self._input_callback: Callable[[str], None] | None = None
         self._approve_callback: Callable[[str], None] | None = None
         self._cancel_callback: Callable[[str], None] | None = None
+        self._registration_retry_callback: Callable[[], None] | None = None
+        self._retry_in_progress: bool = False
+        self._retry_lock: threading.Lock = threading.Lock()
         self._permission_pending = False
+        self._pending_reg: Any = None
+        self._pending_reg_status: str | None = None
 
     def set_input_callback(self, fn: Callable[[str], None]) -> None:
         self._input_callback = fn
@@ -89,6 +136,9 @@ class CockpitWindow:
 
     def set_cancel_callback(self, fn: Callable[[str], None]) -> None:
         self._cancel_callback = fn
+
+    def set_registration_retry_callback(self, fn: Callable[[], None]) -> None:
+        self._registration_retry_callback = fn
 
     def start(self) -> None:
         self._win = webview.create_window(
@@ -110,6 +160,11 @@ class CockpitWindow:
     def _on_loaded(self) -> None:
         self._ready = True
         logging.info("[cockpit] frontend loaded")
+        if self._pending_reg is not None:
+            self._emit_registration_card()
+        if self._pending_reg_status is not None:
+            safe = json.dumps(self._pending_reg_status)
+            self._eval(f"window.updateRegistrationStatus({safe})")
 
     def open(self) -> None:
         if self._win is None:
@@ -186,6 +241,37 @@ class CockpitWindow:
     def hide_permission_card(self) -> None:
         self._permission_pending = False
         self._eval("window.hidePermissionCard()")
+
+    def show_registration_card(self, reg: Any) -> None:
+        self._pending_reg = reg
+        if self._ready:
+            self._emit_registration_card()
+
+    def _emit_registration_card(self) -> None:
+        import dataclasses
+        try:
+            d = dataclasses.asdict(self._pending_reg)
+        except TypeError:
+            d = self._pending_reg if isinstance(self._pending_reg, dict) else {}
+        safe = json.dumps(d, ensure_ascii=False)
+        self._eval(f"window.showRegistrationCard({safe})")
+        if not self._visible:
+            self.open()
+
+    def hide_registration_card(self) -> None:
+        self._eval("window.hideRegistrationCard()")
+
+    def show_registration_status(self, status: str) -> None:
+        self._pending_reg_status = status
+        safe = json.dumps(status)
+        self._eval(f"window.updateRegistrationStatus({safe})")
+
+    def show_registration_success(self) -> None:
+        self._eval("window.showRegistrationSuccess()")
+
+    def show_registration_failed(self, code: str, message: str) -> None:
+        safe = json.dumps({"code": code, "message": message}, ensure_ascii=False)
+        self._eval(f"window.showRegistrationFailed({safe})")
 
     def show_action_result(self, result: Any) -> None:
         import dataclasses

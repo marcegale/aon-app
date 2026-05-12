@@ -5,6 +5,7 @@ import urllib.error
 from typing import Any
 
 import config.settings as settings
+from device_credentials import load_device_key
 
 _TIMEOUT = 30
 _MAX_PROMPT = 8000
@@ -25,11 +26,12 @@ def plan(prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
     if not settings.BACKEND_URL:
         logging.error("[planner] BACKEND_URL no configurado")
         return {"ok": False, "error": {"code": "INTERNAL_ERROR", "message": "BACKEND_URL no configurado."}}
-    if not settings.DEVICE_KEY:
-        logging.error("[planner] ATLAS_DEVICE_KEY no configurado")
+    device_key = load_device_key() or settings.DEVICE_KEY
+    if not device_key:
+        logging.error("[planner] No device key available")
         return {"ok": False, "error": {"code": "INTERNAL_ERROR", "message": "ATLAS_DEVICE_KEY no configurado."}}
 
-    payload: dict[str, Any] = {"device_key": settings.DEVICE_KEY, "prompt": prompt}
+    payload: dict[str, Any] = {"device_key": device_key, "prompt": prompt}
     if context:
         payload["context"] = context
 

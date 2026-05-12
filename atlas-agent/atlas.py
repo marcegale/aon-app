@@ -28,6 +28,9 @@ try:
 except RuntimeError as exc:
     logging.warning("[atlas] config: %s (dev mode)", exc)
 
+from device_startup import dev_only_accept_existing_key_validator, make_backend_device_key_validator, run_startup_device_check
+from device_registration_polling import PollingCallbacks
+from device_registration_recovery import retry_registration
 from broker import Broker
 from state_machine import (
     StateMachine,
@@ -184,6 +187,21 @@ def main() -> None:
     logging.info("=" * 60)
     logging.info("[atlas] Atlas Phase 3A starting")
 
+    # Phase 5F: startup device state check with real backend validator
+    if settings.BACKEND_URL:
+        _validator = make_backend_device_key_validator(settings.BACKEND_URL)
+    else:
+        _validator = dev_only_accept_existing_key_validator
+        logging.warning("[atlas] BACKEND_URL not configured — startup check using dev validator")
+    _startup = run_startup_device_check(_validator)
+    logging.info("[atlas] Device state: %s", _startup.result.state.value)
+    logging.info("[atlas] %s", _startup.user_message)
+
+    # Phase 5K: registration start deferred to _begin_registration_flow (supports retry)
+    if not _startup.should_start_registration:
+        logging.info("[atlas] Device registration not required")
+    else:
+        logging.info("[atlas] Device registration required — will start after UI ready")
     broker  = Broker()
     fsm     = StateMachine(broker)
     orb     = OrbWindow(broker)
@@ -194,6 +212,25 @@ def main() -> None:
     cockpit.set_approve_callback(lambda _: gate.resolve(True))
     cockpit.set_cancel_callback(lambda _: gate.resolve(False))
     cockpit.set_input_callback(_make_input_handler(fsm, cockpit, gate))
+
+    def _begin_registration_flow() -> None:
+        cbs = PollingCallbacks(
+            on_status=cockpit.show_registration_status,
+            on_registered=cockpit.show_registration_success,
+            on_failed=lambda code, msg: cockpit.show_registration_failed(code, msg),
+        )
+        result = retry_registration(
+            startup_check=_startup,
+            backend_url=settings.BACKEND_URL,
+            callbacks=cbs,
+        )
+        if result.started and result.startup_registration is not None:
+            cockpit.show_registration_card(result.startup_registration)
+
+    cockpit.set_registration_retry_callback(_begin_registration_flow)
+
+    if _startup.should_start_registration:
+        _begin_registration_flow()
 
     orb.start()
     cockpit.start()

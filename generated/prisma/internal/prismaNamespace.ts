@@ -16,10 +16,10 @@
  */
 
 import * as runtime from "@prisma/client/runtime/client"
-import type * as Prisma from "../models"
-import { type PrismaClient } from "./class"
+import type * as Prisma from "../models.ts"
+import { type PrismaClient } from "./class.ts"
 
-export type * from '../models'
+export type * from '../models.ts'
 
 export type DMMF = typeof runtime.DMMF
 
@@ -397,7 +397,9 @@ export const ModelName = {
   RecruitingCandidate: 'RecruitingCandidate',
   AgentRun: 'AgentRun',
   CharlieSession: 'CharlieSession',
-  CharlieDevice: 'CharlieDevice'
+  CharlieDevice: 'CharlieDevice',
+  AtlasDevice: 'AtlasDevice',
+  AtlasDeviceRegistration: 'AtlasDeviceRegistration'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -413,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun" | "charlieSession" | "charlieDevice"
+    modelProps: "lead" | "user" | "rrhh_processes" | "tenant" | "tenantMembership" | "tenantDocument" | "tenantAnalysis" | "recruitingSearch" | "recruitingCompanyProfile" | "recruitingAttachment" | "recruitingCandidate" | "agentRun" | "charlieSession" | "charlieDevice" | "atlasDevice" | "atlasDeviceRegistration"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1453,6 +1455,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AtlasDevice: {
+      payload: Prisma.$AtlasDevicePayload<ExtArgs>
+      fields: Prisma.AtlasDeviceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AtlasDeviceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AtlasDeviceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        findFirst: {
+          args: Prisma.AtlasDeviceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AtlasDeviceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        findMany: {
+          args: Prisma.AtlasDeviceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>[]
+        }
+        create: {
+          args: Prisma.AtlasDeviceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        createMany: {
+          args: Prisma.AtlasDeviceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AtlasDeviceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>[]
+        }
+        delete: {
+          args: Prisma.AtlasDeviceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        update: {
+          args: Prisma.AtlasDeviceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        deleteMany: {
+          args: Prisma.AtlasDeviceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AtlasDeviceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AtlasDeviceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>[]
+        }
+        upsert: {
+          args: Prisma.AtlasDeviceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDevicePayload>
+        }
+        aggregate: {
+          args: Prisma.AtlasDeviceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAtlasDevice>
+        }
+        groupBy: {
+          args: Prisma.AtlasDeviceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AtlasDeviceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AtlasDeviceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AtlasDeviceCountAggregateOutputType> | number
+        }
+      }
+    }
+    AtlasDeviceRegistration: {
+      payload: Prisma.$AtlasDeviceRegistrationPayload<ExtArgs>
+      fields: Prisma.AtlasDeviceRegistrationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AtlasDeviceRegistrationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AtlasDeviceRegistrationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        findFirst: {
+          args: Prisma.AtlasDeviceRegistrationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AtlasDeviceRegistrationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        findMany: {
+          args: Prisma.AtlasDeviceRegistrationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>[]
+        }
+        create: {
+          args: Prisma.AtlasDeviceRegistrationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        createMany: {
+          args: Prisma.AtlasDeviceRegistrationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AtlasDeviceRegistrationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>[]
+        }
+        delete: {
+          args: Prisma.AtlasDeviceRegistrationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        update: {
+          args: Prisma.AtlasDeviceRegistrationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        deleteMany: {
+          args: Prisma.AtlasDeviceRegistrationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AtlasDeviceRegistrationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AtlasDeviceRegistrationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>[]
+        }
+        upsert: {
+          args: Prisma.AtlasDeviceRegistrationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AtlasDeviceRegistrationPayload>
+        }
+        aggregate: {
+          args: Prisma.AtlasDeviceRegistrationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAtlasDeviceRegistration>
+        }
+        groupBy: {
+          args: Prisma.AtlasDeviceRegistrationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AtlasDeviceRegistrationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AtlasDeviceRegistrationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AtlasDeviceRegistrationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1705,6 +1855,44 @@ export const CharlieDeviceScalarFieldEnum = {
 } as const
 
 export type CharlieDeviceScalarFieldEnum = (typeof CharlieDeviceScalarFieldEnum)[keyof typeof CharlieDeviceScalarFieldEnum]
+
+
+export const AtlasDeviceScalarFieldEnum = {
+  id: 'id',
+  supabaseUserId: 'supabaseUserId',
+  deviceName: 'deviceName',
+  deviceKeyHash: 'deviceKeyHash',
+  status: 'status',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt',
+  platform: 'platform',
+  clientVersion: 'clientVersion',
+  fingerprint: 'fingerprint'
+} as const
+
+export type AtlasDeviceScalarFieldEnum = (typeof AtlasDeviceScalarFieldEnum)[keyof typeof AtlasDeviceScalarFieldEnum]
+
+
+export const AtlasDeviceRegistrationScalarFieldEnum = {
+  id: 'id',
+  deviceCodeHash: 'deviceCodeHash',
+  status: 'status',
+  platform: 'platform',
+  clientVersion: 'clientVersion',
+  approvedByUserId: 'approvedByUserId',
+  deviceName: 'deviceName',
+  deviceKeyHash: 'deviceKeyHash',
+  pickedUpAt: 'pickedUpAt',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  approvedAt: 'approvedAt',
+  completedAt: 'completedAt',
+  deniedAt: 'deniedAt',
+  atlasDeviceId: 'atlasDeviceId'
+} as const
+
+export type AtlasDeviceRegistrationScalarFieldEnum = (typeof AtlasDeviceRegistrationScalarFieldEnum)[keyof typeof AtlasDeviceRegistrationScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1974,6 +2162,8 @@ export type GlobalOmitConfig = {
   agentRun?: Prisma.AgentRunOmit
   charlieSession?: Prisma.CharlieSessionOmit
   charlieDevice?: Prisma.CharlieDeviceOmit
+  atlasDevice?: Prisma.AtlasDeviceOmit
+  atlasDeviceRegistration?: Prisma.AtlasDeviceRegistrationOmit
 }
 
 /* Types for Logging */

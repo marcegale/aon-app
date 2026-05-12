@@ -13,10 +13,20 @@ const permWarning    = document.getElementById('perm-warning');
 const permApproveBtn = document.getElementById('perm-approve-btn');
 const permCancelBtn  = document.getElementById('perm-cancel-btn');
 const permCloseBtn   = document.getElementById('perm-close-btn');
+const regCard        = document.getElementById('registration-card');
+const regCodeEl      = document.getElementById('reg-device-code');
+const regExpiresEl   = document.getElementById('reg-expires');
+const regUrlEl       = document.getElementById('reg-url-fallback');
+const regCopyBtn     = document.getElementById('reg-copy-btn');
+const regOpenBtn     = document.getElementById('reg-open-btn');
+const regRetryBtn    = document.getElementById('reg-retry-btn');
+const regStatusEl    = document.getElementById('reg-status');
+const regErrorEl     = document.getElementById('reg-error');
 
 let isBusy          = false;
 let thinkingEl      = null;
 let pendingActionId = null;
+let _regUrl         = null;
 
 // ── State colours ──────────────────────────────────────────────────────────
 const DOT_COLORS = {
@@ -29,6 +39,14 @@ const DOT_COLORS = {
   VERIFYING:          ['#7c4dff', 'rgba(124,77,255,0.7)'],
   REPORTING:          ['#7c4dff', 'rgba(124,77,255,0.7)'],
   ERROR:              ['#f44336', 'rgba(244,67,54,0.7)'],
+};
+
+const REG_STATUS_LABELS = {
+  pending:   'Esperando aprobación...',
+  approved:  'Aprobado. Guardando credencial...',
+  expired:   'Registro expirado.',
+  denied:    'Registro rechazado.',
+  completed: 'Registro ya completado.',
 };
 
 // ── Public API (called from Python via evaluate_js) ────────────────────────
@@ -116,6 +134,56 @@ window.hidePermissionCard = function () {
   pendingActionId = null;
   _setBusy(false);
   _focusInput();
+};
+
+// ── Registration card ──────────────────────────────────────────────────────
+window.showRegistrationCard = function (reg) {
+  regCodeEl.textContent    = reg.device_code      || '';
+  regUrlEl.textContent     = reg.registration_url || '';
+  regExpiresEl.textContent = reg.expires_at
+    ? 'Expira: ' + new Date(reg.expires_at).toLocaleString('es')
+    : '';
+  if (regStatusEl) regStatusEl.textContent = '';
+  if (regErrorEl)  regErrorEl.classList.add('hidden');
+  if (regRetryBtn) regRetryBtn.classList.add('hidden');
+  if (regOpenBtn)  regOpenBtn.classList.remove('hidden');
+  _regUrl = reg.registration_url || null;
+  regCard.classList.remove('hidden');
+  regCard.classList.remove('reg-success');
+  _setBusy(true);
+};
+
+window.hideRegistrationCard = function () {
+  regCard.classList.add('hidden');
+  _regUrl = null;
+  _setBusy(false);
+  _focusInput();
+};
+
+window.updateRegistrationStatus = function (status) {
+  if (!regStatusEl) return;
+  regStatusEl.textContent = REG_STATUS_LABELS[status] || status;
+};
+
+window.showRegistrationSuccess = function () {
+  regCard.classList.add('reg-success');
+  var titleEl = regCard.querySelector('.reg-title');
+  if (titleEl) titleEl.textContent = 'Dispositivo registrado. Atlas está listo.';
+  if (regStatusEl) regStatusEl.textContent = '';
+  if (regRetryBtn) regRetryBtn.classList.add('hidden');
+  var btnsEl = regCard.querySelector('.reg-buttons');
+  if (btnsEl) btnsEl.style.display = 'none';
+  _setBusy(false);
+  _focusInput();
+  setTimeout(function () { window.hideRegistrationCard(); }, 3000);
+};
+
+window.showRegistrationFailed = function (err) {
+  if (!regErrorEl) return;
+  regErrorEl.textContent = (err && err.message) ? err.message : 'Registro fallido.';
+  regErrorEl.classList.remove('hidden');
+  if (regRetryBtn) regRetryBtn.classList.remove('hidden');
+  if (regOpenBtn)  regOpenBtn.classList.add('hidden');
 };
 
 // ── Action Result Card ─────────────────────────────────────────────────────
@@ -324,6 +392,39 @@ permCancelBtn.addEventListener('click', function () {
 permCloseBtn.addEventListener('click', function () {
   pywebview.api.cancel_action(pendingActionId || '').catch(function (err) {
     console.error('cancel_action (close) error', err);
+  });
+});
+
+// ── Registration card buttons ──────────────────────────────────────────────
+regCopyBtn.addEventListener('click', function () {
+  var code = regCodeEl.textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(function () {
+    regCopyBtn.textContent = 'copiado';
+    setTimeout(function () { regCopyBtn.textContent = 'copiar'; }, 1500);
+  }).catch(function () {
+    regCopyBtn.textContent = 'error';
+    setTimeout(function () { regCopyBtn.textContent = 'copiar'; }, 1500);
+  });
+});
+
+regOpenBtn.addEventListener('click', function () {
+  if (!_regUrl) return;
+  if (regStatusEl) regStatusEl.textContent = 'Abriendo página de aprobación...';
+  var result = pywebview.api.open_external_url(_regUrl);
+  if (result && typeof result.catch === 'function') {
+    result.catch(function () {
+      if (regStatusEl) regStatusEl.textContent = 'No se pudo abrir el enlace. Copia la URL manualmente.';
+    });
+  }
+});
+
+regRetryBtn.addEventListener('click', function () {
+  if (regStatusEl) regStatusEl.textContent = 'Iniciando nuevo registro...';
+  if (regErrorEl)  regErrorEl.classList.add('hidden');
+  regRetryBtn.classList.add('hidden');
+  pywebview.api.retry_registration().catch(function () {
+    regRetryBtn.classList.remove('hidden');
   });
 });
 
