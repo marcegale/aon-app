@@ -235,6 +235,18 @@ export default function HomePage() {
               </div>
             </div>
           </section>
+
+          <footer className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-6 pb-6 text-xs text-white/45">
+            <span>AON App</span>
+            <div className="flex items-center gap-4">
+              <Link href="/privacidad" className="transition hover:text-white/75">
+                Politica de Privacidad
+              </Link>
+              <Link href="/terminos" className="transition hover:text-white/75">
+                Terminos de Servicio
+              </Link>
+            </div>
+          </footer>
         </div>
 
         {isContactOpen && (
