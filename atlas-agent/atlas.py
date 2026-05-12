@@ -30,6 +30,7 @@ except RuntimeError as exc:
 
 from device_startup import dev_only_accept_existing_key_validator, make_backend_device_key_validator, run_startup_device_check
 from device_registration_startup import maybe_start_registration_from_startup_check
+from device_registration_polling import start_registration_polling, PollingCallbacks
 from broker import Broker
 from state_machine import (
     StateMachine,
@@ -220,6 +221,16 @@ def main() -> None:
 
     if _startup_registration.started:
         cockpit.show_registration_card(_startup_registration)
+        _poll_callbacks = PollingCallbacks(
+            on_status=cockpit.show_registration_status,
+            on_registered=cockpit.show_registration_success,
+            on_failed=lambda code, msg: cockpit.show_registration_failed(code, msg),
+        )
+        start_registration_polling(
+            startup_registration=_startup_registration,
+            backend_url=settings.BACKEND_URL,
+            callbacks=_poll_callbacks,
+        )
 
     orb.start()
     cockpit.start()

@@ -83,6 +83,7 @@ class CockpitWindow:
         self._cancel_callback: Callable[[str], None] | None = None
         self._permission_pending = False
         self._pending_reg: Any = None
+        self._pending_reg_status: str | None = None
 
     def set_input_callback(self, fn: Callable[[str], None]) -> None:
         self._input_callback = fn
@@ -115,6 +116,9 @@ class CockpitWindow:
         logging.info("[cockpit] frontend loaded")
         if self._pending_reg is not None:
             self._emit_registration_card()
+        if self._pending_reg_status is not None:
+            safe = json.dumps(self._pending_reg_status)
+            self._eval(f"window.updateRegistrationStatus({safe})")
 
     def open(self) -> None:
         if self._win is None:
@@ -210,6 +214,18 @@ class CockpitWindow:
 
     def hide_registration_card(self) -> None:
         self._eval("window.hideRegistrationCard()")
+
+    def show_registration_status(self, status: str) -> None:
+        self._pending_reg_status = status
+        safe = json.dumps(status)
+        self._eval(f"window.updateRegistrationStatus({safe})")
+
+    def show_registration_success(self) -> None:
+        self._eval("window.showRegistrationSuccess()")
+
+    def show_registration_failed(self, code: str, message: str) -> None:
+        safe = json.dumps({"code": code, "message": message}, ensure_ascii=False)
+        self._eval(f"window.showRegistrationFailed({safe})")
 
     def show_action_result(self, result: Any) -> None:
         import dataclasses

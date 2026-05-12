@@ -19,6 +19,8 @@ const regExpiresEl   = document.getElementById('reg-expires');
 const regUrlEl       = document.getElementById('reg-url-fallback');
 const regCopyBtn     = document.getElementById('reg-copy-btn');
 const regOpenBtn     = document.getElementById('reg-open-btn');
+const regStatusEl    = document.getElementById('reg-status');
+const regErrorEl     = document.getElementById('reg-error');
 
 let isBusy          = false;
 let thinkingEl      = null;
@@ -36,6 +38,14 @@ const DOT_COLORS = {
   VERIFYING:          ['#7c4dff', 'rgba(124,77,255,0.7)'],
   REPORTING:          ['#7c4dff', 'rgba(124,77,255,0.7)'],
   ERROR:              ['#f44336', 'rgba(244,67,54,0.7)'],
+};
+
+const REG_STATUS_LABELS = {
+  pending:   'Esperando aprobación...',
+  approved:  'Aprobado. Guardando credencial...',
+  expired:   'Registro expirado.',
+  denied:    'Registro rechazado.',
+  completed: 'Registro ya completado.',
 };
 
 // ── Public API (called from Python via evaluate_js) ────────────────────────
@@ -132,8 +142,11 @@ window.showRegistrationCard = function (reg) {
   regExpiresEl.textContent = reg.expires_at
     ? 'Expira: ' + new Date(reg.expires_at).toLocaleString('es')
     : '';
+  if (regStatusEl) regStatusEl.textContent = '';
+  if (regErrorEl)  regErrorEl.classList.add('hidden');
   _regUrl = reg.registration_url || null;
   regCard.classList.remove('hidden');
+  regCard.classList.remove('reg-success');
   _setBusy(true);
 };
 
@@ -142,6 +155,29 @@ window.hideRegistrationCard = function () {
   _regUrl = null;
   _setBusy(false);
   _focusInput();
+};
+
+window.updateRegistrationStatus = function (status) {
+  if (!regStatusEl) return;
+  regStatusEl.textContent = REG_STATUS_LABELS[status] || status;
+};
+
+window.showRegistrationSuccess = function () {
+  regCard.classList.add('reg-success');
+  var titleEl = regCard.querySelector('.reg-title');
+  if (titleEl) titleEl.textContent = 'Dispositivo registrado. Atlas está listo.';
+  if (regStatusEl) regStatusEl.textContent = '';
+  var btnsEl = regCard.querySelector('.reg-buttons');
+  if (btnsEl) btnsEl.style.display = 'none';
+  _setBusy(false);
+  _focusInput();
+  setTimeout(function () { window.hideRegistrationCard(); }, 3000);
+};
+
+window.showRegistrationFailed = function (err) {
+  if (!regErrorEl) return;
+  regErrorEl.textContent = (err && err.message) ? err.message : 'Registration failed.';
+  regErrorEl.classList.remove('hidden');
 };
 
 // ── Action Result Card ─────────────────────────────────────────────────────

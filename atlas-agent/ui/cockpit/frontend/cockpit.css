@@ -672,3 +672,21 @@ header {
 }
 .reg-open-btn:hover  { opacity: 0.85; }
 .reg-open-btn:active { transform: scale(0.96); }
+
+.reg-status {
+  font-size: 11px;
+  color: #4dd9ff;
+  line-height: 1.4;
+  min-height: 1em;
+}
+
+.reg-error {
+  font-size: 11px;
+  color: #ff8a80;
+  line-height: 1.4;
+}
+
+.registration-card.reg-success {
+  border-left-color: rgba(0,200,100,0.55);
+  border-color: rgba(0,200,100,0.22);
+}

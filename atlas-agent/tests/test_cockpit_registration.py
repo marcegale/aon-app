@@ -194,5 +194,70 @@ class TestPendingRegStorage(unittest.TestCase):
         self.assertIs(cw._pending_reg, REG)
 
 
+class TestShowRegistrationStatus(unittest.TestCase):
+    """Phase 5I: show_registration_status emits updateRegistrationStatus."""
+
+    def test_emits_update_status_when_ready(self) -> None:
+        cw = _cockpit_ready()
+        cw.show_registration_status("pending")
+        args = [c[0][0] for c in cw._win.evaluate_js.call_args_list]
+        self.assertTrue(any("updateRegistrationStatus" in a for a in args))
+
+    def test_stores_pending_status(self) -> None:
+        cw = _cockpit_not_ready()
+        cw.show_registration_status("pending")
+        self.assertEqual(cw._pending_reg_status, "pending")
+
+    def test_deferred_status_emitted_on_loaded(self) -> None:
+        cw = _cockpit_not_ready()
+        cw.show_registration_status("approved")
+        cw._win.evaluate_js.assert_not_called()
+        cw._on_loaded()
+        args = [c[0][0] for c in cw._win.evaluate_js.call_args_list]
+        self.assertTrue(any("updateRegistrationStatus" in a for a in args))
+
+
+class TestShowRegistrationSuccess(unittest.TestCase):
+    """Phase 5I: show_registration_success emits showRegistrationSuccess."""
+
+    def test_emits_show_registration_success(self) -> None:
+        cw = _cockpit_ready()
+        cw.show_registration_success()
+        cw._win.evaluate_js.assert_called_once()
+        arg = cw._win.evaluate_js.call_args[0][0]
+        self.assertIn("showRegistrationSuccess", arg)
+
+    def test_does_nothing_when_not_ready(self) -> None:
+        cw = _cockpit_not_ready()
+        cw.show_registration_success()
+        cw._win.evaluate_js.assert_not_called()
+
+
+class TestShowRegistrationFailed(unittest.TestCase):
+    """Phase 5I: show_registration_failed emits showRegistrationFailed with JSON."""
+
+    def test_emits_show_registration_failed(self) -> None:
+        cw = _cockpit_ready()
+        cw.show_registration_failed("REGISTRATION_NOT_COMPLETED", "Did not complete.")
+        cw._win.evaluate_js.assert_called_once()
+        arg = cw._win.evaluate_js.call_args[0][0]
+        self.assertIn("showRegistrationFailed", arg)
+
+    def test_emitted_json_contains_code_and_message(self) -> None:
+        cw = _cockpit_ready()
+        cw.show_registration_failed("SOME_ERROR", "Something went wrong.")
+        arg = cw._win.evaluate_js.call_args[0][0]
+        prefix = "window.showRegistrationFailed("
+        self.assertTrue(arg.startswith(prefix))
+        data = json.loads(arg[len(prefix):-1])
+        self.assertEqual(data["code"], "SOME_ERROR")
+        self.assertEqual(data["message"], "Something went wrong.")
+
+    def test_does_nothing_when_not_ready(self) -> None:
+        cw = _cockpit_not_ready()
+        cw.show_registration_failed("ERR", "msg")
+        cw._win.evaluate_js.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
