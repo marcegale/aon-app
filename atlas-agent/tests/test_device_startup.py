@@ -11,16 +11,20 @@ All dependencies are injected via plain callables.
 from __future__ import annotations
 
 import io
+import json
 import os
 import sys
 import unittest
+import urllib.error
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from device_auth_client import AtlasDeviceAuthClient
 from device_startup import (
     StartupDeviceCheck,
     dev_only_accept_existing_key_validator,
+    make_backend_device_key_validator,
     run_startup_device_check,
 )
 from device_state import DeviceState
@@ -183,6 +187,84 @@ class TestDevOnlyValidator(unittest.TestCase):
         with mock.patch("sys.stdout", out), mock.patch("sys.stderr", err):
             dev_only_accept_existing_key_validator(self.SENSITIVE)
         self.assertNotIn(self.SENSITIVE, out.getvalue() + err.getvalue())
+
+
+class TestMakeBackendValidator(unittest.TestCase):
+    """Phase 5F: make_backend_device_key_validator tests."""
+
+    BACKEND_URL = "http://localhost:3000"
+
+    def _ok_response(self) -> mock.MagicMock:
+        resp = mock.MagicMock()
+        resp.read.return_value = json.dumps({"ok": True}).encode("utf-8")
+        resp.__enter__.return_value = resp
+        resp.__exit__.return_value = False
+        return resp
+
+    def _http_error(self, code: int, error_code: str) -> urllib.error.HTTPError:
+        body = {"ok": False, "error": {"code": error_code, "message": "err"}}
+        fp = io.BytesIO(json.dumps(body).encode("utf-8"))
+        return urllib.error.HTTPError(url=self.BACKEND_URL, code=code, msg=f"HTTP {code}", hdrs={}, fp=fp)  # type: ignore[arg-type]
+
+    def test_returns_callable(self) -> None:
+        validator = make_backend_device_key_validator(self.BACKEND_URL)
+        self.assertTrue(callable(validator))
+
+    def test_delegates_to_atlas_device_auth_client(self) -> None:
+        with mock.patch.object(AtlasDeviceAuthClient, "validate_device_key", return_value={"ok": True}) as mock_v:
+            validator = make_backend_device_key_validator(self.BACKEND_URL)
+            result = validator("atl_test_key")
+            mock_v.assert_called_once_with("atl_test_key")
+        self.assertTrue(result.get("ok"))
+
+    def test_success_maps_to_registered(self) -> None:
+        with mock.patch("urllib.request.urlopen", return_value=self._ok_response()):
+            validator = make_backend_device_key_validator(self.BACKEND_URL)
+            check = run_startup_device_check(
+                validate_device_key_fn=validator,
+                load_device_key_fn=lambda: "atl_key",
+                clear_device_key_fn=lambda: None,
+            )
+        self.assertEqual(check.result.state, DeviceState.REGISTERED)
+        self.assertTrue(check.should_allow_planner)
+
+    def test_revoked_maps_to_revoked_and_clears(self) -> None:
+        cleared: list = []
+        exc = self._http_error(401, "DEVICE_REVOKED")
+        with mock.patch("urllib.request.urlopen", side_effect=exc):
+            validator = make_backend_device_key_validator(self.BACKEND_URL)
+            check = run_startup_device_check(
+                validate_device_key_fn=validator,
+                load_device_key_fn=lambda: "atl_key",
+                clear_device_key_fn=lambda: cleared.append(True),
+            )
+        self.assertEqual(check.result.state, DeviceState.REVOKED)
+        self.assertEqual(len(cleared), 1)
+
+    def test_network_error_maps_to_offline(self) -> None:
+        exc = urllib.error.URLError(reason="Connection refused")
+        with mock.patch("urllib.request.urlopen", side_effect=exc):
+            validator = make_backend_device_key_validator(self.BACKEND_URL)
+            check = run_startup_device_check(
+                validate_device_key_fn=validator,
+                load_device_key_fn=lambda: "atl_key",
+                clear_device_key_fn=lambda: None,
+            )
+        self.assertEqual(check.result.state, DeviceState.OFFLINE)
+        self.assertFalse(check.should_allow_planner)
+
+    def test_no_raw_key_in_stdout_stderr(self) -> None:
+        SENSITIVE = "atl_SENSITIVE_MUST_NOT_APPEAR_5F"
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("urllib.request.urlopen", return_value=self._ok_response()):
+            validator = make_backend_device_key_validator(self.BACKEND_URL)
+            with mock.patch("sys.stdout", out), mock.patch("sys.stderr", err):
+                run_startup_device_check(
+                    validate_device_key_fn=validator,
+                    load_device_key_fn=lambda: SENSITIVE,
+                    clear_device_key_fn=lambda: None,
+                )
+        self.assertNotIn(SENSITIVE, out.getvalue() + err.getvalue())
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from device_auth_client import AtlasDeviceAuthClient
 from device_credentials import clear_device_key, load_device_key
 from device_state import DeviceState, DeviceStateResult, resolve_startup_device_state
 
@@ -27,12 +28,21 @@ class StartupDeviceCheck:
 
 def dev_only_accept_existing_key_validator(_device_key: str) -> dict:
     """
-    Temporary validator that unconditionally accepts any stored key.
+    Fallback validator that unconditionally accepts any stored key.
 
-    Used during Phase 5E wiring only — no network call is made.
-    TODO Phase 5F: replace with a real backend validation call.
+    No network call is made.  Use only when BACKEND_URL is unavailable
+    (e.g. dev environment without a running backend).
     """
     return {"ok": True}
+
+
+def make_backend_device_key_validator(
+    backend_url: str,
+    timeout_seconds: float = 10.0,
+) -> Callable[[str], dict]:
+    """Return a validator bound to the given backend URL via AtlasDeviceAuthClient."""
+    client = AtlasDeviceAuthClient(backend_url, timeout_seconds)
+    return client.validate_device_key
 
 
 def run_startup_device_check(
