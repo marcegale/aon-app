@@ -28,6 +28,7 @@ try:
 except RuntimeError as exc:
     logging.warning("[atlas] config: %s (dev mode)", exc)
 
+from device_startup import dev_only_accept_existing_key_validator, run_startup_device_check
 from broker import Broker
 from state_machine import (
     StateMachine,
@@ -183,6 +184,12 @@ def on_started(orb: OrbWindow) -> None:
 def main() -> None:
     logging.info("=" * 60)
     logging.info("[atlas] Atlas Phase 3A starting")
+
+    # Phase 5E: startup device state check
+    # TODO Phase 5F: replace dev_only validator with real backend validation call.
+    _startup = run_startup_device_check(dev_only_accept_existing_key_validator)
+    logging.info("[atlas] Device state: %s", _startup.result.state.value)
+    logging.info("[atlas] %s", _startup.user_message)
 
     broker  = Broker()
     fsm     = StateMachine(broker)
