@@ -27,6 +27,16 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = req.nextUrl.pathname;
+  const isDevelopmentRecruitingDemoApi =
+    process.env.NODE_ENV === "development" &&
+    [
+      "/api/recruiting/create",
+      "/api/recruiting/google/connect",
+      "/api/recruiting/email-account",
+      "/api/recruiting/monitor/start",
+      "/api/recruiting/monitor/stop",
+      "/api/recruiting/monitor/run-once",
+    ].includes(pathname);
 
   const isPublic =
     pathname === "/" ||
@@ -34,7 +44,9 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/signup") ||
     pathname.startsWith("/logout") ||
     pathname.startsWith("/api/charlie") ||
-    pathname.startsWith("/api/atlas");
+    pathname.startsWith("/api/atlas") ||
+    pathname === "/api/recruiting/google/callback" ||
+    isDevelopmentRecruitingDemoApi;
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));

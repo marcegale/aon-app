@@ -24,6 +24,31 @@ enum UserStatus {
   @@schema("public")
 }
 
+enum ProcessingStatus {
+  pending
+  queued
+  processing
+  retrying
+  completed
+  failed
+  skipped
+
+  @@schema("public")
+}
+
+enum RecruitingPipelineStage {
+  applied
+  screening
+  shortlisted
+  interview
+  technical
+  offer
+  hired
+  rejected
+
+  @@schema("public")
+}
+
 model Lead {
   id                 String    @id @default(cuid())
   nombre             String?
@@ -180,6 +205,19 @@ model RecruitingSearch {
   companyProfile         RecruitingCompanyProfile?
   attachments            RecruitingAttachment[]
   candidates             RecruitingCandidate[]
+  emailConnections       RecruitingEmailConnection[]
+  ingestLogs             RecruitingEmailIngestLog[]
+  processingJobs         RecruitingCandidateProcessingJob[]
+  candidateAuditLogs     RecruitingCandidateAuditLog[]
+  interviewSessions      RecruitingInterviewSession[]
+  automationRules        RecruitingAutomationRule[]
+  automationExecutions   RecruitingAutomationExecution[]
+  candidateEmbeddings    RecruitingCandidateEmbedding[]
+  candidateMemories      RecruitingCandidateMemory[]
+  offers                 RecruitingOffer[]
+  notificationDeliveries RecruitingNotificationDelivery[]
+  operationalEvents      RecruitingOperationalEvent[]
+  agentRuns              RecruitingAgentRun[]
 
   @@index([tenantId])
   @@map("recruiting_searches")
@@ -218,11 +256,703 @@ model RecruitingCandidate {
   fullName       String?
   email          String?
   receivedAt     DateTime         @default(now())
+  cvFileUrl      String?
+  cvFileName     String?
+  cvMimeType     String?
+  cvHash         String?
+  sourceEmailId  String?
+  sourceSubject  String?
+  cvSummary      String?
+  cvScore        Int?
+  cvReport       Json?
+  processingStatus ProcessingStatus @default(pending)
+  processingError  String?
+  pipelineStage   RecruitingPipelineStage @default(applied)
+  pipelineUpdatedAt DateTime?
+  consentStatus   String?
+  consentCapturedAt DateTime?
+  dataRetentionUntil DateTime?
+  anonymizedAt    DateTime?
 
   search         RecruitingSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  ingestLogs     RecruitingEmailIngestLog[]
+  processingJobs  RecruitingCandidateProcessingJob[]
+  auditLogs       RecruitingCandidateAuditLog[]
+  interviewSessions RecruitingInterviewSession[]
+  automationExecutions RecruitingAutomationExecution[]
+  embeddings      RecruitingCandidateEmbedding[]
+  memories        RecruitingCandidateMemory[]
+  offers          RecruitingOffer[]
+  notificationDeliveries RecruitingNotificationDelivery[]
+  operationalEvents RecruitingOperationalEvent[]
+  offerSignatures RecruitingOfferSignature[]
+  agentRuns       RecruitingAgentRun[]
 
   @@index([searchId])
+  @@index([processingStatus])
+  @@index([pipelineStage])
+  @@index([consentStatus])
+  @@index([dataRetentionUntil])
+  @@index([anonymizedAt])
+  @@index([searchId, pipelineStage])
+  @@index([sourceEmailId])
+  @@index([cvHash])
+  @@unique([searchId, sourceEmailId])
+  @@unique([searchId, cvHash])
   @@map("recruiting_candidates")
+  @@schema("public")
+}
+
+model RecruitingEmailConnection {
+  id                 String                    @id @default(cuid())
+  tenantId           String
+  searchId           String?
+  provider           String                    @default("gmail")
+  emailAddress       String
+  googleRefreshToken String?
+  status             String                    @default("active")
+  lastHistoryId      String?
+  lastIngestedAt     DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  search             RecruitingSearch?         @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  ingestLogs         RecruitingEmailIngestLog[]
+  processingJobs     RecruitingCandidateProcessingJob[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([searchId])
+  @@map("recruiting_email_connections")
+  @@schema("public")
+}
+
+model RecruitingEmailAccount {
+  id                String    @id @default(cuid())
+  tenantId          String
+  userId            String
+  provider          String    @default("google")
+  email             String
+  googleAccountId   String
+  accessToken       String?   @db.Text
+  refreshToken      String?   @db.Text
+  tokenType         String?
+  scope             String?   @db.Text
+  expiryDate        DateTime?
+  monitoringEnabled Boolean   @default(false)
+  lastHistoryId     String?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([tenantId, userId])
+  @@index([email])
+  @@map("recruiting_email_accounts")
+  @@schema("public")
+}
+
+model RecruitingEmailIngestLog {
+  id                String                     @id @default(cuid())
+  tenantId          String
+  searchId          String?
+  candidateId       String?
+  connectionId      String?
+  provider          String                     @default("gmail")
+  providerMessageId String?
+  fromEmail         String?
+  subject           String?
+  refCode           String?
+  cvHash            String?
+  status            String
+  reason            String?
+  metadata          Json?
+  createdAt         DateTime                   @default(now())
+
+  search            RecruitingSearch?          @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  candidate         RecruitingCandidate?       @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  connection        RecruitingEmailConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([candidateId])
+  @@index([connectionId])
+  @@index([providerMessageId])
+  @@map("recruiting_email_ingest_logs")
+  @@schema("public")
+}
+
+model RecruitingCandidateProcessingJob {
+  id                String                     @id @default(cuid())
+  tenantId          String
+  searchId          String
+  candidateId       String?
+  connectionId      String?
+  provider          String                     @default("gmail")
+  providerMessageId String
+  gmailAttachmentId String
+  attachmentFileName String
+  attachmentMimeType String
+  fromEmail         String?
+  subject           String?
+  refCode           String
+  processingStatus  ProcessingStatus           @default(pending)
+  attempts          Int                        @default(0)
+  maxAttempts       Int                        @default(4)
+  triggerRunId      String?
+  cvHash            String?
+  errorMessage      String?
+  errorStack        String?
+  logs              Json?
+  metadata          Json?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  search            RecruitingSearch           @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  candidate         RecruitingCandidate?       @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  connection        RecruitingEmailConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  operationalEvents RecruitingOperationalEvent[]
+
+  @@unique([searchId, providerMessageId, gmailAttachmentId])
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([candidateId])
+  @@index([connectionId])
+  @@index([processingStatus])
+  @@index([triggerRunId])
+  @@map("recruiting_candidate_processing_jobs")
+  @@schema("public")
+}
+
+model RecruitingCandidateAuditLog {
+  id            String              @id @default(cuid())
+  tenantId      String
+  candidateId   String
+  searchId      String
+  action        String
+  previousValue String?
+  newValue      String?
+  actorUserId   String?
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+
+  candidate     RecruitingCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  search        RecruitingSearch    @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([action])
+  @@map("recruiting_candidate_audit_logs")
+  @@schema("public")
+}
+
+model RecruitingInterviewSession {
+  id               String                         @id @default(cuid())
+  tenantId         String
+  searchId         String
+  candidateId      String
+  publicToken      String                         @unique
+  status           String                         @default("pending")
+  startedAt        DateTime?
+  completedAt      DateTime?
+  expiresAt        DateTime
+  interviewScore   Int?
+  interviewSummary String?
+  interviewReport  Json?
+  scheduledAt      DateTime?
+  calendarEventId  String?
+  meetingUrl       String?
+  timezone         String?
+  interviewerEmail String?
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+
+  search           RecruitingSearch               @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  candidate        RecruitingCandidate            @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  questions        RecruitingInterviewQuestion[]
+  answers          RecruitingInterviewAnswer[]
+  notificationDeliveries RecruitingNotificationDelivery[]
+
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([candidateId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([scheduledAt])
+  @@index([publicToken])
+  @@map("recruiting_interview_sessions")
+  @@schema("public")
+}
+
+model RecruitingInterviewQuestion {
+  id        String                      @id @default(cuid())
+  sessionId String
+  order     Int
+  question  String
+  category  String
+  createdAt DateTime                    @default(now())
+
+  session   RecruitingInterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answers   RecruitingInterviewAnswer[]
+
+  @@unique([sessionId, order])
+  @@index([sessionId])
+  @@map("recruiting_interview_questions")
+  @@schema("public")
+}
+
+model RecruitingInterviewAnswer {
+  id         String                     @id @default(cuid())
+  sessionId  String
+  questionId String
+  answerText String?
+  transcript String?
+  audioUrl   String?
+  answerType String?
+  durationSeconds Int?
+  transcriptionStatus String?
+  transcriptionConfidence Float?
+  realtimeTranscript Json?
+  aiSignals Json?
+  score      Int?
+  feedback   String?
+  createdAt  DateTime                   @default(now())
+
+  session    RecruitingInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question   RecruitingInterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@index([questionId])
+  @@map("recruiting_interview_answers")
+  @@schema("public")
+}
+
+model RecruitingAutomationRule {
+  id          String                         @id @default(cuid())
+  tenantId    String
+  searchId    String?
+  name        String
+  enabled     Boolean                        @default(true)
+  triggerType String
+  conditions  Json
+  actions     Json
+  createdAt   DateTime                       @default(now())
+  updatedAt   DateTime                       @updatedAt
+
+  search      RecruitingSearch?              @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  executions  RecruitingAutomationExecution[]
+
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([triggerType])
+  @@index([enabled])
+  @@map("recruiting_automation_rules")
+  @@schema("public")
+}
+
+model RecruitingAutomationExecution {
+  id           String                    @id @default(cuid())
+  tenantId     String
+  ruleId       String?
+  candidateId  String
+  searchId     String
+  action       String
+  status       String
+  input        Json?
+  output       Json?
+  errorMessage String?
+  createdAt    DateTime                  @default(now())
+
+  rule         RecruitingAutomationRule?  @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  candidate    RecruitingCandidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  search       RecruitingSearch           @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  operationalEvents RecruitingOperationalEvent[]
+
+  @@index([tenantId])
+  @@index([ruleId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([action])
+  @@index([status])
+  @@map("recruiting_automation_executions")
+  @@schema("public")
+}
+
+model RecruitingCandidateEmbedding {
+  id             String                 @id @default(cuid())
+  tenantId       String
+  candidateId    String
+  searchId       String
+  embedding      Unsupported("vector")?
+  embeddingJson  Json?
+  embeddingModel String
+  sourceType     String
+  createdAt      DateTime               @default(now())
+
+  candidate      RecruitingCandidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  search         RecruitingSearch       @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([sourceType])
+  @@map("recruiting_candidate_embeddings")
+  @@schema("public")
+}
+
+model RecruitingCandidateMemory {
+  id          String              @id @default(cuid())
+  tenantId    String
+  candidateId String
+  searchId    String
+  memoryType  String
+  content     String
+  metadata    Json?
+  createdAt   DateTime            @default(now())
+
+  candidate   RecruitingCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  search      RecruitingSearch    @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([memoryType])
+  @@map("recruiting_candidate_memories")
+  @@schema("public")
+}
+
+model RecruitingOffer {
+  id               String                   @id @default(cuid())
+  tenantId         String
+  candidateId      String
+  searchId         String
+  status           String                   @default("draft")
+  currentVersionId String?
+  publicToken      String?                  @unique
+  respondedAt      DateTime?
+  candidateNotes   String?
+  pdfStoragePath   String?
+  pdfSignedUrl     String?
+  pdfGeneratedAt   DateTime?
+  deliveredAt      DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  candidate        RecruitingCandidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  search           RecruitingSearch         @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  versions         RecruitingOfferVersion[]
+  notificationDeliveries RecruitingNotificationDelivery[]
+  signatures       RecruitingOfferSignature[]
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([status])
+  @@index([publicToken])
+  @@index([expiresAt])
+  @@map("recruiting_offers")
+  @@schema("public")
+}
+
+model RecruitingOfferSignature {
+  id            String              @id @default(cuid())
+  tenantId      String
+  offerId       String
+  candidateId   String
+  signerEmail   String
+  signerName    String?
+  status        String              @default("pending")
+  signedAt      DateTime?
+  signatureText String?
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+
+  offer         RecruitingOffer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  candidate     RecruitingCandidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([offerId])
+  @@index([candidateId])
+  @@index([status])
+  @@map("recruiting_offer_signatures")
+  @@schema("public")
+}
+
+model RecruitingNotificationDelivery {
+  id                 String                       @id @default(cuid())
+  tenantId           String
+  candidateId        String?
+  searchId           String?
+  offerId            String?
+  interviewSessionId String?
+  type               String
+  toEmail            String
+  subject            String
+  status             String                       @default("pending")
+  provider           String
+  providerMessageId  String?
+  errorMessage       String?
+  metadata           Json?
+  createdAt          DateTime                     @default(now())
+
+  candidate          RecruitingCandidate?         @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  search             RecruitingSearch?            @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  offer              RecruitingOffer?             @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  interviewSession   RecruitingInterviewSession?  @relation(fields: [interviewSessionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([searchId])
+  @@index([offerId])
+  @@index([interviewSessionId])
+  @@index([type])
+  @@index([status])
+  @@map("recruiting_notification_deliveries")
+  @@schema("public")
+}
+
+model RecruitingCalendarConnection {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  userId                String
+  provider              String   @default("google")
+  email                 String
+  encryptedAccessToken  String?
+  encryptedRefreshToken String
+  tokenExpiresAt        DateTime?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([provider])
+  @@index([isActive])
+  @@map("recruiting_calendar_connections")
+  @@schema("public")
+}
+
+model RecruitingRoleAssignment {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String
+  role        String
+  permissions Json?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([role])
+  @@unique([tenantId, userId, role])
+  @@map("recruiting_role_assignments")
+  @@schema("public")
+}
+
+model RecruitingOperationalEvent {
+  id                    String                         @id @default(cuid())
+  tenantId              String
+  searchId              String?
+  candidateId           String?
+  jobId                 String?
+  automationExecutionId String?
+  type                  String
+  severity              String
+  message               String
+  metadata              Json?
+  createdAt             DateTime                       @default(now())
+
+  search                RecruitingSearch?              @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  candidate             RecruitingCandidate?           @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  job                   RecruitingCandidateProcessingJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  automationExecution   RecruitingAutomationExecution?  @relation(fields: [automationExecutionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([candidateId])
+  @@index([jobId])
+  @@index([automationExecutionId])
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("recruiting_operational_events")
+  @@schema("public")
+}
+
+model RecruitingDataRetentionPolicy {
+  id                     String   @id @default(cuid())
+  tenantId               String
+  cvRetentionDays        Int      @default(365)
+  audioRetentionDays     Int      @default(90)
+  interviewRetentionDays Int      @default(365)
+  offerRetentionDays     Int      @default(365)
+  enabled                Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([enabled])
+  @@map("recruiting_data_retention_policies")
+  @@schema("public")
+}
+
+model RecruitingTenantSettings {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  defaultTimezone       String   @default("UTC")
+  defaultCurrency       String   @default("USD")
+  defaultCountry        String?
+  emailFromName         String?
+  emailFromAddress      String?
+  offerApprovalRequired Boolean  @default(false)
+  interviewReminderHours Json?
+  automationEnabled     Boolean  @default(true)
+  aiScoringEnabled      Boolean  @default(true)
+  voiceInterviewEnabled Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("recruiting_tenant_settings")
+  @@schema("public")
+}
+
+model RecruitingNotificationTemplate {
+  id        String           @id @default(cuid())
+  tenantId  String
+  type      String
+  subject   String
+  body      String
+  enabled   Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+  @@index([type])
+  @@index([enabled])
+  @@map("recruiting_notification_templates")
+  @@schema("public")
+}
+
+model RecruitingAgentRun {
+  id           String              @id @default(cuid())
+  tenantId     String
+  searchId     String?
+  candidateId  String?
+  agentType    String
+  status       String
+  input        Json?
+  output       Json?
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime            @default(now())
+
+  search       RecruitingSearch?   @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  candidate    RecruitingCandidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  approvals    RecruitingAgentApproval[]
+
+  @@index([tenantId])
+  @@index([searchId])
+  @@index([candidateId])
+  @@index([agentType])
+  @@index([status])
+  @@map("recruiting_agent_runs")
+  @@schema("public")
+}
+
+model RecruitingAgentMemory {
+  id         String   @id @default(cuid())
+  tenantId   String
+  agentType  String
+  entityType String
+  entityId   String
+  memoryKey  String
+  content    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([agentType])
+  @@index([entityType, entityId])
+  @@unique([tenantId, agentType, entityType, entityId, memoryKey])
+  @@map("recruiting_agent_memories")
+  @@schema("public")
+}
+
+model RecruitingAgentTask {
+  id           String    @id @default(cuid())
+  tenantId     String
+  agentType    String
+  taskType     String
+  status       String    @default("queued")
+  priority     Int       @default(5)
+  payload      Json
+  result       Json?
+  errorMessage String?
+  attempts     Int       @default(0)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([agentType])
+  @@index([taskType])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("recruiting_agent_tasks")
+  @@schema("public")
+}
+
+model RecruitingAgentApproval {
+  id              String              @id @default(cuid())
+  tenantId        String
+  agentRunId      String
+  actionType      String
+  proposedAction  Json
+  status          String              @default("pending")
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime            @default(now())
+
+  agentRun        RecruitingAgentRun   @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([agentRunId])
+  @@index([actionType])
+  @@index([status])
+  @@map("recruiting_agent_approvals")
+  @@schema("public")
+}
+
+model RecruitingOfferVersion {
+  id                   String          @id @default(cuid())
+  offerId              String
+  baseSalary           Int
+  variableCompensation Int?
+  equity               String?
+  currency             String
+  country              String?
+  benefits             Json?
+  generatedContent     String
+  aiSummary            String
+  createdAt            DateTime        @default(now())
+
+  offer                RecruitingOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@map("recruiting_offer_versions")
   @@schema("public")
 }
 

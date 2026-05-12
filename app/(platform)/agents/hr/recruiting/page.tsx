@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GmailConnectionCard } from "./GmailConnectionCard";
 
 const workflowStages = [
   {
@@ -140,6 +141,8 @@ export default function RecruitingAgentPage() {
         </div>
 
         <aside className="space-y-6">
+          <GmailConnectionCard />
+
           <div className="rounded-2xl border border-white/10 bg-[#0F2422]/70 p-6 backdrop-blur-sm">
             <p className="text-xs uppercase tracking-[0.24em] text-[#C96F3B]">
               REF activa
