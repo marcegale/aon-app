@@ -23,11 +23,23 @@ def _frontend_path() -> str:
 
 
 import os as _os
-_extra_base = _os.getenv("NEXT_PUBLIC_APP_URL", "").rstrip("/")
-_ALLOWED_URL_PREFIXES = tuple(filter(None, [
-    "https://app.aigency.com/",
-    (_extra_base + "/") if _extra_base else None,
-]))
+
+
+def _build_allowed_prefixes(*base_urls: str) -> tuple[str, ...]:
+    """Return normalised (trailing-slash) URL prefix tuple, deduped, non-empty."""
+    seen: list[str] = []
+    for u in base_urls:
+        norm = u.rstrip("/") + "/"
+        if norm != "/" and norm not in seen:
+            seen.append(norm)
+    return tuple(seen)
+
+
+_ALLOWED_URL_PREFIXES = _build_allowed_prefixes(
+    "https://app.aigency.com",
+    _os.getenv("NEXT_PUBLIC_APP_URL", ""),
+    _os.getenv("BACKEND_URL", ""),
+)
 
 
 class _CockpitAPI:

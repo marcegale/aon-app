@@ -318,5 +318,124 @@ class TestRegistrationRetryCallback(unittest.TestCase):
         self.assertIsInstance(result, dict)
 
 
+from ui.cockpit.cockpit_window import _build_allowed_prefixes  # noqa: E402
+
+
+class TestBuildAllowedPrefixes(unittest.TestCase):
+    """Phase 5M fix: _build_allowed_prefixes logic."""
+
+    def test_aigency_always_present(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com")
+        self.assertIn("https://app.aigency.com/", prefixes)
+
+    def test_trailing_slash_normalised(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com/")
+        self.assertIn("https://app.aigency.com/", prefixes)
+        # No double slash
+        self.assertNotIn("https://app.aigency.com//", prefixes)
+
+    def test_localhost_included(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com", "http://localhost:3000")
+        self.assertIn("http://localhost:3000/", prefixes)
+
+    def test_empty_string_excluded(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com", "")
+        self.assertNotIn("/", prefixes)
+        self.assertEqual(len(prefixes), 1)
+
+    def test_deduplication(self) -> None:
+        prefixes = _build_allowed_prefixes(
+            "https://app.aigency.com",
+            "https://app.aigency.com/",
+            "https://app.aigency.com",
+        )
+        self.assertEqual(prefixes.count("https://app.aigency.com/"), 1)
+
+    def test_backend_url_included(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com", "http://localhost:3000")
+        self.assertIn("http://localhost:3000/", prefixes)
+        self.assertIn("https://app.aigency.com/", prefixes)
+
+    def test_unknown_domain_not_added_automatically(self) -> None:
+        prefixes = _build_allowed_prefixes("https://app.aigency.com")
+        self.assertNotIn("https://evil.com/", prefixes)
+
+
+class TestOpenExternalUrl(unittest.TestCase):
+    """Phase 5M fix: open_external_url allowlist behaviour."""
+
+    def _call(self, url: str, prefixes: tuple[str, ...]) -> bool:
+        """Return True if webbrowser.open was called."""
+        cw = CockpitWindow()
+        with mock.patch("ui.cockpit.cockpit_window._ALLOWED_URL_PREFIXES", prefixes):
+            with mock.patch("webbrowser.open") as mock_open:
+                cw._api.open_external_url(url)
+                return mock_open.called
+
+    def test_aigency_url_allowed(self) -> None:
+        opened = self._call(
+            "https://app.aigency.com/atlas/register?code=ABCD1234",
+            ("https://app.aigency.com/",),
+        )
+        self.assertTrue(opened)
+
+    def test_localhost_url_allowed_when_in_prefixes(self) -> None:
+        opened = self._call(
+            "http://localhost:3000/atlas/register?code=ABCD1234",
+            ("https://app.aigency.com/", "http://localhost:3000/"),
+        )
+        self.assertTrue(opened)
+
+    def test_unknown_domain_blocked(self) -> None:
+        opened = self._call(
+            "https://evil.com/steal",
+            ("https://app.aigency.com/",),
+        )
+        self.assertFalse(opened)
+
+    def test_blocked_url_logs_warning_without_url(self) -> None:
+        cw = CockpitWindow()
+        blocked_url = "https://evil.com/steal?code=SECRET"
+        captured: list[str] = []
+
+        class _Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                captured.append(self.format(record))
+
+        handler = _Capture()
+        root = logging.getLogger()
+        root.addHandler(handler)
+        try:
+            with mock.patch("ui.cockpit.cockpit_window._ALLOWED_URL_PREFIXES", ("https://app.aigency.com/",)):
+                cw._api.open_external_url(blocked_url)
+        finally:
+            root.removeHandler(handler)
+
+        combined = " ".join(captured)
+        self.assertTrue(any("blocked" in m.lower() or "not in allowed" in m.lower() for m in captured),
+                        "Expected a warning about blocked domain")
+        self.assertNotIn(blocked_url, combined)
+
+    def test_non_string_url_does_not_open(self) -> None:
+        opened = self._call(None, ("https://app.aigency.com/",))  # type: ignore[arg-type]
+        self.assertFalse(opened)
+
+
+class TestRegistrationButtonLabel(unittest.TestCase):
+    """Phase 5M fix: reg-open-btn must not reference app.aigency.com."""
+
+    def test_button_label_not_hardcoded_to_aigency(self) -> None:
+        import pathlib
+        html_path = pathlib.Path(__file__).resolve().parent.parent / "ui" / "cockpit" / "frontend" / "index.html"
+        html = html_path.read_text(encoding="utf-8")
+        # Button should not say "Abrir app.aigency.com" (case-insensitive for robustness)
+        import re
+        btn_match = re.search(r'id="reg-open-btn"[^>]*>(.*?)</button>', html, re.DOTALL)
+        self.assertIsNotNone(btn_match, "reg-open-btn button not found in HTML")
+        label_text = btn_match.group(1).strip()  # type: ignore[union-attr]
+        self.assertNotIn("app.aigency.com", label_text,
+                         f"Button label must not hardcode app.aigency.com, got: {label_text!r}")
+
+
 if __name__ == "__main__":
     unittest.main()

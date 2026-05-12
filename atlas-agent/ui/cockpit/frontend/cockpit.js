@@ -410,9 +410,13 @@ regCopyBtn.addEventListener('click', function () {
 
 regOpenBtn.addEventListener('click', function () {
   if (!_regUrl) return;
-  pywebview.api.open_external_url(_regUrl).catch(function (err) {
-    console.error('open_external_url error', err);
-  });
+  if (regStatusEl) regStatusEl.textContent = 'Abriendo página de aprobación...';
+  var result = pywebview.api.open_external_url(_regUrl);
+  if (result && typeof result.catch === 'function') {
+    result.catch(function () {
+      if (regStatusEl) regStatusEl.textContent = 'No se pudo abrir el enlace. Copia la URL manualmente.';
+    });
+  }
 });
 
 regRetryBtn.addEventListener('click', function () {
