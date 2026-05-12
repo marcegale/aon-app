@@ -550,3 +550,125 @@ header {
 #send-btn:hover:not(:disabled)  { opacity: 0.85; }
 #send-btn:active:not(:disabled) { transform: scale(0.93); }
 #send-btn:disabled              { opacity: 0.3; cursor: default; }
+
+/* ── Registration card ──────────────────────────────────────────────────── */
+.registration-card {
+  position: absolute;
+  bottom: 68px;
+  left: 12px;
+  right: 12px;
+  z-index: 100;
+  background: #131a24;
+  border: 1px solid rgba(26,159,255,0.22);
+  border-left: 3px solid rgba(26,159,255,0.55);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(244,235,208,0.05) inset;
+  padding: 14px 16px 12px;
+  animation: card-in 0.2s ease forwards;
+}
+
+.reg-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.reg-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(26,159,255,0.14);
+  color: #4dd9ff;
+  border: 1px solid rgba(26,159,255,0.30);
+  flex-shrink: 0;
+}
+
+.reg-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reg-body {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reg-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.reg-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reg-code {
+  flex: 1;
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  font-size: 12px;
+  color: #4dd9ff;
+  background: rgba(26,159,255,0.07);
+  border: 1px solid rgba(26,159,255,0.18);
+  border-radius: 6px;
+  padding: 5px 10px;
+  word-break: break-all;
+  min-width: 0;
+}
+
+.reg-copy-btn {
+  font-family: var(--font);
+  font-size: 10px;
+  background: none;
+  border: 1px solid rgba(244,235,208,0.15);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.reg-copy-btn:hover { border-color: rgba(244,235,208,0.35); color: var(--text); }
+
+.reg-expires {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.reg-url-fallback {
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  font-size: 10px;
+  color: rgba(26,159,255,0.55);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.reg-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reg-open-btn {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: rgba(26,159,255,0.14);
+  border: 1px solid rgba(26,159,255,0.30);
+  color: #4dd9ff;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.reg-open-btn:hover  { opacity: 0.85; }
+.reg-open-btn:active { transform: scale(0.96); }

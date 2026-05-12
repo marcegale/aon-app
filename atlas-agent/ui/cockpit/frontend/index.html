@@ -22,6 +22,25 @@
 
     <div id="messages"></div>
 
+    <div id="registration-card" class="registration-card hidden">
+      <div class="reg-header">
+        <span class="reg-badge">REGISTRO</span>
+        <span class="reg-title">Activa Atlas en tu cuenta</span>
+      </div>
+      <div class="reg-body">
+        <p class="reg-label">Código de dispositivo</p>
+        <div class="reg-code-row">
+          <code id="reg-device-code" class="reg-code"></code>
+          <button id="reg-copy-btn" class="reg-copy-btn">copiar</button>
+        </div>
+        <p id="reg-expires" class="reg-expires"></p>
+        <p id="reg-url-fallback" class="reg-url-fallback"></p>
+      </div>
+      <div class="reg-buttons">
+        <button id="reg-open-btn" class="reg-open-btn">Abrir app.aigency.com</button>
+      </div>
+    </div>
+
     <div id="permission-card" class="hidden">
       <div class="perm-header">
         <span class="perm-badge" id="perm-badge">SENSITIVE</span>

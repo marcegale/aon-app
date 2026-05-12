@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 import sys
@@ -80,6 +82,7 @@ class CockpitWindow:
         self._approve_callback: Callable[[str], None] | None = None
         self._cancel_callback: Callable[[str], None] | None = None
         self._permission_pending = False
+        self._pending_reg: Any = None
 
     def set_input_callback(self, fn: Callable[[str], None]) -> None:
         self._input_callback = fn
@@ -110,6 +113,8 @@ class CockpitWindow:
     def _on_loaded(self) -> None:
         self._ready = True
         logging.info("[cockpit] frontend loaded")
+        if self._pending_reg is not None:
+            self._emit_registration_card()
 
     def open(self) -> None:
         if self._win is None:
@@ -186,6 +191,25 @@ class CockpitWindow:
     def hide_permission_card(self) -> None:
         self._permission_pending = False
         self._eval("window.hidePermissionCard()")
+
+    def show_registration_card(self, reg: Any) -> None:
+        self._pending_reg = reg
+        if self._ready:
+            self._emit_registration_card()
+
+    def _emit_registration_card(self) -> None:
+        import dataclasses
+        try:
+            d = dataclasses.asdict(self._pending_reg)
+        except TypeError:
+            d = self._pending_reg if isinstance(self._pending_reg, dict) else {}
+        safe = json.dumps(d, ensure_ascii=False)
+        self._eval(f"window.showRegistrationCard({safe})")
+        if not self._visible:
+            self.open()
+
+    def hide_registration_card(self) -> None:
+        self._eval("window.hideRegistrationCard()")
 
     def show_action_result(self, result: Any) -> None:
         import dataclasses

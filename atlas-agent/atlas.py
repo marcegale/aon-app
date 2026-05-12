@@ -207,8 +207,6 @@ def main() -> None:
         logging.info("[atlas] Device registration started")
     else:
         logging.info("[atlas] Device registration start failed: %s", _startup_registration.error_code)
-    # TODO Phase 5H: surface _startup_registration to Cockpit/UI.
-
     broker  = Broker()
     fsm     = StateMachine(broker)
     orb     = OrbWindow(broker)
@@ -219,6 +217,9 @@ def main() -> None:
     cockpit.set_approve_callback(lambda _: gate.resolve(True))
     cockpit.set_cancel_callback(lambda _: gate.resolve(False))
     cockpit.set_input_callback(_make_input_handler(fsm, cockpit, gate))
+
+    if _startup_registration.started:
+        cockpit.show_registration_card(_startup_registration)
 
     orb.start()
     cockpit.start()

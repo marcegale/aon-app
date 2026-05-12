@@ -13,10 +13,17 @@ const permWarning    = document.getElementById('perm-warning');
 const permApproveBtn = document.getElementById('perm-approve-btn');
 const permCancelBtn  = document.getElementById('perm-cancel-btn');
 const permCloseBtn   = document.getElementById('perm-close-btn');
+const regCard        = document.getElementById('registration-card');
+const regCodeEl      = document.getElementById('reg-device-code');
+const regExpiresEl   = document.getElementById('reg-expires');
+const regUrlEl       = document.getElementById('reg-url-fallback');
+const regCopyBtn     = document.getElementById('reg-copy-btn');
+const regOpenBtn     = document.getElementById('reg-open-btn');
 
 let isBusy          = false;
 let thinkingEl      = null;
 let pendingActionId = null;
+let _regUrl         = null;
 
 // ── State colours ──────────────────────────────────────────────────────────
 const DOT_COLORS = {
@@ -114,6 +121,25 @@ window.showPermissionCard = function (action, isDestructiveBlocked) {
 window.hidePermissionCard = function () {
   permCard.classList.add('hidden');
   pendingActionId = null;
+  _setBusy(false);
+  _focusInput();
+};
+
+// ── Registration card ──────────────────────────────────────────────────────
+window.showRegistrationCard = function (reg) {
+  regCodeEl.textContent    = reg.device_code      || '';
+  regUrlEl.textContent     = reg.registration_url || '';
+  regExpiresEl.textContent = reg.expires_at
+    ? 'Expira: ' + new Date(reg.expires_at).toLocaleString('es')
+    : '';
+  _regUrl = reg.registration_url || null;
+  regCard.classList.remove('hidden');
+  _setBusy(true);
+};
+
+window.hideRegistrationCard = function () {
+  regCard.classList.add('hidden');
+  _regUrl = null;
   _setBusy(false);
   _focusInput();
 };
@@ -324,6 +350,26 @@ permCancelBtn.addEventListener('click', function () {
 permCloseBtn.addEventListener('click', function () {
   pywebview.api.cancel_action(pendingActionId || '').catch(function (err) {
     console.error('cancel_action (close) error', err);
+  });
+});
+
+// ── Registration card buttons ──────────────────────────────────────────────
+regCopyBtn.addEventListener('click', function () {
+  var code = regCodeEl.textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(function () {
+    regCopyBtn.textContent = 'copiado';
+    setTimeout(function () { regCopyBtn.textContent = 'copiar'; }, 1500);
+  }).catch(function () {
+    regCopyBtn.textContent = 'error';
+    setTimeout(function () { regCopyBtn.textContent = 'copiar'; }, 1500);
+  });
+});
+
+regOpenBtn.addEventListener('click', function () {
+  if (!_regUrl) return;
+  pywebview.api.open_external_url(_regUrl).catch(function (err) {
+    console.error('open_external_url error', err);
   });
 });
 
