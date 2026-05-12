@@ -70,7 +70,22 @@ class _CockpitAPI:
         cb = self._cockpit._registration_retry_callback
         if cb is None:
             return {"ok": False, "error": "No retry callback registered"}
-        threading.Thread(target=cb, daemon=True).start()
+        with self._cockpit._retry_lock:
+            if self._cockpit._retry_in_progress:
+                return {"ok": False, "error": "Retry already in progress"}
+            self._cockpit._retry_in_progress = True
+
+        def _run() -> None:
+            try:
+                cb()
+            finally:
+                self._cockpit._retry_in_progress = False
+
+        try:
+            threading.Thread(target=_run, daemon=True).start()
+        except Exception:
+            self._cockpit._retry_in_progress = False
+            return {"ok": False, "error": "Failed to start retry thread"}
         return {"ok": True}
 
 
@@ -90,6 +105,8 @@ class CockpitWindow:
         self._approve_callback: Callable[[str], None] | None = None
         self._cancel_callback: Callable[[str], None] | None = None
         self._registration_retry_callback: Callable[[], None] | None = None
+        self._retry_in_progress: bool = False
+        self._retry_lock: threading.Lock = threading.Lock()
         self._permission_pending = False
         self._pending_reg: Any = None
         self._pending_reg_status: str | None = None
