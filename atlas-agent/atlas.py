@@ -29,6 +29,7 @@ except RuntimeError as exc:
     logging.warning("[atlas] config: %s (dev mode)", exc)
 
 from device_startup import dev_only_accept_existing_key_validator, make_backend_device_key_validator, run_startup_device_check
+from device_registration_startup import maybe_start_registration_from_startup_check
 from broker import Broker
 from state_machine import (
     StateMachine,
@@ -194,6 +195,19 @@ def main() -> None:
     _startup = run_startup_device_check(_validator)
     logging.info("[atlas] Device state: %s", _startup.result.state.value)
     logging.info("[atlas] %s", _startup.user_message)
+
+    # Phase 5G: trigger registration start if state requires it
+    _startup_registration = maybe_start_registration_from_startup_check(
+        startup_check=_startup,
+        backend_url=settings.BACKEND_URL,
+    )
+    if not _startup_registration.attempted:
+        logging.info("[atlas] Device registration not required")
+    elif _startup_registration.started:
+        logging.info("[atlas] Device registration started")
+    else:
+        logging.info("[atlas] Device registration start failed: %s", _startup_registration.error_code)
+    # TODO Phase 5H: surface _startup_registration to Cockpit/UI.
 
     broker  = Broker()
     fsm     = StateMachine(broker)
